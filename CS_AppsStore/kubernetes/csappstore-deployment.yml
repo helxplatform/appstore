@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cs-appstore 
+  labels:
+    app: cs-appstore 
+spec:
+  #replicas: 3
+  template:
+    metadata:
+      labels:
+        app: cs-appstore 
+    spec:
+      initContainers:
+      - name: postgres-init
+        image: busybox:1.28
+        command: ['sh', '-c', 'until nslookup postgres; do echo waiting for postgres; sleep 2; done;']
+      containers:
+      - name: cs-appstore 
+        image: heliumdatastage/commonsshare_appstore:latest
+        imagePullPolicy: Always
+        command: ['/bin/bash', '-c']
+        args: ['python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && gunicorn --timeout 300 --workers 2 --bind 0.0.0.0:8000 CS_AppsStore.wsgi:application']
+        env:
+        - name: OAUTH_SERVICE_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              key: OAUTH_SERVICE_SERVER_URL
+              name: csappstore-env
+        - name: OAUTH_APP_KEY 
+          valueFrom:
+            configMapKeyRef:
+              key: OAUTH_APP_KEY 
+              name: csappstore-env
+        - name: DATABASE_USER
+          valueFrom:
+            configMapKeyRef:
+              key: DATABASE_USER 
+              name: csappstore-env
+        - name: DATABASE_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: DATABASE_PASSWORD 
+              name: csappstore-env
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_HOST 
+              name: csappstore-env
+        ports:
+        - containerPort: 8000
+      restartPolicy: Always

@@ -1,0 +1,18 @@
+version: "3.6"
+services:
+  imagej:
+    image: heliumdatastage/renci-guacamole-vnc:use-all-defaults-with-executables
+    container_name: imagej
+    entrypoint: /init
+    ports:
+      - 8080:8080
+    volumes:
+      - TYCHO_NFS/cloud-top:/usr/local/renci/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 2000M
+        reservations:
+          cpus: '0.50'
+          memory: 2000M

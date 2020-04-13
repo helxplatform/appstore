@@ -1,0 +1,39 @@
+version: 1.1
+service:
+  type: docker-compose
+  name: JBrowse
+  author:
+  description: |
+    JBrowse is a fast, scalable genome browser built completely with JavaScript and HTML5.
+    It can run on your desktop, or be embedded in your website.
+  files:
+     - docker-compose.yml
+     - healthcheck.sh
+     - port.sh
+     - prepare_refdata.sh
+     - stand_up.sh
+     - stop.sh
+     - GRCh37.json
+
+  scripts:
+    prestart: prepare_refdata.sh
+    start: stand_up.sh
+    port: port.sh
+    healthcheck: healthcheck.sh
+    stop: stop.sh
+
+  environment:
+    JBROWSE_NAME:
+        default: jbrowse
+        description: The name of the container.
+    HTTP_PORT:
+        default: 3000
+        description: The host port that JBrowse exposes.
+
+  data:
+    dataset_1:
+        targetDirectory: data
+        files:
+            reference:
+                description: A reference sequence
+

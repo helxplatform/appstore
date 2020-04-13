@@ -1,0 +1,20 @@
+# .dockstore.yml for Kubernetes Guestbook
+# https://github.com/kubernetes/examples/tree/master
+version: 1.1
+service:
+  subclass: kubernetes
+  files:
+      - application/guestbook/redis-master-deployment.yml
+        order: 2
+      - application/guestbook/redis-master-service.yaml
+        order: 1
+      - application/guestbook/redis-slave-deployment.yml
+        order: 4
+      - application/guestbook/redis-slave-service.yaml
+        order: 3
+      - application/guestbook/frontend-deployment.yml
+        order: 6
+      - application/guestbook/frontend-service.yaml
+        order: 5
+      - application/guestbook/README.md
+      - application/guestbook/MAINTENANCE.md

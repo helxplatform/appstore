@@ -1,0 +1,22 @@
+{
+  "description": "Loads probe map, clinical, and expression data sets.",
+  "environment": {
+    "httpPort": "7222"
+  },
+  "data": {
+    "dataset_1": [
+      {
+        "tsv": "https://xena.treehouse.gi.ucsc.edu/download/TreehousePEDv9_Ribodeplete_clinical_metadata.2019-03-25.tsv",
+        "metadata": "https://xena.treehouse.gi.ucsc.edu/download/TreehousePEDv9_Ribodeplete_clinical_metadata.2019-03-25.tsv.json"
+      },
+      {
+        "tsv": "https://xena.treehouse.gi.ucsc.edu/download/TreehousePEDv9_Ribodeplete_unique_ensembl_expected_count.2019-03-25.tsv",
+        "metadata": "https://xena.treehouse.gi.ucsc.edu/download/TreehousePEDv9_Ribodeplete_unique_ensembl_expected_count.2019-03-25.tsv.json"
+      },
+      {
+        "tsv": "https://xena.treehouse.gi.ucsc.edu/download/gencode.v23.annotation.gene.probemap",
+        "metadata": "https://xena.treehouse.gi.ucsc.edu/download/gencode.v23.annotation.gene.probemap.json"
+      }
+    ]
+  }
+}

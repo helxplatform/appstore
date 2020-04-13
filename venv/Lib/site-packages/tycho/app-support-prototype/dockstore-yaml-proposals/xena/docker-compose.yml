@@ -1,0 +1,15 @@
+version: '2.1'
+
+services:
+  xena:
+    image: quay.io/coverbeck/xenahub:v0.3
+    container_name: xena
+    ports:
+      - ${HTTP_PORT:-7222}:7222 # http,  format is host port:container port
+      - ${HTTPS_PORT:-7223}:7223 # https, format is host port:container port
+    volumes:
+      - ${PWD}/xena:/root/xena
+    group_add:
+      # The number of the group owning these xena files.
+      # To retrieve: getent group GROUPNAME
+      - 600

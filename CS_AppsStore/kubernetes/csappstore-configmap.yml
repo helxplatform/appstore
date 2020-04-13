@@ -1,0 +1,13 @@
+apiVersion: v1
+data:
+  OAUTH_SERVICE_SERVER_URL: https://heliumplus-icat.commonsshare.org/
+  OAUTH_APP_KEY: 9073d39be7f1eb7ae783e7912092d70e439312912cfa7c5d10aea7acc3817822
+  POSTGRES_DB: postgres
+  POSTGRES_HOST: postgres
+  DATABASE_USER: postgres
+  DATABASE_PASSWORD: renci 
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  labels:
+  name: csappstore-env

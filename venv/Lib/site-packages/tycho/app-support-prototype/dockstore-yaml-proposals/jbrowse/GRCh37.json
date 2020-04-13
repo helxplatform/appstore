@@ -1,0 +1,7 @@
+{
+  "data": {
+    "dataset_1": [
+        "reference": "https://ftp.ensembl.org/pub/release-75/fasta/homo_sapiens/dna/Homo_sapiens.GRCh37.75.dna.chromosome.1.fa.gz"
+    ]
+  }
+}

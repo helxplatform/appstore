@@ -1,0 +1,9 @@
+{
+  "description": "Comprehensive annotation, gene only. Gene: GENCODE 23 comprehensive (hg38) e.g. ENSG00000223972.5 Not required, but recommended",
+  "dataset": [
+    {
+      "data": "https://xena.treehouse.gi.ucsc.edu/download/gencode.v23.annotation.gene.probemap",
+      "metadata": "https://xena.treehouse.gi.ucsc.edu/download/gencode.v23.annotation.gene.probemap.json"
+    }
+  ]
+}

@@ -1,0 +1,268 @@
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    creationTimestamp: 2018-12-15T03:23:32Z
+    generateName: hello-minikube-7c77b68cff-
+    labels:
+      pod-template-hash: "3733624799"
+      run: hello-minikube
+    name: hello-minikube-7c77b68cff-ns2z7
+    namespace: default
+    ownerReferences:
+    - apiVersion: extensions/v1beta1
+      blockOwnerDeletion: true
+      controller: true
+      kind: ReplicaSet
+      name: hello-minikube-7c77b68cff
+      uid: cc85a4b8-0018-11e9-a0ec-08002740fc0b
+    resourceVersion: "2110"
+    selfLink: /api/v1/namespaces/default/pods/hello-minikube-7c77b68cff-ns2z7
+    uid: cc8915ce-0018-11e9-a0ec-08002740fc0b
+  spec:
+    containers:
+    - image: k8s.gcr.io/echoserver:1.10
+      imagePullPolicy: IfNotPresent
+      name: hello-minikube
+      ports:
+      - containerPort: 8080
+        protocol: TCP
+      resources: {}
+      terminationMessagePath: /dev/termination-log
+      terminationMessagePolicy: File
+      volumeMounts:
+      - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+        name: default-token-fpf7v
+        readOnly: true
+    dnsPolicy: ClusterFirst
+    nodeName: minikube
+    restartPolicy: Always
+    schedulerName: default-scheduler
+    securityContext: {}
+    serviceAccount: default
+    serviceAccountName: default
+    terminationGracePeriodSeconds: 30
+    tolerations:
+    - effect: NoExecute
+      key: node.kubernetes.io/not-ready
+      operator: Exists
+      tolerationSeconds: 300
+    - effect: NoExecute
+      key: node.kubernetes.io/unreachable
+      operator: Exists
+      tolerationSeconds: 300
+    volumes:
+    - name: default-token-fpf7v
+      secret:
+        defaultMode: 420
+        secretName: default-token-fpf7v
+  status:
+    conditions:
+    - lastProbeTime: null
+      lastTransitionTime: 2018-12-15T03:23:32Z
+      status: "True"
+      type: Initialized
+    - lastProbeTime: null
+      lastTransitionTime: 2018-12-15T03:23:33Z
+      status: "True"
+      type: Ready
+    - lastProbeTime: null
+      lastTransitionTime: 2018-12-15T03:23:32Z
+      status: "True"
+      type: PodScheduled
+    containerStatuses:
+    - containerID: docker://75913497e35018fef8653ef470d829be6651333f6bee162006cc1ab16ac07f5d
+      image: k8s.gcr.io/echoserver:1.10
+      imageID: docker-pullable://k8s.gcr.io/echoserver@sha256:cb5c1bddd1b5665e1867a7fa1b5fa843a47ee433bbb75d4293888b71def53229
+      lastState: {}
+      name: hello-minikube
+      ready: true
+      restartCount: 0
+      state:
+        running:
+          startedAt: 2018-12-15T03:23:33Z
+    hostIP: 10.0.2.15
+    phase: Running
+    podIP: 172.17.0.4
+    qosClass: BestEffort
+    startTime: 2018-12-15T03:23:32Z
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: 2018-12-15T03:23:41Z
+    labels:
+      run: hello-minikube
+    name: hello-minikube
+    namespace: default
+    resourceVersion: "2124"
+    selfLink: /api/v1/namespaces/default/services/hello-minikube
+    uid: d2219502-0018-11e9-a0ec-08002740fc0b
+  spec:
+    clusterIP: 10.102.103.41
+    externalTrafficPolicy: Cluster
+    ports:
+    - nodePort: 32302
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      run: hello-minikube
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: 2018-12-15T02:58:22Z
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+    resourceVersion: "15"
+    selfLink: /api/v1/namespaces/default/services/kubernetes
+    uid: 4870bfe0-0015-11e9-a0ec-08002740fc0b
+  spec:
+    clusterIP: 10.96.0.1
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 8443
+    sessionAffinity: ClientIP
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 10800
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: 2018-12-15T03:23:32Z
+    generation: 1
+    labels:
+      run: hello-minikube
+    name: hello-minikube
+    namespace: default
+    resourceVersion: "2112"
+    selfLink: /apis/apps/v1/namespaces/default/deployments/hello-minikube
+    uid: cc82c5fa-0018-11e9-a0ec-08002740fc0b
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        run: hello-minikube
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 1
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          run: hello-minikube
+      spec:
+        containers:
+        - image: k8s.gcr.io/echoserver:1.10
+          imagePullPolicy: IfNotPresent
+          name: hello-minikube
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: 2018-12-15T03:23:32Z
+      lastUpdateTime: 2018-12-15T03:23:32Z
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: 2018-12-15T03:23:32Z
+      lastUpdateTime: 2018-12-15T03:23:33Z
+      message: ReplicaSet "hello-minikube-7c77b68cff" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: apps/v1
+  kind: ReplicaSet
+  metadata:
+    annotations:
+      deployment.kubernetes.io/desired-replicas: "1"
+      deployment.kubernetes.io/max-replicas: "2"
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: 2018-12-15T03:23:32Z
+    generation: 1
+    labels:
+      pod-template-hash: "3733624799"
+      run: hello-minikube
+    name: hello-minikube-7c77b68cff
+    namespace: default
+    ownerReferences:
+    - apiVersion: extensions/v1beta1
+      blockOwnerDeletion: true
+      controller: true
+      kind: Deployment
+      name: hello-minikube
+      uid: cc82c5fa-0018-11e9-a0ec-08002740fc0b
+    resourceVersion: "2111"
+    selfLink: /apis/apps/v1/namespaces/default/replicasets/hello-minikube-7c77b68cff
+    uid: cc85a4b8-0018-11e9-a0ec-08002740fc0b
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        pod-template-hash: "3733624799"
+        run: hello-minikube
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          pod-template-hash: "3733624799"
+          run: hello-minikube
+      spec:
+        containers:
+        - image: k8s.gcr.io/echoserver:1.10
+          imagePullPolicy: IfNotPresent
+          name: hello-minikube
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    fullyLabeledReplicas: 1
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""

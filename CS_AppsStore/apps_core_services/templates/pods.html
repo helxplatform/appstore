@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block content %}
+<html>
+<head>
+    <style>
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+</style>
+</head>
+<body>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>IP Address</th>
+        <th>Port</th>
+        <th> SID </th>
+        <th> Creation Time</th>
+    </tr>
+    {% for service in services %}
+    <tr>
+        <td> {{ service.name }} </td>
+        <td> {{ service.ip_address }} </td>
+        <td> {{ service.port }} </td>
+        <td> {{ service.identifier }} </td>
+        <td> {{ service.creation_time }} </td>
+        <td>
+            <form action="???" method="POST" onsubmit="buttonDisable(this)">
+                {% csrf_token %}
+                <input type="hidden" name="id" value={{ service.identifier }}>
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" id="delete" class="btn btn-success" formmethod="POST">Delete</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+<script type="text/javascript">
+    function buttonDisable(obj) {
+        obj.delete.disabled = true;
+        obj.delete.innerHTML = "Deleting";
+    }
+</script>
+{% endblock %}
+</body>

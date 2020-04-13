@@ -1,0 +1,79 @@
+version: '3.6'
+services:
+
+   cloudtop:
+      image: heliumdatastage/renci-guacamole-vnc:with-ohif-ortha-napari-latest
+      container_name: cloudtop
+      environment:
+      volumes:
+         - TYCHO_NFS/cloud-top:/usr/local/renci/data
+         - TYCHO_NFS/cloud-top:/mounts
+      entrypoint: ["bash", "-c", "python /files/sed.py && /init"]
+      ports: 
+         - 8080:8080
+      deploy:
+        resources:
+          limits:
+            cpus: '0.60'
+            memory: 5000M
+          reservations:
+            cpus: '0.60'
+            memory: 5000M
+   
+   #loadortha:
+   #   image: heliumdatastage/loadortha:6
+   #   container_name: loadortha
+   #   volumes:
+   #      - TYCHO_NFS/cloud-top:/user/local/renci/data
+   #   entrypoint: /bin/bash /init-pg.sh
+
+   viewer:
+      image: ohif/viewer:v1.1.14.3708
+      container_name: viewer
+      volumes:
+         - TYCHO_NFS/cloud-top:/mounts
+      environment:
+         - MONGO_URL=mongodb://mongo:27017/ohif
+         - APP_CONFIG=/mounts/app-config.js
+      entrypoint: ["bash", "-c", "sleep 5 && cp /mounts/default.conf /etc/nginx/conf.d && /usr/src/entrypoint.sh nginx -g 'daemon off;'"]
+      depends_on:
+         - mongo
+         - orthanc
+      ports:
+         - "3000:80"
+
+   orthanc:
+      image: jodogne/orthanc-plugins:latest
+      container_name: orthanc
+      depends_on:
+         - postgres
+      entrypoint: ["bash", "-c", "sleep 5 && cp /mounts/orthanc.json /etc/orthanc/orthanc.json && Orthanc /etc/orthanc"]
+      volumes:
+         - TYCHO_NFS/cloud-top:/mounts
+      ports:
+         - "8042:8042"
+         - "4242:4242"
+      securityContext:
+          privileged: true
+
+   mongo:
+      image: mongo:latest
+      container_name: mongo
+      ports:
+         - "27017:27017"
+      volumes:
+        - TYCHO_NFS/cloud-top:/data/
+
+   postgres:
+      image: heliumdatastage/postgres:stage
+      container_name: postgres
+      volumes:
+        - TYCHO_NFS/cloud-top:/var/lib/postgresql
+      environment:
+        - POSTGRES_DB=orthanc
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres-orthanc
+      ports:
+         - "5432:5432"
+      securityContext:
+          privileged: true

@@ -1,0 +1,84 @@
+Metadata-Version: 2.1
+Name: django-oidc-rp
+Version: 0.3.4
+Summary: A server side OpenID Connect Relying Party (RP/Client) implementation for Django.
+Home-page: https://github.com/impak-finance/django-oidc-rp
+Author: impak Finance
+Author-email: tech@impakfinance.com
+License: MIT
+Keywords: django openidconnect oidc client rp authentication auth
+Platform: UNKNOWN
+Classifier: Development Status :: 4 - Beta
+Classifier: Environment :: Web Environment
+Classifier: Framework :: Django
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Requires-Dist: django (>=1.11)
+Requires-Dist: jsonfield (>=2.0)
+Requires-Dist: pyjwkest (>=1.4)
+Requires-Dist: requests (>2.0)
+
+django-oidc-rp
+##############
+
+.. image:: https://readthedocs.org/projects/django-oidc-rp/badge/?version=latest
+    :target: https://django-oidc-rp.readthedocs.io/en/latest/
+    :alt: Documentation Status
+
+.. image:: https://img.shields.io/pypi/l/django-oidc-rp.svg
+    :target: https://pypi.python.org/pypi/django-oidc-rp/
+    :alt: License
+
+.. image:: https://img.shields.io/pypi/pyversions/django-oidc-rp.svg
+    :target: https://pypi.python.org/pypi/django-oidc-rp
+
+.. image:: https://img.shields.io/pypi/v/django-oidc-rp.svg
+    :target: https://pypi.python.org/pypi/django-oidc-rp/
+    :alt: Latest Version
+
+.. image:: https://travis-ci.org/impak-finance/django-oidc-rp.svg?branch=master
+    :target: https://travis-ci.org/impak-finance/django-oidc-rp
+
+.. image:: https://codecov.io/gh/impak-finance/django-oidc-rp/branch/master/graph/badge.svg
+  :target: https://codecov.io/gh/impak-finance/django-oidc-rp
+
+|
+
+**Django-oidc-rp** is a lightweight - server side OpenID Connect Relying Party (RP/Client)
+implementation for Django. It allows to easily integrate an OpenID Connect provider as the
+authentication source in a Django project.
+
+.. contents:: Table of Contents
+    :local:
+
+Documentation
+=============
+
+Online browsable documentation is available at https://django-oidc-rp.readthedocs.io.
+
+Head over to the documentation for all the details on how to add OpenID Connect authentication
+support to your Django project
+
+Main requirements
+=================
+
+Python 3.4+, Django 1.11+.
+
+Authors
+=======
+
+impak Finance <tech@impakfinance.com>.
+
+License
+=======
+
+MIT. See ``LICENSE`` for more details.
+
+

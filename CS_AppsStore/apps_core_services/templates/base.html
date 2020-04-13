@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load staticfiles %}
+<head>
+  <title>Commons Share</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/css/cs_core.css">
+  <link rel="stylesheet" href="/static/css/cs_extends.css">
+  <link rel="stylesheet" href="/static/css/apps_page.css">
+
+  {% block extra_css %}{% endblock %}
+
+  <script src="/static/js/jquery-3.3.1.js"></script>
+  <script src="/static/js/bootstrap.min.js"></script>
+  <script src="/static/js/csrf_ajax_setup.js"></script>
+  {% block extra_js %}{% endblock %}
+</head>
+<body>
+
+	<div id="hs-nav-bar" class="navbar navbar-inverse navbar-fixed-top" style='background-color: #e3f2fd;'>
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a href="/"><img class="navbar-brand" id="img-brand-logo" src="/static/images/logo-lg.png" alt="CommonsShare"></a>
+                <a class="navbar-brand" href="/"><img class="divider" id="img-brand-logo" src="/static/images/App-Store-Logo-1.png" alt="AppStore"></a>
+            </div>
+            <div class="collapse navbar-collapse">
+				<ul class="nav navbar-nav navbar-right hidden-xs">
+                    <li id="signin-menu" ><a href="/signout_view"><span class="glyphicon glyphicon-log-out"></span> Sign Out</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+					{% if request.user.is_authenticated %}
+						<li class="nav-item" id="cs_apps"><a href="/apps/">Apps</a></li>
+					{% endif %}
+				</ul>
+            </div>
+        </div>
+    </div>
+
+	<div class="main-container">
+        {% block content %}
+            {% csrf_token %}
+        {% endblock %}
+    </div>
+    <div>
+      <strong>Menu:</strong>
+      <ul>
+	{% if user.is_authenticated %}
+	<li><a href="{% url 'account_email' %}">Change E-mail</a></li>
+	<li><a href="{% url 'account_logout' %}">Sign Out</a></li>
+	{% else %}
+	<li><a href="{% url 'account_login' %}">Sign In</a></li>
+	<li><a href="{% url 'account_signup' %}">Sign Up</a></li>
+	{% endif %}
+      </ul>
+    </div>
+</body>
+</html>

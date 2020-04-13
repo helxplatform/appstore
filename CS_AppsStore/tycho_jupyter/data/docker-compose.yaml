@@ -1,0 +1,19 @@
+---
+# Docker compose formatted system.
+version: "3"
+services:
+  jupyter-datascience:
+    image: jupyter/datascience-notebook
+    entrypoint: start.sh jupyter lab --LabApp.token=
+    ports:
+      - $HOST_PORT:8888
+    volumes:
+      - TYCHO_NFS/deepgtex-prp:/mydata
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
+        reservations:
+          cpus: '0.01'
+          memory: 20M
