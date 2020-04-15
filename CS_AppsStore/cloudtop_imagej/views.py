@@ -19,7 +19,7 @@ def login_start(request):
 
 
 def start(request):
-    print("entered here")
+    print("entered start")
     # view function when the start action is triggered from CommonsShare
     auth_resp = check_authorization(request)
     if auth_resp.status_code != 200:
@@ -31,12 +31,20 @@ def start(request):
 
 @login_required
 def deploy(request):
+    print("Entering cloudtop_imagej/views.py::deploy(request)")
     print("deploying service...")
+
+    print(f"USERNAME: {request.user.username}")
     request.META['REMOTE_USER'] = request.user.username
+    print(f"REQUEST META: {request.META}")
+    request.session['REMOTE_USER'] = request.user.username
+
     try:
         redirect_url = deployment.deploy(request)
     except Exception as ex:
         return JsonResponse(data={'invalid ip_address or port from imagej deployment ': ex},
                             status=HTTP_500_INTERNAL_SERVER_ERROR)
+
     sleep(20)
+    print("Exiting cloudtop_imagej/views.py::deploy(request)")
     return redirect_url

@@ -2,9 +2,9 @@ import os
 import yaml
 from tycho.client import TychoClientFactory
 from tycho.client import TychoApps
-import time
-
-from django.http import HttpResponseRedirect
+#import time
+import json
+#from django.http import HttpResponseRedirect
 
 def deploy(request):
     if "HTTP_REFERER" in request.META:
@@ -50,21 +50,26 @@ def deploy(request):
              }
     }
 
-    print(request)
+    print(json.dumps(request))
     tycho_system = client.start(request)
     system_name = tycho_system.name.split("-")[0]
     identifier = tycho_system.identifier
+    print(f"LOCAL SYSTEM_NAME: {system_name}")
+    print(f"LOCAL SYSTEM IDENTIFIER: {identifier}")
 
     guid = tycho_system.identifier
     status = tycho_system.status
     services = tycho_system.services
 
+    print(f"Service Nextflow: {services}")
+    print(f"Status: {status}")
     if status != 'success':
         raise Exception("Error encountered while starting jupyter-datascience service: " + status)
 
     for service in services:
         name = service.name
         if name == 'nextflow':
+            print(f"SERVICE NAME: {name}")
             ip_address = service.ip_address
             port = service.port
             port = settings_dict['HOST_PORT']

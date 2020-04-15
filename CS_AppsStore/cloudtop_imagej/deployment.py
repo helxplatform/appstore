@@ -2,11 +2,14 @@ import os
 import yaml
 from tycho.client import TychoClientFactory
 from tycho.client import TychoApps
+import json
 
 def deploy(request):
+    printf("Enter cloudtop_imagej/deployment.py::deploy(request)")
     if "HTTP_REFERER" in request.META:
         url_referer = request.META["HTTP_REFERER"]
         system_url = url_referer.split("/")[2]
+        print(f"SYSTEM URL from Http_Referer: {system_url}")
 
     try:
         client_factory = TychoClientFactory()
@@ -52,7 +55,9 @@ def deploy(request):
              }
     }
 
-    print(request)
+    print("Request sent to tycho client start to start imagej client app:")
+    print(json.dumps(request))
+
     tycho_system = client.start(request)
     print(f"TYCHO SYSTEM: {tycho_system.name}, {tycho_system.identifier}")
     system_name = tycho_system.name.split("-")[0]

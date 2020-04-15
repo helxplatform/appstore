@@ -2,10 +2,10 @@ import os
 import yaml
 from tycho.client import TychoClientFactory
 from tycho.client import TychoApps
-import time
+#import time
 import json
 
-from django.http import HttpResponseRedirect
+#from django.http import HttpResponseRedirect
 
 def deploy(request):
     if "HTTP_REFERER" in request.META:
@@ -53,12 +53,17 @@ def deploy(request):
              }
     }
 
+    print("Sending this request to tycho client to start imagej app:")
     print(json.dumps(request))
 
     tycho_system = client.start(request)
-    print(tycho_system)
+
+    print(f"TYCHO SYSTEM: {tycho_system}")
     system_name = tycho_system.name.split("-")[0]
     identifier = tycho_system.identifier
+    print(f"LOCAL SYSTEM_NAME: {system_name}")
+    print(f"LOCAL SYSTEM IDENTIFIER: {identifier}")
+
 
     guid = tycho_system.identifier
     status = tycho_system.status

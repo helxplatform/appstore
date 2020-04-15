@@ -57,25 +57,63 @@ def signout_view(request):
     return redirect('/')
 
 
+def get_svc_data():
+    tycho_status = get_pods_services(request)
+    services = tycho_status.services
+    print(f"TYCHO STATUS: {services}")
+
+    svcs_list = []
+    path_prefix = "/static/images/"
+    path_suffix = "-logo.png"
+    for service in services:
+        name = service.name.split("-")[0]
+        lname = name.capitalize()
+        logo_name = f'{lname} Logo'
+        logo_path = f'{path_prefix}{name}{path_suffix}'
+        ip_address = service.ip_address
+        if(ip_address == 'x'):
+            ip_address = '--'
+        port = ''
+        port = service.port
+        if port == '':
+            port = '--'
+        creation_time =  service.creation_time
+
+        print("APP VALUES:")
+        print(f"NAME: {name}")
+        print(f"LNAME: {lname}")
+        print(f"LOGO_NAME: {logo_name}")
+        print(f"LOGO_PATH: {logo_path}")
+        print(f"IP_ADDRESS: {ip_address}")
+        print(f"PORT: {port}")
+        print(f"CREATION_TIME: {creation_time}")
+        print(" ")
+
+        svcs_list.append({'name': name,
+                          'lname': lname,
+                          'logo_name': logo_name,
+                          'logo_path':logo_path,
+                          'ip_address': ip_address,
+                          'port': port,
+                          'creation_time': creation_time})
+
+    return {"services": svcs_list}
+
+
+
 @login_required
 def login_show_apps(request):
-    apps_list = []
-    print(f"========= Request after login =========")
-    for item in request.META:
-        print(f"{item}: {request.META[item]}")
+    print(f"~~~~~REQUEST: {request.GET}, {request.META}")
+    try:
+       print(f"REQUEST USER: {request.user.username}, {request.user.email}")
+       request.META['REMOTE_USER'] = request.user.username
+    except Exception as e:
+       pass
 
-    for app_conf in apps.get_app_configs():
-        try:
-            url = app_conf.url
-            logo = app_conf.logo
-        except AttributeError:
-            continue
+    print(get_svc_data())
 
-        apps_list.append({'verbose_name': app_conf.verbose_name,
-                          'url': url,
-                          'logo': logo})
+    return render(request, "apps_pods.html", get_svc_data())
 
-    return render(request, "apps.html", {'apps_list': apps_list})
 
 
 def show_apps(request):
@@ -100,6 +138,22 @@ def show_apps(request):
             return HttpResponseBadRequest(
                 'Bad request - no valid access_token or user_name is provided')
 
+
+@login_required
+def list_services(request):
+    # list_pods url comes here . . .
+    if request.method == "POST":
+        action = request.POST.get("action")
+        sid = request.POST.get("id")
+        print(f"ACTION: {action}, SID: {sid}")
+        if action == "delete":
+            delete_pods(request, sid)
+            sleep(15)
+            return render(request, "apps_pods.html", get_svc_data())
+    else:
+        return render(request, "apps_pods.html", get_svc_data())
+
+
 def auth(request):
     if request.user:
         try:
@@ -115,28 +169,10 @@ def auth(request):
     return response
 
 
+
 def test(request):
     print(f"========= Request sent from nginx =========")
     for item in request.META:
         print(f"{item}: {request.META[item]}")
     response = HttpResponse(content_type="application/json", status=200)
     return response
-
-@login_required
-def list_services(request):
-
-    if request.method == "POST":
-        action = request.POST.get("action")
-        sid = request.POST.get("id")
-        print(f"ACTION: {action}, SID: {sid}")
-        if action == "delete":
-            delete_pods(request, sid)
-            sleep(15)
-            tycho_status = get_pods_services(request)
-            services = tycho_status.services
-            return render(request, "pods.html", {"services": services})
-    else:
-        tycho_status = get_pods_services(request)
-        services = tycho_status.services
-        print(f"TYCHO STATUS: {services}")
-        return render(request, "pods.html", {"services": services})

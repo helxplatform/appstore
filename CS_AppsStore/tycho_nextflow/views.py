@@ -23,7 +23,7 @@ def login_start(request):
 
 
 def start(request):
-    print("entered here")
+    print("entered start")
     # view function when the start action is triggered from CommonsShare
     auth_resp = check_authorization(request)
     if auth_resp.status_code != 200:
