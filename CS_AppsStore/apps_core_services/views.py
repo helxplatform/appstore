@@ -57,7 +57,16 @@ def signout_view(request):
     return redirect('/')
 
 
-def get_svc_data():
+@login_required
+def login_show_apps(request):
+    print(f"~~~~~REQUEST: {request.GET}, {request.META}")
+    try:
+       print(f"REQUEST USER: {request.user.username}, {request.user.email}")
+       request.META['REMOTE_USER'] = request.user.username
+    except Exception as e:
+       print("Failed to get request.META['REMOTE_USER']")
+       pass
+
     tycho_status = get_pods_services(request)
     services = tycho_status.services
     print(f"TYCHO STATUS: {services}")
@@ -97,22 +106,7 @@ def get_svc_data():
                           'port': port,
                           'creation_time': creation_time})
 
-    return {"services": svcs_list}
-
-
-
-@login_required
-def login_show_apps(request):
-    print(f"~~~~~REQUEST: {request.GET}, {request.META}")
-    try:
-       print(f"REQUEST USER: {request.user.username}, {request.user.email}")
-       request.META['REMOTE_USER'] = request.user.username
-    except Exception as e:
-       pass
-
-    print(get_svc_data())
-
-    return render(request, "apps_pods.html", get_svc_data())
+    return render(request, "apps_pods.html", {"services": svcs_list})
 
 
 
@@ -142,6 +136,8 @@ def show_apps(request):
 @login_required
 def list_services(request):
     # list_pods url comes here . . .
+    path_prefix = "/static/images/"
+    path_suffix = "-logo.png"
     if request.method == "POST":
         action = request.POST.get("action")
         sid = request.POST.get("id")
@@ -149,9 +145,64 @@ def list_services(request):
         if action == "delete":
             delete_pods(request, sid)
             sleep(15)
-            return render(request, "apps_pods.html", get_svc_data())
+            tycho_status = get_pods_services(request)
+            services = tycho_status.services
+
+            svcs_list = []
+            for service in services:
+                name = service.name
+                lname = name.capitalize()
+                logo_name = f'{lname} Logo'
+                logo_path = f'{path_prefix}{name}{path_suffix}'
+                ip_address = service.ip_address
+                if(ip_address == 'x'):
+                    ip_address = '--'
+                port = ''
+                port = service.port
+                port = settings_dict['HOST_PORT']
+                if port == '':
+                    port = '--'
+                identifier = service.identifier
+                creation_time = service.creation_time
+
+                svcs_list.append({'name': name,
+                                  'lname': lname,
+                                  'logo_name': logo_name,
+                                  'logo_path': logo_path,
+                                  'ip_address': ip_address,
+                                  'port': port,
+                                  'identifier': identifier,
+                                  'creation_time': creation_time})
+
+            return render(request, "apps_pods.html", {"services": svcs_list})
     else:
-        return render(request, "apps_pods.html", get_svc_data())
+        svcs_list = []
+        for service in services:
+            name = service.name
+            lname = name.capitalize()
+            logo_name = f'{lname} Logo'
+            logo_path = f'{path_prefix}{name}{path_suffix}'
+            ip_address = service.ip_address
+            if(ip_address == 'x'):
+                ip_address = '--'
+            port = ''
+            port = service.port
+            port = settings_dict['HOST_PORT']
+            if port == '':
+                port = '--'
+            identifier = service.identifier
+            creation_time = service.creation_time
+
+            svcs_list.append({'name': name,
+                              'lname': lname,
+                              'logo_name': logo_name,
+                              'logo_path': logo_path,
+                              'ip_address': ip_address,
+                              'port': port,
+                              'identifier': identifier,
+                              'creation_time': creation_time})
+
+        return render(request, "apps_pods.html", {"services": svcs_list})
 
 
 def auth(request):
