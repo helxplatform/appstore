@@ -5,7 +5,6 @@ from tycho.client import TychoApps
 import json
 
 def deploy(request):
-    printf("Enter cloudtop_imagej/deployment.py::deploy(request)")
     if "HTTP_REFERER" in request.META:
         url_referer = request.META["HTTP_REFERER"]
         system_url = url_referer.split("/")[2]
