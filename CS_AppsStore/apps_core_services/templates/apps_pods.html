@@ -158,8 +158,8 @@
       function launchApp() {
         const activePodSelection = document.querySelector('.create-pod-list-item.active')
         if ( activePodSelection != null ) {
-          const urlToRequest = activePodSelection.getAttribute('data-url');
-          console.log("APPLICATION URL TO REQUEST: " + urlToRequest)
+          const url = activePodSelection.getAttribute('data-url');
+          console.log("APPLICATION URL TO REQUEST: " + url)
           window.open(url)
           //window.location.reload(true)
         }
@@ -189,8 +189,8 @@
                 {{ s.full_name }}
               </th>
                 <td>{{ s.ip_address }} <br> Port: {{ s.port }} </td>
-                <td>{{ s.creation_time }}</td>
-                <td><button onclick="deleteApp(id)" id="{{s.identifier}}" class="btn btn-danger" data-id="{{ s.identifier }}"><i class="material-icons">delete</i></button></td>
+                <td>{{ s.creation_time }}{{% csrf_token %}}</td>
+                <td><button onclick="deleteApp(id)" id="{{s.identifier}}" class="btn btn-danger" data-id="{{ s.identifier }}"><i class="material-icons">Delete</i></button></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -200,17 +200,15 @@
 
     <script>
       function deleteApp(id_val) {
-        const delete_url = "/list_pods/";
-        const CSRF_TOKEN = {% csrf_token %};
-
         var cb = document.getElementById(id_val);
         cb.disabled = true;
-
         var params = "id=id_val&action=delete";
         var xhr = new XMLHttpRequest();
+        const url = "/list_pods/";
         xhr.open("POST", url, true);
         xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        xhr.setRequestHeader("X-CSRFToken", CSRF_TOKEN);
+        var csrfToken = document.getElementsByName('csrfmiddlewaretoken')[0].value;
+        xhr.setRequestHeader("X-CSRFToken", csrfToken);
         xhr.send(params);
       }
     </script>

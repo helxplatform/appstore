@@ -75,8 +75,10 @@ def login_show_apps(request):
     svcs_list = []
     path_prefix = "/static/images/"
     path_suffix = "-logo.png"
+    print("Listing services")
     for service in services:
         full_name = service.name
+        print(f"Found service: {full_name}")
         name = service.name.split("-")[0]
         lname = name.capitalize()
         logo_name = f'{lname} Logo'
@@ -156,8 +158,10 @@ def list_services(request):
             services = tycho_status.services
 
             svcs_list = []
+            print("Listing services")
             for service in services:
                 full_name = service.name
+                print(f"Found service: {full_name}")
                 name = service.name.split("-")[0]
                 lname = name.capitalize()
                 logo_name = f'{lname} Logo'
@@ -185,11 +189,13 @@ def list_services(request):
 
             return render(request, "apps_pods.html", {"svcs_list": svcs_list})
     else:
+        print("Listing services")
         svcs_list = []
         tycho_status = get_pods_services(request)
         services = tycho_status.services
         for service in services:
             full_name = service.name
+            print(f"Found service: {full_name}")
             name = service.name.split("-")[0]
             lname = name.capitalize()
             logo_name = f'{lname} Logo'
