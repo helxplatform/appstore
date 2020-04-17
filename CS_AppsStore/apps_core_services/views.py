@@ -68,13 +68,15 @@ def login_show_apps(request):
        pass
 
     tycho_status = get_pods_services(request)
+    print(f"login_show_apps: TYCHO STATUS: {tycho_status}")
     services = tycho_status.services
-    print(f"TYCHO STATUS: {services}")
+    print(f"TYCHO SERVICES: {services}")
 
     svcs_list = []
     path_prefix = "/static/images/"
     path_suffix = "-logo.png"
     for service in services:
+        full_name = service.name
         name = service.name.split("-")[0]
         lname = name.capitalize()
         logo_name = f'{lname} Logo'
@@ -86,27 +88,32 @@ def login_show_apps(request):
         port = service.port
         if port == '':
             port = '--'
+        identifier = service.identifier
         creation_time =  service.creation_time
 
         print("APP VALUES:")
+        print(f"FULL_NAME: {full_name}")
         print(f"NAME: {name}")
         print(f"LNAME: {lname}")
         print(f"LOGO_NAME: {logo_name}")
         print(f"LOGO_PATH: {logo_path}")
         print(f"IP_ADDRESS: {ip_address}")
         print(f"PORT: {port}")
+        print(f"IDENTIFIER: {identifier}")
         print(f"CREATION_TIME: {creation_time}")
         print(" ")
 
-        svcs_list.append({'name': name,
+        svcs_list.append({'full_name': full_name,
+                          'name': name,
                           'lname': lname,
                           'logo_name': logo_name,
                           'logo_path':logo_path,
                           'ip_address': ip_address,
                           'port': port,
+                          'identifier': identifier,
                           'creation_time': creation_time})
 
-    return render(request, "apps_pods.html", {"services": svcs_list})
+    return render(request, "apps_pods.html", {"svcs_list": svcs_list})
 
 
 
@@ -150,7 +157,8 @@ def list_services(request):
 
             svcs_list = []
             for service in services:
-                name = service.name
+                full_name = service.name
+                name = service.name.split("-")[0]
                 lname = name.capitalize()
                 logo_name = f'{lname} Logo'
                 logo_path = f'{path_prefix}{name}{path_suffix}'
@@ -159,13 +167,14 @@ def list_services(request):
                     ip_address = '--'
                 port = ''
                 port = service.port
-                port = settings_dict['HOST_PORT']
+                #port = settings_dict['HOST_PORT']
                 if port == '':
                     port = '--'
                 identifier = service.identifier
                 creation_time = service.creation_time
 
-                svcs_list.append({'name': name,
+                svcs_list.append({'full_name': full_name,
+                                  'name': name,
                                   'lname': lname,
                                   'logo_name': logo_name,
                                   'logo_path': logo_path,
@@ -174,11 +183,14 @@ def list_services(request):
                                   'identifier': identifier,
                                   'creation_time': creation_time})
 
-            return render(request, "apps_pods.html", {"services": svcs_list})
+            return render(request, "apps_pods.html", {"svcs_list": svcs_list})
     else:
         svcs_list = []
+        tycho_status = get_pods_services(request)
+        services = tycho_status.services
         for service in services:
-            name = service.name
+            full_name = service.name
+            name = service.name.split("-")[0]
             lname = name.capitalize()
             logo_name = f'{lname} Logo'
             logo_path = f'{path_prefix}{name}{path_suffix}'
@@ -187,13 +199,14 @@ def list_services(request):
                 ip_address = '--'
             port = ''
             port = service.port
-            port = settings_dict['HOST_PORT']
+            #port = settings_dict['HOST_PORT']
             if port == '':
                 port = '--'
             identifier = service.identifier
             creation_time = service.creation_time
 
-            svcs_list.append({'name': name,
+            svcs_list.append({'full_name': full_name,
+                              'name': name,
                               'lname': lname,
                               'logo_name': logo_name,
                               'logo_path': logo_path,
@@ -202,7 +215,7 @@ def list_services(request):
                               'identifier': identifier,
                               'creation_time': creation_time})
 
-        return render(request, "apps_pods.html", {"services": svcs_list})
+        return render(request, "apps_pods.html", {"svcs_list": svcs_list})
 
 
 def auth(request):

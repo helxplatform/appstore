@@ -160,26 +160,13 @@
         if ( activePodSelection != null ) {
           const urlToRequest = activePodSelection.getAttribute('data-url');
           console.log("APPLICATION URL TO REQUEST: " + urlToRequest)
-
-          let host = window.location.host;
-          console.log("HOST: " + host)
-
-          let url = ''
-          const pos = urlToRequest.search("https");
-          if ( pos == -1 ) {
-             url = "https://" + host + urlToRequest
-          } else {
-             url = urlToRequest
-          }
-          console.log("OPENING (FULL) APPLICATION URL: " + url)
           window.open(url)
-          //window.location.assign = url
-          //window.location.href = url
+          //window.location.reload(true)
         }
       }
     </script>
 
-    <!-- TODO: 1) Not rendering full service name, ip address, port, icon 2) dynamic update -->
+    <!-- TODO: 1) Dynamic update -->
     <div class="container-fluid">
       <div class="row">
         <h2 id="current-pods">Current Applications</h2>
@@ -195,32 +182,39 @@
             </tr>
           </thead>
           <tbody>
-            {% for s in services %}
+            {% for s in svcs_list %}
             <tr>
               <th>
                 <img class="pod-type-logo" src="{{ s.logo_path }}" alt="{{ s.logo_name }}">
-                {{ s.name }}
+                {{ s.full_name }}
               </th>
                 <td>{{ s.ip_address }} <br> Port: {{ s.port }} </td>
                 <td>{{ s.creation_time }}</td>
-                <td><button class="btn btn-danger"><i class="material-icons">delete</i></button></td>
+                <td><button onclick="deleteApp(id)" id="{{s.identifier}}" class="btn btn-danger" data-id="{{ s.identifier }}"><i class="material-icons">delete</i></button></td>
             </tr>
             {% endfor %}
-            <!--
-            <tr>
-              <th>
-                <img class="pod-type-logo" src="/static/images/imagej-logo.png" alt="ImageJ Logo">
-                imagej-587c1105cc6746a6a90bd9598da47c8d
-              </th>
-              <td>34.74.46.174 <br> Port: 31738</td>
-              <td>1-22-2020 22:58:39</td>
-              <td><button class="btn btn-danger"><i class="material-icons">delete</i></button></td>
-            </tr>
-          -->
           </tbody>
         </table>
       </div>
     </div>
+
+    <script>
+      function deleteApp(id_val) {
+        const delete_url = "/list_pods/";
+        const CSRF_TOKEN = {% csrf_token %};
+
+        var cb = document.getElementById(id_val);
+        cb.disabled = true;
+
+        var params = "id=id_val&action=delete";
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        xhr.setRequestHeader("X-CSRFToken", CSRF_TOKEN);
+        xhr.send(params);
+      }
+    </script>
+
 
     <!--
     <div class="container-fluid">
