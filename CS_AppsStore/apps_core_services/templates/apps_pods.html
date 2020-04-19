@@ -86,9 +86,9 @@
                   <div class="create-pod-list-item__details">
                     <div class="create-pod-list-item__title">Imagej</div>
                     <div class="create-pod-list-item__description">
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit. Nemo iste, in vitae!
+                      ImageJ/Napari: Imagej is an image processor developed at NIH/LOCI.
                     </div>
-                    <small class="text-muted">Donec id elit non mi porta.</small>
+                    <small class="text-muted">Napari enables multi-dimensional image viewing, annotation and analysis.</small>
                   </div>
                 </a>
                 <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/tycho_jupyter/login_start/">
@@ -96,9 +96,9 @@
                   <div class="create-pod-list-item__details">
                     <div class="create-pod-list-item__title">Jupyter</div>
                     <div class="create-pod-list-item__description">
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit. Molestiae quam, ea sapiente.
+                      Jupyter DataScience: A Jupyter notebook for exploring and visualizing data.
                     </div>
-                    <small>Donec id elit non mi porta.</small>
+                    <small>Includes R, Julia, and Python.</small>
                   </div>
                 </a>
                 <a href="#" class="create-pod-list-item list-group-item list-group-item-action">
@@ -106,9 +106,9 @@
                   <div class="create-pod-list-item__details">
                     <div class="create-pod-list-item__title">Monarch Initiative</div>
                     <div class="create-pod-list-item__description">
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit. Fugiat sequi, magnam beatae!
+                      Monarch Initiative: Ontology based search tools over a large aggregate biomedical graph.
                     </div>
-                    <small class="text-muted">Donec id elit non mi porta.</small>
+                    <small class="text-muted">This application links to an external website.</small>
                   </div>
                 </a>
                 <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/tycho_nextflow/login_start/">
@@ -116,9 +116,9 @@
                   <div class="create-pod-list-item__details">
                     <div class="create-pod-list-item__title">NextFlow</div>
                     <div class="create-pod-list-item__description">
-                      Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dolorum sit maiores fugit.
+                      Nextflow: A scalable workflow computational pipeline workspace.
                     </div>
-                    <small class="text-muted">Donec id elit non mi porta.</small>
+                    <small class="text-muted">Orchestrate Docker containers into reproducible workflows.</small>
                   </div>
                 </a>
               </div>
@@ -161,9 +161,18 @@
           const url = activePodSelection.getAttribute('data-url');
           console.log("APPLICATION URL TO REQUEST: " + url)
           window.open(url)
-          //window.location.reload(true)
+
+          // Update app display with the new app:
+          console.log("Setting timer to refresh app display . . .")
+          setTimeout(refreshAppDisplay, 4000)
         }
       }
+
+      function refreshAppDisplay() {
+        window.location.reload(true)
+        console.log("App display refreshed!")
+      }
+
     </script>
 
     <!-- TODO: 1) Dynamic update -->
@@ -189,8 +198,8 @@
                 {{ s.full_name }}
               </th>
                 <td>{{ s.ip_address }} <br> Port: {{ s.port }} </td>
-                <td>{{ s.creation_time }}{{% csrf_token %}}</td>
-                <td><button onclick="deleteApp(id)" id="{{s.identifier}}" class="btn btn-danger" data-id="{{ s.identifier }}"><i class="material-icons">Delete</i></button></td>
+                <td>{{ s.creation_time }}</td>
+                <td><button onclick="deleteApp(this)" id="{{s.identifier}}" class="btn btn-danger" data-id="{{ s.identifier }}"><i class="material-icons">delete</i></button></td>
             </tr>
             {% endfor %}
           </tbody>
@@ -199,17 +208,40 @@
     </div>
 
     <script>
-      function deleteApp(id_val) {
-        var cb = document.getElementById(id_val);
-        cb.disabled = true;
-        var params = "id=id_val&action=delete";
-        var xhr = new XMLHttpRequest();
+      function getCookie(name) {
+          var cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+             var cookies = document.cookie.split(';');
+             for (var i = 0; i < cookies.length; i++) {
+                  var cookie = cookies[i].trim();
+                  // Check if its the csrf cookie
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+
+      function deleteApp(btn) {
+        btn.disabled = true
+        var sid = btn.getAttribute('data-id');
+        console.log("APPLICATION SID TO DELETE: " + sid);
+        var params = "id=" + sid + "&action=delete";
+        console.log("REQUEST PARAMS: " + params);
+
         const url = "/list_pods/";
+        var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
         xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-        var csrfToken = document.getElementsByName('csrfmiddlewaretoken')[0].value;
+        var csrfToken = getCookie('csrftoken');
         xhr.setRequestHeader("X-CSRFToken", csrfToken);
         xhr.send(params);
+
+        // Update the pods display:
+        console.log("Setting timer to refresh app display . . .")
+        setTimeout(refreshAppDisplay, 4000)
       }
     </script>
 

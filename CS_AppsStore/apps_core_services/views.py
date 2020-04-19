@@ -153,7 +153,7 @@ def list_services(request):
         print(f"ACTION: {action}, SID: {sid}")
         if action == "delete":
             delete_pods(request, sid)
-            sleep(15)
+            sleep(2)
             tycho_status = get_pods_services(request)
             services = tycho_status.services
 

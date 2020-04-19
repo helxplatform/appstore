@@ -45,6 +45,6 @@ def deploy(request):
         return JsonResponse(data={'invalid ip_address or port from imagej deployment ': ex},
                             status=HTTP_500_INTERNAL_SERVER_ERROR)
 
-    sleep(20)
+    sleep(3)
     print("Exiting cloudtop_imagej/views.py::deploy(request)")
     return redirect_url
