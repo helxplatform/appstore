@@ -2,6 +2,7 @@ FROM python:3.7
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
+ENV USE_WHITELIST_FILTER=True
 
 #Switch the working directory.
 WORKDIR /usr/src/inst-mgmt
