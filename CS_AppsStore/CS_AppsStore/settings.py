@@ -188,6 +188,7 @@ SITE_URL = 'http://localhost:8000'
 
 LOGIN_REDIRECT_URL = '/login_apps/'
 LOGIN_URL = '/accounts/login'
+ADMIN_URL = '/admin'
 
 REST_USE_JWT = True
 

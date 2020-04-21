@@ -11,8 +11,10 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         print(user)
 
         if user.is_authenticated:
-            if not request.path.startswith(settings.LOGIN_URL):
+            if not request.path.startswith(settings.LOGIN_URL) and not request.path.startswith(settings.ADMIN_URL):
                 if not user.groups.filter(name='whitelisted').exists():
                     print("Filtering user - not whitelisted")
                     return HttpResponseRedirect(settings.LOGIN_URL)
+                else:
+                    print("Letting user in - whitelisted")
         return None
