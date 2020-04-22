@@ -2,7 +2,6 @@ FROM python:3.7
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV USE_WHITELIST_FILTER=True
 
 #Switch the working directory.
 WORKDIR /usr/src/inst-mgmt
@@ -35,4 +34,4 @@ EXPOSE 8000
 EXPOSE 5432
 COPY . /usr/src/inst-mgmt
 
-#CMD ["gunicorn", "--bind", ":8000", "CS_AppsStore.wsgi:application"]
+CMD ["gunicorn", "--bind", ":8000", "CS_AppsStore.wsgi:application"]
