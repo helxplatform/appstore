@@ -164,99 +164,11 @@ def list_services(request):
         sid = request.POST.get("id")
         print(f"ACTION: {action}, SID: {sid}")
         if action == "delete":
-
             delete_pods(request, sid)
             sleep(2)
-            tycho_status = get_pods_services(request)
-            services = tycho_status.services
-
-            svcs_list = []
-            print("Listing services")
-            for service in services:
-                full_name = service.name
-                print(f"Found service: {full_name}")
-                name = service.name.split("-")[0]
-                lname = name.capitalize()
-                logo_name = f'{lname} Logo'
-                logo_path = f'{path_prefix}{name}{path_suffix}'
-                ip_address = service.ip_address
-                if(ip_address == 'x'):
-                    ip_address = '--'
-                port = ''
-                port = service.port
-                if port == '':
-                    port = '--'
-                identifier = service.identifier
-                creation_time = service.creation_time
-
-                svcs_list.append({'full_name': full_name,
-                                  'name': name,
-                                  'lname': lname,
-                                  'logo_name': logo_name,
-                                  'logo_path': logo_path,
-                                  'ip_address': ip_address,
-                                  'port': port,
-                                  'identifier': identifier,
-                                  'creation_time': creation_time})
-
-            # Get main logo url and alt vars
-            fnames = {"braini": "braini-lg-gray.png",
-                      "scidas": "scidas-logo-lg.png",
-                      "catalyst": "bdc-logo.svg",
-                      "commonsshare": "logo-lg.png"}
-
-            brand = settings.APPLICATION_BRAND
-            logo_prefix = "/static/images/" + brand + "/"
-            logo_url = logo_prefix + fnames[brand]
-            print(f"LOGO_URL: {logo_url}")
-            logo_alt = brand + " image"
-            return render(request, "apps_pods.html", {"logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
+            return HttpResponseRedirect("/login_apps/")
     else:
-        print("Listing services")
-        svcs_list = []
-
-        tycho_status = get_pods_services(request)
-        services = tycho_status.services
-
-        for service in services:
-            full_name = service.name
-            print(f"Found service: {full_name}")
-            name = service.name.split("-")[0]
-            lname = name.capitalize()
-            logo_name = f'{lname} Logo'
-            logo_path = f'{path_prefix}{name}{path_suffix}'
-            ip_address = service.ip_address
-            if(ip_address == 'x'):
-                ip_address = '--'
-            port = ''
-            port = service.port
-            if port == '':
-                port = '--'
-            identifier = service.identifier
-            creation_time = service.creation_time
-
-            svcs_list.append({'full_name': full_name,
-                              'name': name,
-                              'lname': lname,
-                              'logo_name': logo_name,
-                              'logo_path': logo_path,
-                              'ip_address': ip_address,
-                              'port': port,
-                              'identifier': identifier,
-                              'creation_time': creation_time})
-
-        # Get main logo url and alt vars
-        fnames = {"braini": "braini-lg-gray.png",
-                  "scidas": "scidas-logo-lg.png",
-                  "catalyst": "bdc-logo.svg",
-                  "commonsshare": "logo-lg.png"}
-
-        brand = settings.APPLICATION_BRAND
-        logo_prefix = "/static/images/" + brand + "/"
-        logo_url = logo_prefix + fnames[brand]
-        print(f"LOGO_URL: {logo_url}")
-        logo_alt = brand + " image"
-        return render(request, "apps_pods.html", {"logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
+        return HttpResponseRedirect("/login_apps/")
 
 
 def auth(request):
