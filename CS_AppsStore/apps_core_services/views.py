@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.shortcuts import redirect
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse
 from django.apps import apps
 import json
@@ -115,8 +116,19 @@ def login_show_apps(request):
                           'identifier': identifier,
                           'creation_time': creation_time})
 
-    return render(request, "apps_pods.html", {"svcs_list": svcs_list})
+    # Get main logo url and alt vars
+    fnames = {"braini": "braini-lg-gray.png",
+              "scidas": "scidas-logo-lg.png",
+              "catalyst": "bdc-logo.svg",
+              "commonsshare": "logo-lg.png"}
 
+    brand = settings.APPLICATION_BRAND
+    print(f"BRAND: {brand}")
+    logo_prefix = "/static/images/" + brand + "/"
+    logo_url = logo_prefix + fnames[brand]
+    print(f"LOGO_URL: {logo_url}")
+    logo_alt = brand + " image"
+    return render(request, "apps_pods.html", {"logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
 
 
 def show_apps(request):
@@ -152,6 +164,7 @@ def list_services(request):
         sid = request.POST.get("id")
         print(f"ACTION: {action}, SID: {sid}")
         if action == "delete":
+
             delete_pods(request, sid)
             sleep(2)
             tycho_status = get_pods_services(request)
@@ -171,7 +184,6 @@ def list_services(request):
                     ip_address = '--'
                 port = ''
                 port = service.port
-                #port = settings_dict['HOST_PORT']
                 if port == '':
                     port = '--'
                 identifier = service.identifier
@@ -187,12 +199,25 @@ def list_services(request):
                                   'identifier': identifier,
                                   'creation_time': creation_time})
 
-            return render(request, "apps_pods.html", {"svcs_list": svcs_list})
+            # Get main logo url and alt vars
+            fnames = {"braini": "braini-lg-gray.png",
+                      "scidas": "scidas-logo-lg.png",
+                      "catalyst": "bdc-logo.svg",
+                      "commonsshare": "logo-lg.png"}
+
+            brand = settings.APPLICATION_BRAND
+            logo_prefix = "/static/images/" + brand + "/"
+            logo_url = logo_prefix + fnames[brand]
+            print(f"LOGO_URL: {logo_url}")
+            logo_alt = brand + " image"
+            return render(request, "apps_pods.html", {"logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
     else:
         print("Listing services")
         svcs_list = []
+
         tycho_status = get_pods_services(request)
         services = tycho_status.services
+
         for service in services:
             full_name = service.name
             print(f"Found service: {full_name}")
@@ -205,7 +230,6 @@ def list_services(request):
                 ip_address = '--'
             port = ''
             port = service.port
-            #port = settings_dict['HOST_PORT']
             if port == '':
                 port = '--'
             identifier = service.identifier
@@ -221,7 +245,18 @@ def list_services(request):
                               'identifier': identifier,
                               'creation_time': creation_time})
 
-        return render(request, "apps_pods.html", {"svcs_list": svcs_list})
+        # Get main logo url and alt vars
+        fnames = {"braini": "braini-lg-gray.png",
+                  "scidas": "scidas-logo-lg.png",
+                  "catalyst": "bdc-logo.svg",
+                  "commonsshare": "logo-lg.png"}
+
+        brand = settings.APPLICATION_BRAND
+        logo_prefix = "/static/images/" + brand + "/"
+        logo_url = logo_prefix + fnames[brand]
+        print(f"LOGO_URL: {logo_url}")
+        logo_alt = brand + " image"
+        return render(request, "apps_pods.html", {"logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
 
 
 def auth(request):
