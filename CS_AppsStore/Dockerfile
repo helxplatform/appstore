@@ -27,9 +27,6 @@ RUN pip install jinja2
 RUN pip install kubernetes
 RUN pip install requests
 
-# Added from Murali's Dockerfile:
-RUN mkdir /usr/local/lib/python3.7/site-packages/django/contrib/admin/templates/accounts
-COPY ./login.html /usr/local/lib/python3.7/site-packages/django/contrib/admin/templates/accounts/
 EXPOSE 8000
 EXPOSE 5432
 COPY . /usr/src/inst-mgmt
