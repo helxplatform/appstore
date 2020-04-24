@@ -55,7 +55,7 @@ def signout_view(request):
     #del  request.GET['token']
     #del request.GET['session_id']
     #logout(request)
-    return redirect('/')
+    return redirect('/accounts/logout/')
 
 
 @login_required
