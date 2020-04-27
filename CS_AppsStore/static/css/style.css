@@ -1,0 +1,50 @@
+ @import url('https://fonts.googleapis.com/css?family=IBM+Plex+Sans&display=swap');
+
+ :root {
+  --color-silver: #e9e9ee;
+  --color-smoke: #ddd;
+  --color-slate: #334;
+}
+
+body {
+  background: #007bff;
+  background: linear-gradient(to bottom, #fff, var(--color-silver));
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: var(--color-slate);
+  letter-spacing: 1px;
+}
+
+/* Main Content */
+
+main {
+  line-height: 2;
+  margin: 2rem;
+}
+
+.container, .container-fluid {
+  max-width: 1140px;
+}
+
+h1, h2 {
+  margin-bottom: 2rem;
+}
+
+h3, h4 {
+  margin-bottom: 1rem;
+}
+
+h1, h2, h3, h4 {
+  text-align: center;
+}
+
+@media screen and (min-width: 576px) {
+  h1, h2, h3, h4 {
+    text-align: left;
+  }
+}
+
+/* Vertically center icons in button */
+button > i {
+   vertical-align: middle;
+}
+
