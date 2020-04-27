@@ -21,6 +21,10 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 # and other pages such as login/logout, etc.
 APPLICATION_BRAND = "braini"
 
+# "TRUE" | "FALSE"
+ALLOW_DJANGO_LOGIN = "FALSE"
+
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'n2mb4kf5(_%_p!raq@e58ub+mws^!a+zvn4!#a1ijm(5cob_d*'
 
