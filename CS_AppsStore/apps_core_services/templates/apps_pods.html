@@ -15,10 +15,17 @@
 <body>
   <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
     <div class="container-fluid">
-      <a class="navbar-brand" href="#">
-        <img src="{{ logo_url }}" width="320px" alt="{{ logo_alt }}">
-        <span class="navbar-brand-text">App Store</span>
-      </a>
+      {% if brand == "scidas" %}
+        <a class="navbar-brand-scidas">
+          <img src="{{ logo_url }}" width="120px" height="auto" alt="{{ logo_alt }}">
+            <span class="navbar-brand navbar-brand-scidas-main">App Store</span>
+        </a>
+      {% else %}
+        <a class="navbar-brand" href="#">
+          <img src="{{ logo_url }}" width="320px" alt="{{ logo_alt }}">
+            <span class="navbar-brand-text">App Store</span>
+        </a>
+      {% endif %}
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>

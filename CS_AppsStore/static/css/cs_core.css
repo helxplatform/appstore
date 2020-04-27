@@ -30,8 +30,18 @@ h1.hl small, h2.hl small, h3.hl small, h4.hl small, h5.hl small, h6.hl small {
     padding-top: 10px;
 }
 
+.navbar-brand-scidas {
+    padding: 3px;
+    padding-top: 5px;
+}
+
 #img-brand-logo {
-	width: 145px;
+    width: 145px;
+}
+
+#img-brand-scidas-logo {
+    width: 62px;
+    height: auto;
 }
 
 .container>.navbar-header, .container>.navbar-collapse {

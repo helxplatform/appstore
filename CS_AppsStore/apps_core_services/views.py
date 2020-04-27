@@ -118,7 +118,7 @@ def login_show_apps(request):
 
     # Get main logo url and alt vars
     fnames = {"braini": "braini-lg-gray.png",
-              "scidas": "scidas-logo-lg.png",
+              "scidas": "scidas-logo-sm.png",
               "catalyst": "bdc-logo.svg",
               "commonsshare": "logo-lg.png"}
 
@@ -128,7 +128,7 @@ def login_show_apps(request):
     logo_url = logo_prefix + fnames[brand]
     print(f"LOGO_URL: {logo_url}")
     logo_alt = brand + " image"
-    return render(request, "apps_pods.html", {"logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
+    return render(request, "apps_pods.html", {"brand": brand, "logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
 
 
 def show_apps(request):

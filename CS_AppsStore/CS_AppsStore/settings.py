@@ -14,7 +14,16 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+
+# APPLICATION_BRAND should be set to one of:
+# "braini", "scidas", "catalyst", or "commonsshare"
+# This sets the logos and other CSS for the main UI
+# and other pages such as login/logout, etc.
 APPLICATION_BRAND = "braini"
+
+# "TRUE" | "FALSE"
+ALLOW_DJANGO_LOGIN = "FALSE"
+
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'n2mb4kf5(_%_p!raq@e58ub+mws^!a+zvn4!#a1ijm(5cob_d*'
@@ -115,6 +124,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.request',
+                'CS_AppsStore.context_processors.global_settings',
             ],
         },
     },
