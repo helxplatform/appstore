@@ -127,7 +127,18 @@ def login_show_apps(request):
     logo_prefix = "/static/images/" + brand + "/"
     logo_url = logo_prefix + fnames[brand]
     print(f"LOGO_URL: {logo_url}")
-    logo_alt = brand + " image"
+
+    if brand == "braini":
+       full_brand = "Brain-I"
+    elif brand == "scidas":
+       full_brand = "SciDAS"
+    elif brand == "catalyst":
+       full_brand = "Biodata Catalyst"
+    else:
+       full_brand = "CommonsShare"
+
+    logo_alt = full_brand + " Image"
+
     return render(request, "apps_pods.html", {"brand": brand, "logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
 
 
@@ -169,6 +180,24 @@ def list_services(request):
             return HttpResponseRedirect("/login_apps/")
     else:
         return HttpResponseRedirect("/login_apps/")
+
+
+@login_required
+def login_whitelist(request):
+    print("LOGIN_WHITELIST: Rendering whitelist.html")
+    brand = settings.APPLICATION_BRAND
+
+    if brand == "braini":
+       full_brand = "Brain-I"
+    elif brand == "scidas":
+       full_brand = "SciDAS"
+    elif brand == "catalyst":
+       full_brand = "Biodata Catalyst"
+    else:
+       full_brand = "CommonsShare"
+
+    print(f"BRAND: {brand}, FULL_BRAND: {full_brand}")
+    return render(request, "whitelist.html", {"brand": brand, "full_brand": full_brand})
 
 
 def auth(request):

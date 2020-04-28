@@ -16,13 +16,14 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         if user.is_authenticated and not user.is_superuser:
             if not request.path.startswith(settings.LOGIN_URL) \
                     and not request.path.startswith(settings.ADMIN_URL) \
-                    and not request.path.startswith(settings.STATIC_URL):
+                    and not request.path.startswith(settings.STATIC_URL) \
+                    and not request.path.startswith(settings.LOGIN_WHITELIST_URL):
                 if not user.groups.filter(name='whitelisted').exists():
                     #logger.info (f"user groups for user {user}: {user.groups}")
                     #logger.info (f"Filtering user {user} is not whitelisted")
                     print (f"user groups for user {user}: {user.groups}")
                     print (f"Filtering user {user} is not whitelisted")
-                    return HttpResponseRedirect(settings.LOGIN_URL)
+                    return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
         #logger.info (f"accepting user {user}")
         print(f"accepting user {user}")
         return None

@@ -54,6 +54,7 @@ urlpatterns = [
     url(r'^apps/$', views.show_apps, name='apps-view'),
     url(r'^login_apps/$', views.login_show_apps, name='login-apps-view'),
     url(r'^login_apps/signout_view$', views.signout_view),
+    url(r'^login_whitelist/$', views.login_whitelist, name='login-whitelist-view'),
     url(r'^$', TemplateView.as_view(template_name='index.html')),
     url(r'^accounts/profile/$', TemplateView.as_view(template_name='profile.html')),
     url(r'^accounts/', include('allauth.urls')),

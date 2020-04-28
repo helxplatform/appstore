@@ -91,7 +91,6 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400 # 1 day in seconds
 ACCOUNT_LOGOUT_REDIRECT_URL ='/accounts/login/'
-LOGIN_REDIRECT_URL = '/accounts/email/' 
 
 SOCIALACCOUNT_QUERY_EMAIL=ACCOUNT_EMAIL_REQUIRED
 
@@ -186,6 +185,7 @@ SITE_URL = 'http://localhost:8000'
 LOGIN_REDIRECT_URL = '/login_apps/'
 LOGIN_URL = '/accounts/login'
 ADMIN_URL = '/admin'
+LOGIN_WHITELIST_URL = '/login_whitelist/'
 
 REST_USE_JWT = True
 
