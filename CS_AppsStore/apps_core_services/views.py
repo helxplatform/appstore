@@ -1,72 +1,23 @@
-from django.shortcuts import render
-from django.shortcuts import redirect
-from django.contrib.auth.decorators import login_required
-from django.conf import settings
-from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse
-from django.apps import apps
-import json
-import xml.etree.ElementTree as ET
-
-from apps_core_services.utils import check_authorization, authenticate_user
-
-from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
-from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
-from allauth.socialaccount.providers.oauth2.client import OAuth2Client
-from rest_auth.registration.views import SocialLoginView
-
-from apps_core_services.get_pods import get_pods_services, delete_pods
 from time import sleep
 
-# Create your views here.
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.shortcuts import render
 
-class GithubLogin(SocialLoginView):
-    adapter_class = GitHubOAuth2Adapter
-    callback_url = "http://127.0.0.1:8000/accounts/github/login/callback/"
-    client_class = OAuth2Client
-
-class GoogleLogin(SocialLoginView):
-    adapter_class = GoogleOAuth2Adapter
-    client_class = OAuth2Client
-    callback_url = "http://127.0.0.1:8000/accounts/google/login/callback/"
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-
-
-class AppsStore_JWT(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        content = {'message': 'Testing AppsStore JWT Token Creation!'}
-        return Response(content)
-
-def home_page_view(request):
-    auth_resp = check_authorization(request)
-    if auth_resp.status_code != 200:
-        return auth_resp
-    return render(request, "apps.html", {})
-
-
-def signout_view(request):
-    #print(request)
-    #print(request.GET['token'])
-    #print(request.GET['session_id'])
-    #del  request.GET['token']
-    #del request.GET['session_id']
-    #logout(request)
-    return redirect('/accounts/logout/')
+from apps_core_services.get_pods import get_pods_services, delete_pods
+from apps_core_services.utils import check_authorization, authenticate_user
 
 
 @login_required
 def login_show_apps(request):
     print(f"~~~~~REQUEST: {request.GET}, {request.META}")
     try:
-       print(f"REQUEST USER: {request.user.username}, {request.user.email}")
-       request.META['REMOTE_USER'] = request.user.username
+        print(f"REQUEST USER: {request.user.username}, {request.user.email}")
+        request.META['REMOTE_USER'] = request.user.username
     except Exception as e:
-       print("Failed to get request.META['REMOTE_USER']")
-       pass
+        print("Failed to get request.META['REMOTE_USER']")
+        pass
 
     tycho_status = get_pods_services(request)
     print(f"login_show_apps: TYCHO STATUS: {tycho_status}")
@@ -85,14 +36,14 @@ def login_show_apps(request):
         logo_name = f'{lname} Logo'
         logo_path = f'{path_prefix}{name}{path_suffix}'
         ip_address = service.ip_address
-        if(ip_address == 'x'):
+        if (ip_address == 'x'):
             ip_address = '--'
         port = ''
         port = service.port
         if port == '':
             port = '--'
         identifier = service.identifier
-        creation_time =  service.creation_time
+        creation_time = service.creation_time
 
         print("APP VALUES:")
         print(f"FULL_NAME: {full_name}")
@@ -110,7 +61,7 @@ def login_show_apps(request):
                           'name': name,
                           'lname': lname,
                           'logo_name': logo_name,
-                          'logo_path':logo_path,
+                          'logo_path': logo_path,
                           'ip_address': ip_address,
                           'port': port,
                           'identifier': identifier,
@@ -127,8 +78,20 @@ def login_show_apps(request):
     logo_prefix = "/static/images/" + brand + "/"
     logo_url = logo_prefix + fnames[brand]
     print(f"LOGO_URL: {logo_url}")
-    logo_alt = brand + " image"
-    return render(request, "apps_pods.html", {"brand": brand, "logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
+
+    if brand == "braini":
+        full_brand = "Brain-I"
+    elif brand == "scidas":
+        full_brand = "SciDAS"
+    elif brand == "catalyst":
+        full_brand = "Biodata Catalyst"
+    else:
+        full_brand = "CommonsShare"
+
+    logo_alt = full_brand + " Image"
+
+    return render(request, "apps_pods.html",
+                  {"brand": brand, "logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
 
 
 def show_apps(request):
@@ -146,7 +109,7 @@ def show_apps(request):
         # requests coming from auth service return which already authenticated the user
         name = request.GET.get('name', None)
         ret_user = authenticate_user(request, username=uname, access_token=token,
-                                name=name, email=uemail)
+                                     name=name, email=uemail)
         if ret_user:
             return HttpResponseRedirect("/login_apps/")
         else:
@@ -171,25 +134,19 @@ def list_services(request):
         return HttpResponseRedirect("/login_apps/")
 
 
-def auth(request):
-    if request.user:
-        try:
-            response = HttpResponse(content_type="application/json", status=200)
-            response["REMOTE_USER"] = request.user
-            print(f"{response['REMOTE_USER']}")
-        except Exception as e:
-            response = HttpResponse(content_type="application/json", status=403)
-            response["REMOTE_USER"] = request.user
+@login_required
+def login_whitelist(request):
+    print("LOGIN_WHITELIST: Rendering whitelist.html")
+    brand = settings.APPLICATION_BRAND
+
+    if brand == "braini":
+        full_brand = "Brain-I"
+    elif brand == "scidas":
+        full_brand = "SciDAS"
+    elif brand == "catalyst":
+        full_brand = "Biodata Catalyst"
     else:
-        response = HttpResponse(content_type="application/json", status=403)
-        response["REMOTE_USER"] = request.user
-    return response
+        full_brand = "CommonsShare"
 
-
-
-def test(request):
-    print(f"========= Request sent from nginx =========")
-    for item in request.META:
-        print(f"{item}: {request.META[item]}")
-    response = HttpResponse(content_type="application/json", status=200)
-    return response
+    print(f"BRAND: {brand}, FULL_BRAND: {full_brand}")
+    return render(request, "whitelist.html", {"brand": brand, "full_brand": full_brand})
