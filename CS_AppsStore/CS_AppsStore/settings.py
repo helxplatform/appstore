@@ -24,7 +24,6 @@ APPLICATION_BRAND = "braini"
 # "TRUE" | "FALSE"
 ALLOW_DJANGO_LOGIN = "FALSE"
 
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'n2mb4kf5(_%_p!raq@e58ub+mws^!a+zvn4!#a1ijm(5cob_d*'
 
@@ -54,8 +53,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'rest_framework',
     'rest_framework.authtoken',
-    'rest_auth',
-    'rest_auth.registration',
+    # 'rest_auth',
+    # 'rest_auth.registration',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform'
@@ -86,14 +85,14 @@ DEFAULT_SUPPORT_EMAIL = 'bot.commonsshare@gmail.com'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS =1
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
-ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400 # 1 day in seconds
-ACCOUNT_LOGOUT_REDIRECT_URL ='/accounts/login/'
-LOGIN_REDIRECT_URL = '/accounts/email/' 
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
+ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
+# LOGIN_REDIRECT_URL = '/accounts/email/'
 
-SOCIALACCOUNT_QUERY_EMAIL=ACCOUNT_EMAIL_REQUIRED
+SOCIALACCOUNT_QUERY_EMAIL = ACCOUNT_EMAIL_REQUIRED
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.RemoteUserBackend',
@@ -103,12 +102,12 @@ AUTHENTICATION_BACKENDS = (
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http"
 
-SOCIALACCOUNT_QUERY_EMAIL = True
+# SOCIALACCOUNT_QUERY_EMAIL = True
 
 SOCIALACCOUNT_PROVIDERS = \
     {'google':
-        {'SCOPE': ['profile', 'email'],
-         'AUTH_PARAMS': {'access_type': 'online'}}}
+         {'SCOPE': ['profile', 'email'],
+          'AUTH_PARAMS': {'access_type': 'online'}}}
 
 ROOT_URLCONF = 'CS_AppsStore.urls'
 
@@ -135,10 +134,10 @@ WSGI_APPLICATION = 'CS_AppsStore.wsgi.application'
 TEMPLATE_CONTEXT_PROCESSORS = 'allauth.socialaccount.context_processors.socialaccount'
 
 DATABASES = {
- 'default': {
-       'ENGINE': 'django.db.backends.sqlite3',
-       'NAME': os.path.join(BASE_DIR, 'DATABASE.sqlite3'),
-   }
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'DATABASE.sqlite3'),
+    }
 }
 
 ##################
@@ -148,8 +147,8 @@ DATABASES = {
 # Allow any settings to be defined in local_settings.py which should be
 # ignored in your version control system allowing for settings to be
 # defined per machine.
-#local_settings = __import__(local_settings_module, globals(), locals(), ['*'])
-#for k in dir(local_settings):
+# local_settings = __import__(local_settings_module, globals(), locals(), ['*'])
+# for k in dir(local_settings):
 #    locals()[k] = getattr(local_settings, k)
 
 # Internationalization
@@ -175,7 +174,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL.strip("/"))
 
 # PIVOT HAIL APP specific settings
 INITIAL_COST_CPU = 6
-INITIAL_COST_MEM = 6 # in MB
+INITIAL_COST_MEM = 6  # in MB
 
 # phenotype specific settings
 PHENOTYPE_REDIRECT_URL = "https://monarchinitiative.org/analyze/phenotypes"
@@ -190,7 +189,6 @@ ADMIN_URL = '/admin'
 REST_USE_JWT = True
 
 DEFAULT_AUTHENTICATION_CLASSES = [
-            'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-            'rest_framework.authentication.BasicAuthentication',
-
-    ]
+    'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+    'rest_framework.authentication.BasicAuthentication',
+]
