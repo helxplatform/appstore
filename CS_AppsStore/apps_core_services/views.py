@@ -93,7 +93,6 @@ def list_services(request):
 def login_whitelist(request):
     print("LOGIN_WHITELIST: Rendering whitelist.html")
     brand = settings.APPLICATION_BRAND
-
     if brand == "braini":
         full_brand = "Brain-I"
     elif brand == "scidas":
