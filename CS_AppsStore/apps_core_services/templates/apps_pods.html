@@ -88,16 +88,6 @@
 
             <div class="modal-body">
               <div class="list-group create-pod-list">
-                <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/cloudtop_imagej/login_start/">
-                  <img class="create-pod-list-item__image" src="/static/images/imagej-logo.png" alt="Imagej Logo">
-                  <div class="create-pod-list-item__details">
-                    <div class="create-pod-list-item__title">Imagej</div>
-                    <div class="create-pod-list-item__description">
-                      ImageJ/Napari: Imagej is an image processor developed at NIH/LOCI.
-                    </div>
-                    <small class="text-muted">Napari enables multi-dimensional image viewing, annotation and analysis.</small>
-                  </div>
-                </a>
                 <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/tycho_jupyter/login_start/">
                   <img class="create-pod-list-item__image" src="/static/images/jupyter-logo.png" alt="Jupyter Logo">
                   <div class="create-pod-list-item__details">
@@ -108,6 +98,60 @@
                     <small>Includes R, Julia, and Python.</small>
                   </div>
                 </a>
+                {% if brand == "scidas" %}
+                  <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/tycho_nextflow/login_start/">
+                    <img class="create-pod-list-item__image" src="/static/images/nextflow-logo.png" alt="Nextflow Logo">
+                    <div class="create-pod-list-item__details">
+                      <div class="create-pod-list-item__title">NextFlow</div>
+                      <div class="create-pod-list-item__description">
+                        Nextflow: A scalable workflow computational pipeline workspace.
+                      </div>
+                      <small class="text-muted">Orchestrate Docker containers into reproducible workflows.</small>
+                    </div>
+                  </a>
+                {% elif brand == "braini" %}
+                  <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/cloudtop_imagej/login_start/">
+                    <img class="create-pod-list-item__image" src="/static/images/imagej-logo.png" alt="Imagej Logo">
+                    <div class="create-pod-list-item__details">
+                      <div class="create-pod-list-item__title">Imagej</div>
+                      <div class="create-pod-list-item__description">
+                        ImageJ/Napari: Imagej is an image processor developed at NIH/LOCI.
+                      </div>
+                      <small class="text-muted">Napari enables multi-dimensional image viewing, annotation and analysis.</small>
+                    </div>
+                  </a>
+                {% elif brand == "catalyst" %}
+                  <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/cloudtop_imagej/login_start/">
+                    <img class="create-pod-list-item__image" src="/static/images/imagej-logo.png" alt="Imagej Logo">
+                    <div class="create-pod-list-item__details">
+                      <div class="create-pod-list-item__title">Imagej</div>
+                      <div class="create-pod-list-item__description">
+                        ImageJ: Imagej is an image processor developed at NIH/LOCI.
+                      </div>
+                      <!--<small class="text-muted"></small>-->
+                    </div>
+                  </a>
+                  <!--<a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/rstudio/login_start/">
+                    <img class="create-pod-list-item__image" src="/static/images/rstudio.png" alt="RStudio Logo">
+                    <div class="create-pod-list-item__details">
+                      <div class="create-pod-list-item__title">RStudio</div>
+                      <div class="create-pod-list-item__description">
+                        RStudio is . . .
+                      </div>
+                      <small class="text-muted">Lorem ipsum</small>
+                    </div>
+                  </a>
+                  <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/dicom/login_start/">
+                    <img class="create-pod-list-item__image" src="/static/images/dicom.png" alt="Dicom Logo">
+                    <div class="create-pod-list-item__details">
+                      <div class="create-pod-list-item__title">Dicom</div>
+                      <div class="create-pod-list-item__description">
+                        Dicom is  . . .
+                      </div>
+                      <small class="text-muted">Lorem ipsum</small>
+                    </div>
+                  </a> -->
+                {% endif %}
                 <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="https://monarchinitiative.org/analyze/phenotypes">
                   <img class="create-pod-list-item__image" src="/static/images/monarch-initiative-logo.png" alt="Monarch-Initiative Logo">
                   <div class="create-pod-list-item__details">
@@ -116,16 +160,6 @@
                       Monarch Initiative: Ontology based search tools over a large aggregate biomedical graph.
                     </div>
                     <small class="text-muted">This application links to an external website.</small>
-                  </div>
-                </a>
-                <a href="#" class="create-pod-list-item list-group-item list-group-item-action" data-url="/tycho_nextflow/login_start/">
-                  <img class="create-pod-list-item__image" src="/static/images/nextflow-logo.png" alt="Nextflow Logo">
-                  <div class="create-pod-list-item__details">
-                    <div class="create-pod-list-item__title">NextFlow</div>
-                    <div class="create-pod-list-item__description">
-                      Nextflow: A scalable workflow computational pipeline workspace.
-                    </div>
-                    <small class="text-muted">Orchestrate Docker containers into reproducible workflows.</small>
                   </div>
                 </a>
               </div>
