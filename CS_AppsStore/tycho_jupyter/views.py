@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-from django.contrib.auth.decorators import login_required
-from apps_core_services.utils import check_authorization
-from django.http import HttpResponseRedirect, JsonResponse, HttpResponse
-from django.shortcuts import render
-from rest_framework.status import HTTP_200_OK, HTTP_500_INTERNAL_SERVER_ERROR, \
-    HTTP_400_BAD_REQUEST
-import json
+
 from time import sleep
 
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect, JsonResponse
+from rest_framework.status import HTTP_500_INTERNAL_SERVER_ERROR
+
+from apps_core_services.utils import check_authorization
 from tycho_jupyter import deployment
+
 
 # Create your views here.
 @login_required
 def login_start(request):
     # view function when the start action is triggered from CommonsShare Apps Store from
     # which the user has already logged in to CommonsShare Apps Store directly
-    #if "REMOTE_USER" in request.META:
-    #request.session['REMOTE_USER'] = request.META["REMOTE_USER"]
+    # if "REMOTE_USER" in request.META:
+    # request.session['REMOTE_USER'] = request.META["REMOTE_USER"]
     redirect_url = deploy(request)
     return HttpResponseRedirect(redirect_url)
 
@@ -35,7 +35,7 @@ def start(request):
 
 @login_required
 def deploy(request):
-    print ("Deploying service ...")
+    print("Deploying service ...")
     request.META['REMOTE_USER'] = request.user.username
     try:
         redirect_url = deployment.deploy(request)

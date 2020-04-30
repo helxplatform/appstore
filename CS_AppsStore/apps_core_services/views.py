@@ -2,119 +2,74 @@ from time import sleep
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponseRedirect
 from django.shortcuts import render
+from django.views import generic
 
 from apps_core_services.get_pods import get_pods_services, delete_pods
-from apps_core_services.utils import check_authorization, authenticate_user
 
 
-@login_required
-def login_show_apps(request):
-    print(f"~~~~~REQUEST: {request.GET}, {request.META}")
-    try:
-        print(f"REQUEST USER: {request.user.username}, {request.user.email}")
-        request.META['REMOTE_USER'] = request.user.username
-    except Exception as e:
-        print("Failed to get request.META['REMOTE_USER']")
-        pass
+class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
+    template_name = 'apps_pods.html'
 
-    tycho_status = get_pods_services(request)
-    print(f"login_show_apps: TYCHO STATUS: {tycho_status}")
-    services = tycho_status.services
-    print(f"TYCHO SERVICES: {services}")
+    def get_context_data(self, *args, **kwargs):
+        context = super(ApplicationManager, self).get_context_data(*args, **kwargs)
 
-    svcs_list = []
-    path_prefix = "/static/images/"
-    path_suffix = "-logo.png"
-    print("Listing services")
-    for service in services:
-        full_name = service.name
-        print(f"Found service: {full_name}")
-        name = service.name.split("-")[0]
-        lname = name.capitalize()
-        logo_name = f'{lname} Logo'
-        logo_path = f'{path_prefix}{name}{path_suffix}'
-        ip_address = service.ip_address
-        if (ip_address == 'x'):
-            ip_address = '--'
-        port = ''
-        port = service.port
-        if port == '':
-            port = '--'
-        identifier = service.identifier
-        creation_time = service.creation_time
+        tycho_status = get_pods_services(self.request.user.username)
+        services = tycho_status.services
+        svcs_list = []
+        path_prefix = "/static/images/"
+        path_suffix = "-logo.png"
+        for service in services:
+            full_name = service.name
+            name = service.name.split("-")[0]
+            lname = name.capitalize()
+            logo_name = f'{lname} Logo'
+            logo_path = f'{path_prefix}{name}{path_suffix}'
+            ip_address = service.ip_address
+            if (ip_address == 'x'):
+                ip_address = '--'
+            port = service.port
+            if port == '':
+                port = '--'
+            identifier = service.identifier
+            creation_time = service.creation_time
 
-        print("APP VALUES:")
-        print(f"FULL_NAME: {full_name}")
-        print(f"NAME: {name}")
-        print(f"LNAME: {lname}")
-        print(f"LOGO_NAME: {logo_name}")
-        print(f"LOGO_PATH: {logo_path}")
-        print(f"IP_ADDRESS: {ip_address}")
-        print(f"PORT: {port}")
-        print(f"IDENTIFIER: {identifier}")
-        print(f"CREATION_TIME: {creation_time}")
-        print(" ")
+            svcs_list.append({'full_name': full_name,
+                              'name': name,
+                              'lname': lname,
+                              'logo_name': logo_name,
+                              'logo_path': logo_path,
+                              'ip_address': ip_address,
+                              'port': port,
+                              'identifier': identifier,
+                              'creation_time': creation_time})
 
-        svcs_list.append({'full_name': full_name,
-                          'name': name,
-                          'lname': lname,
-                          'logo_name': logo_name,
-                          'logo_path': logo_path,
-                          'ip_address': ip_address,
-                          'port': port,
-                          'identifier': identifier,
-                          'creation_time': creation_time})
+        # Get main logo url and alt vars
+        fnames = {"braini": "braini-lg-gray.png",
+                  "scidas": "scidas-logo-sm.png",
+                  "catalyst": "bdc-logo.svg",
+                  "commonsshare": "logo-lg.png"}
 
-    # Get main logo url and alt vars
-    fnames = {"braini": "braini-lg-gray.png",
-              "scidas": "scidas-logo-sm.png",
-              "catalyst": "bdc-logo.svg",
-              "commonsshare": "logo-lg.png"}
-
-    brand = settings.APPLICATION_BRAND
-    print(f"BRAND: {brand}")
-    logo_prefix = "/static/images/" + brand + "/"
-    logo_url = logo_prefix + fnames[brand]
-    print(f"LOGO_URL: {logo_url}")
-
-    if brand == "braini":
-        full_brand = "Brain-I"
-    elif brand == "scidas":
-        full_brand = "SciDAS"
-    elif brand == "catalyst":
-        full_brand = "Biodata Catalyst"
-    else:
-        full_brand = "CommonsShare"
-
-    logo_alt = full_brand + " Image"
-
-    return render(request, "apps_pods.html",
-                  {"brand": brand, "logo_url": logo_url, "logo_alt": logo_alt, "svcs_list": svcs_list})
-
-
-def show_apps(request):
-    token = request.GET.get('access_token', None)
-    uname = request.GET.get('user_name', None)
-    uemail = request.GET.get('email', None)
-
-    if not token or not uname:
-        auth_resp = check_authorization(request)
-        if auth_resp.status_code != 200:
-            return HttpResponseRedirect("/")
+        brand = settings.APPLICATION_BRAND
+        logo_prefix = "/static/images/" + brand + "/"
+        logo_url = logo_prefix + fnames[brand]
+        if brand == "braini":
+            full_brand = "Brain-I"
+        elif brand == "scidas":
+            full_brand = "SciDAS"
+        elif brand == "catalyst":
+            full_brand = "Biodata Catalyst"
         else:
-            return HttpResponseRedirect("/login_apps/")
-    else:
-        # requests coming from auth service return which already authenticated the user
-        name = request.GET.get('name', None)
-        ret_user = authenticate_user(request, username=uname, access_token=token,
-                                     name=name, email=uemail)
-        if ret_user:
-            return HttpResponseRedirect("/login_apps/")
-        else:
-            return HttpResponseBadRequest(
-                'Bad request - no valid access_token or user_name is provided')
+            full_brand = "CommonsShare"
+
+        logo_alt = full_brand + " Image"
+        context['brand'] = brand
+        context['logo_url'] = logo_url
+        context['logo_alt'] = logo_alt
+        context['svcs_list'] = svcs_list
+        return context
 
 
 @login_required
