@@ -84,9 +84,9 @@ def list_services(request):
         if action == "delete":
             delete_pods(request, sid)
             sleep(2)
-            return HttpResponseRedirect("/login_apps/")
+            return HttpResponseRedirect("/apps/")
     else:
-        return HttpResponseRedirect("/login_apps/")
+        return HttpResponseRedirect("/apps/")
 
 
 @login_required
