@@ -1,8 +1,8 @@
 from tycho.client import TychoClientFactory
-import requests
 
 
-def get_pods_services(request):
+def get_pods_services(username):
+    # client = TychoClient(url="http://localhost:5000")
     try:
         client_factory = TychoClientFactory()
         client = client_factory.get_client()
@@ -11,13 +11,13 @@ def get_pods_services(request):
     except Exception as e:
         tycho_url = "http://localhost:5000/system"
         print(f"TYCHO URL: {tycho_url}")
+        raise
 
-    request_pods = {}
-    request_pods['username'] = request.user.username
-
+    request_pods = {'username': username}
     tycho_status = client.status(request_pods)
     print(tycho_status)
     return tycho_status
+
 
 def delete_pods(request, sid):
     try:
