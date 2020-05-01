@@ -65,11 +65,11 @@ Add the IP Address of the local machine to the list of ALLOWED_HOSTS if you are 
 
 
 7) Run Tycho locally:
-   a) git clone https://github.com/helxplatform/tycho.git --branch amb-helx-v1.0
-   b) python3 -m venv /venv/tycho
-   c) . source /venv/tycho/bin/activate
-   d) pip install -r /tycho/requirements.txt
-   e) python /tycho/tycho/api.py -d
+   1) git clone https://github.com/helxplatform/tycho.git --branch amb-helx-v1.0
+   2) python3 -m venv /venv/tycho
+   3) . source /venv/tycho/bin/activate
+   4) pip install -r /tycho/requirements.txt
+   5) python /tycho/tycho/api.py -d
 
 
 
