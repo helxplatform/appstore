@@ -27,6 +27,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                 if self.is_authorized(user):
                     print (f"Adding user {user} to whitelist")
                     user.groups.add(whitelist_group)
+                    print (f"user groups for user {user}: {user.groups}")
                 else:
                     print (f"Filtering user {user} is not authorized")
                     self.clear_session(request)
