@@ -39,9 +39,9 @@ Add the IP Address of the local machine to the list of ALLOWED_HOSTS if you are 
 4) Navigate to the Project root and run the Django server:
 
 ```python manage.py runserver --settings=<settings_module>```
-   - For braini, use --settings=CS_AppsStore.settings.braini_settings
-   - For scidas, use --settings=CS_AppsStore.settings.scidas_settings
-   - For catalyst, use --settings=CS_AppsStore.settings.cat_settings
+   - For braini, use ```--settings=CS_AppsStore.settings.braini_settings```
+   - For scidas, use ```--settings=CS_AppsStore.settings.scidas_settings```
+   - For catalyst, use ```--settings=CS_AppsStore.settings.cat_settings```
 
 5) To install a new app, follow the steps below:
 
@@ -59,9 +59,18 @@ Add the IP Address of the local machine to the list of ALLOWED_HOSTS if you are 
 
 6) Run the following commands to make sure database migration has taken place and all static files have been collectioned to the server:
 
-```python manage.py migrate```
+```python manage.py migrate --settings=<settings_module>```
 
-```python manage.py collectstatic```
+```python manage.py collectstatic --settings=<settings_module>```
+
+
+7) Run Tycho locally:
+   a) git clone https://github.com/helxplatform/tycho.git --branch amb-helx-v1.0
+   b) python3 -m venv /venv/tycho
+   c) . source /venv/tycho/bin/activate
+   d) pip install -r /tycho/requirements.txt
+   e) python /tycho/tycho/api.py -d
+
 
 
 # Docker Development
