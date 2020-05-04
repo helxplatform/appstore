@@ -1,3 +1,4 @@
+import logging
 from time import sleep
 
 from django.conf import settings
@@ -9,13 +10,15 @@ from django.views import generic
 
 from apps_core_services.get_pods import get_pods_services, delete_pods
 
+logger = logging.getLogger(__name__)
+
 
 class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
     template_name = 'apps_pods.html'
 
     def get_context_data(self, *args, **kwargs):
         context = super(ApplicationManager, self).get_context_data(*args, **kwargs)
-
+        logger.debug("Working in Application Manager")
         tycho_status = get_pods_services(self.request.user.username)
         services = tycho_status.services
         svcs_list = []
@@ -72,11 +75,7 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
         return context
 
 
-@login_required
 def list_services(request):
-    # list_pods url comes here . . .
-    path_prefix = "/static/images/"
-    path_suffix = "-logo.png"
     if request.method == "POST":
         action = request.POST.get("action")
         sid = request.POST.get("id")
@@ -84,9 +83,9 @@ def list_services(request):
         if action == "delete":
             delete_pods(request, sid)
             sleep(2)
-            return HttpResponseRedirect("/login_apps/")
+            return HttpResponseRedirect("/apps/")
     else:
-        return HttpResponseRedirect("/login_apps/")
+        return HttpResponseRedirect("/apps/")
 
 
 @login_required

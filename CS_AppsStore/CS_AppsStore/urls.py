@@ -2,8 +2,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path, re_path
-from django.views.generic.base import RedirectView
-from django.views.generic.base import TemplateView
+from django.views.generic.base import RedirectView, TemplateView
 from django.views.static import serve
 from rest_framework_simplejwt import views as jwt_views
 
@@ -19,7 +18,6 @@ urlpatterns = [
     path('sign-out', RedirectView.as_view(url='/accounts/logout/'), name='sign-out'),
     path('accounts/', include('allauth.urls')),
 
-    # path('apps/', app_core_views.show_apps, name='apps-view'),
     path('apps/', app_core_views.ApplicationManager.as_view(), name='apps'),
     path('list_pods/', app_core_views.list_services, name="list_pods_services"),
     path('login_whitelist/', app_core_views.login_whitelist, name='login-whitelist-view'), ]
