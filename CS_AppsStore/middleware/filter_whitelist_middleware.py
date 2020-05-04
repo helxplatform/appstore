@@ -1,6 +1,9 @@
 from django.conf import settings
+from django.contrib.auth.models import Group
+from django.contrib.sessions.models import Session
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
+
 from apps_core_services.models import AuthorizedUser
 from django.contrib.auth.models import Group
 
@@ -17,7 +20,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         # logger.info (f"testing user: {user}")
         print(f"testing user: {user}")
 
-        whitelist_group = Group.objects.get(name='whitelisted')
+        #whitelist_group = Group.objects.get(name='whitelisted')
 
         if user.is_authenticated and not user.is_superuser:
             if not request.path.startswith(settings.LOGIN_URL) \
@@ -25,17 +28,18 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                     and not request.path.startswith(settings.ADMIN_URL) \
                     and not request.path.startswith(settings.STATIC_URL) \
                     and not request.path.startswith(settings.LOGIN_WHITELIST_URL):
+
                 if self.is_authorized(user):
-                    print (f"Adding user {user} to whitelist")
+                    print(f"Adding user {user} to whitelist")
                     whitelist_group = Group.objects.get(name='whitelisted')
                     user.groups.add(whitelist_group)
-                    print (f"user groups for user {user}: {user.groups}")
+                    print(f"user groups for user {user}: {user.groups}")
                 else:
-                    print (f"Filtering user {user} is not authorized")
+                    print(f"Filtering user {user} is not authorized")
                     self.clear_session(request)
                     return HttpResponseRedirect(settings.LOGIN_URL)
-                    #return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
-        #logger.info (f"accepting user {user}")
+                    # return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
+        # logger.info (f"accepting user {user}")
         print(f"accepting user {user}")
         return None
 

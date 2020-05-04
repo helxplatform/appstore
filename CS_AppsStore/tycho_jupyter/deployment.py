@@ -1,11 +1,8 @@
-import os
-import yaml
-from tycho.client import TychoClientFactory
-from tycho.client import TychoApps
-#import time
 import json
 
-#from django.http import HttpResponseRedirect
+from tycho.client import TychoApps
+from tycho.client import TychoClientFactory
+
 
 def deploy(request):
     if "HTTP_REFERER" in request.META:
@@ -42,15 +39,15 @@ def deploy(request):
     username = request.META["REMOTE_USER"]
 
     request = {
-            "name": "jupyter-ds",
-            "username": request.META["REMOTE_USER"],
-            "env": settings_dict,
-            "system": structure,
-            "services": {
-                "jupyter-ds": {
+        "name": "jupyter-ds",
+        "username": request.META["REMOTE_USER"],
+        "env": settings_dict,
+        "system": structure,
+        "services": {
+            "jupyter-ds": {
                 "port": settings_dict['HOST_PORT']
-                }
-             }
+            }
+        }
     }
 
     print("Sending this request to tycho client to start imagej app:")
@@ -63,7 +60,6 @@ def deploy(request):
     identifier = tycho_system.identifier
     print(f"LOCAL SYSTEM_NAME: {system_name}")
     print(f"LOCAL SYSTEM IDENTIFIER: {identifier}")
-
 
     guid = tycho_system.identifier
     status = tycho_system.status
