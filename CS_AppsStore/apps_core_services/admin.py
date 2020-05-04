@@ -1,3 +1,9 @@
 from django.contrib import admin
+from apps_core_services.models import AuthorizedUser
 
-# Register your models here.
+class AuthorizedUserAdmin(admin.ModelAdmin):
+    fields = ['email']
+    list_display = 'email'
+
+# Option 1 - Basic
+admin.site.register(AuthorizedUser)
