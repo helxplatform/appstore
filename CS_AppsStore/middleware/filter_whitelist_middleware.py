@@ -4,41 +4,35 @@ from django.contrib.sessions.models import Session
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 
+import logging
+
 from apps_core_services.models import AuthorizedUser
 
 
-# logger = logging.getLogger (__name__)
-# FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
-# logging.basicConfig(format=FORMAT)
+logger = logging.getLogger (__name__)
+FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+logging.basicConfig(format=FORMAT)
 
 class AllowWhiteListedUserOnly(MiddlewareMixin):
     def process_request(self, request):
         user = request.user
-        # logger.info (f"testing user: {user}")
-        print(f"testing user: {user}")
-
-        # whitelist_group = Group.objects.get(name='whitelisted')
+        logger.info (f"testing user: {user}")
 
         if user.is_authenticated and not user.is_superuser:
             if not request.path.startswith(settings.LOGIN_URL) \
                     and not request.path.startswith(settings.LOGIN_WHITELIST_URL) \
                     and not request.path.startswith(settings.ADMIN_URL) \
-                    and not request.path.startswith(settings.STATIC_URL) \
-                    and not request.path.startswith(settings.LOGIN_WHITELIST_URL):
+                    and not request.path.startswith(settings.STATIC_URL):
 
                 if self.is_authorized(user):
-                    print(f"Adding user {user} to whitelist")
+                    logger.info(f"Adding user {user} to whitelist")
                     whitelist_group = Group.objects.get(name='whitelisted')
                     user.groups.add(whitelist_group)
-                    print(f"user groups for user {user}: {user.groups}")
                 else:
-                    print(f"Filtering user {user} is not authorized")
+                    logger.info(f"Filtering user {user} is not authorized")
                     self.clear_session(request)
-                    print("=====",user)
-                    # return HttpResponseRedirect(settings.LOGIN_URL)
                     return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
-        # logger.info (f"accepting user {user}")
-        print(f"accepting user {user}")
+        logger.info (f"accepting user {user}")
         return None
 
     @staticmethod
@@ -49,11 +43,10 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
 
     @staticmethod
     def is_authorized(user):
-        print("is_authorized")
-        print(user.email)
         if AuthorizedUser.objects.filter(email=user.email).exists():
-            print("found in AuthorizedUser")
+            logger.info(f"found user email {user.email} in AuthorizedUser")
             return True
+        logger.info(f"user email {user.email} not found in AuthorizedUser")
         return False
 
     @staticmethod
