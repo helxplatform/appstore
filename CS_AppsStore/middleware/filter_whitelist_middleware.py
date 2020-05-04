@@ -1,13 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
-
-<<<<<<< HEAD
-
-# logger = logging.getLogger (__name__)
-# FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
-# logging.basicConfig(format=FORMAT)
-=======
 from apps_core_services.models import AuthorizedUser
 from django.contrib.auth.models import Group
 
@@ -17,7 +10,6 @@ import logging
 #logger = logging.getLogger (__name__)
 #FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
 #logging.basicConfig(format=FORMAT)
->>>>>>> isma-dev
 
 class AllowWhiteListedUserOnly(MiddlewareMixin):
     def process_request(self, request):
@@ -31,17 +23,8 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
             if not request.path.startswith(settings.LOGIN_URL) \
                     and not request.path.startswith(settings.LOGIN_WHITELIST_URL) \
                     and not request.path.startswith(settings.ADMIN_URL) \
-<<<<<<< HEAD
                     and not request.path.startswith(settings.STATIC_URL) \
                     and not request.path.startswith(settings.LOGIN_WHITELIST_URL):
-                if not user.groups.filter(name='whitelisted').exists():
-                    # logger.info (f"user groups for user {user}: {user.groups}")
-                    # logger.info (f"Filtering user {user} is not whitelisted")
-                    print(f"user groups for user {user}: {user.groups}")
-                    print(f"Filtering user {user} is not whitelisted")
-                    return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
-=======
-                    and not request.path.startswith(settings.STATIC_URL):
                 if self.is_authorized(user):
                     print (f"Adding user {user} to whitelist")
                     whitelist_group = Group.objects.get(name='whitelisted')
@@ -76,4 +59,3 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         session_key = request.session.session_key
         session = Session.objects.get(session_key=session_key)
         Session.objects.filter(session_key=session).delete()
->>>>>>> isma-dev
