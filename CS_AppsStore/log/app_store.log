@@ -1,4 +1,0 @@
-2020-05-04 16:04:05,126 [MainThread  ] [DEBUG] [git.cmd                    ]  Popen(['git', 'version'], cwd=/Users/singh/Desktop/app_store/appstore/CS_AppsStore, universal_newlines=False, shell=None, istream=None)
-2020-05-04 16:04:05,137 [MainThread  ] [DEBUG] [git.cmd                    ]  Popen(['git', 'version'], cwd=/Users/singh/Desktop/app_store/appstore/CS_AppsStore, universal_newlines=False, shell=None, istream=None)
-2020-05-04 16:07:07,512 [MainThread  ] [DEBUG] [git.cmd                    ]  Popen(['git', 'version'], cwd=/Users/singh/Desktop/app_store/appstore/CS_AppsStore, universal_newlines=False, shell=None, istream=None)
-2020-05-04 16:07:07,522 [MainThread  ] [DEBUG] [git.cmd                    ]  Popen(['git', 'version'], cwd=/Users/singh/Desktop/app_store/appstore/CS_AppsStore, universal_newlines=False, shell=None, istream=None)

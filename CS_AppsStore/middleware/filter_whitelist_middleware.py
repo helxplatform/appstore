@@ -17,7 +17,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         # logger.info (f"testing user: {user}")
         print(f"testing user: {user}")
 
-        whitelist_group = Group.objects.get(name='whitelisted')
+        #whitelist_group = Group.objects.get(name='whitelisted')
 
         if user.is_authenticated and not user.is_superuser:
             if not request.path.startswith(settings.LOGIN_URL) \

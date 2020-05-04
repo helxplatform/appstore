@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import logging
 from time import sleep
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect ,JsonResponse
+from django.http import HttpResponseRedirect, JsonResponse
 
 from tycho_jupyter import deployment
-import logging
 
 logger = logging.getLogger(__name__)
+
 
 # Create your views here.
 @login_required
@@ -18,9 +19,9 @@ def login_start(request):
     # which the user has already logged in to CommonsShare Apps Store directly
     # if "REMOTE_USER" in request.META:
     # request.session['REMOTE_USER'] = request.META["REMOTE_USER"]
-    #redirect_url = deploy(request)
+    redirect_url = deploy(request)
     logger.info("TYcho  jUpyter")
-    return HttpResponseRedirect('/')
+    return HttpResponseRedirect(redirect_url)
 
 
 @login_required

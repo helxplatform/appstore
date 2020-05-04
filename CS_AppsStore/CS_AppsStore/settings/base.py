@@ -236,7 +236,7 @@ LOGGING = {
             # 'level': 'INFO',
         },
         'django': {
-            'handlers': ['syslog', 'djangoLog'],
+            'handlers': ['syslog', 'djangoLog','console'],
             'level': min_django_level,
             'propagate': False,
 

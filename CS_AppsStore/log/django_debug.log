@@ -1,3 +1,0 @@
-2020-05-04 16:04:04,869 [MainThread  ] [INFO ] [django.utils.autoreload    ]  Watching for file changes with StatReloader
-2020-05-04 16:07:06,520 [MainThread  ] [INFO ] [django.utils.autoreload    ]  /Users/singh/Desktop/app_store/appstore/CS_AppsStore/middleware/filter_whitelist_middleware.py changed, reloading.
-2020-05-04 16:07:07,248 [MainThread  ] [INFO ] [django.utils.autoreload    ]  Watching for file changes with StatReloader
