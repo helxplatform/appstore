@@ -5,14 +5,11 @@ from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 
 from apps_core_services.models import AuthorizedUser
-from django.contrib.auth.models import Group
 
-from django.contrib.sessions.models import Session
 
-import logging
-#logger = logging.getLogger (__name__)
-#FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
-#logging.basicConfig(format=FORMAT)
+# logger = logging.getLogger (__name__)
+# FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+# logging.basicConfig(format=FORMAT)
 
 class AllowWhiteListedUserOnly(MiddlewareMixin):
     def process_request(self, request):
@@ -20,7 +17,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         # logger.info (f"testing user: {user}")
         print(f"testing user: {user}")
 
-        #whitelist_group = Group.objects.get(name='whitelisted')
+        # whitelist_group = Group.objects.get(name='whitelisted')
 
         if user.is_authenticated and not user.is_superuser:
             if not request.path.startswith(settings.LOGIN_URL) \
@@ -37,8 +34,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                 else:
                     print(f"Filtering user {user} is not authorized")
                     self.clear_session(request)
-                    return HttpResponseRedirect(settings.LOGIN_URL)
-                    # return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
+                    print("=====",user)
+                    # return HttpResponseRedirect(settings.LOGIN_URL)
+                    return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
         # logger.info (f"accepting user {user}")
         print(f"accepting user {user}")
         return None
