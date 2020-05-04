@@ -27,10 +27,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                     and not request.path.startswith(settings.STATIC_URL):
                 if self.is_authorized(user):
                     print (f"Adding user {user} to whitelist")
-<<<<<<< HEAD
                     whitelist_group = Group.objects.get(name='whitelisted')
-=======
->>>>>>> 4683ab7bcb6708fa0bed7ec3346f6794caf58fd0
                     user.groups.add(whitelist_group)
                     print (f"user groups for user {user}: {user.groups}")
                 else:
@@ -61,8 +58,4 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
     def clear_session(request):
         session_key = request.session.session_key
         session = Session.objects.get(session_key=session_key)
-<<<<<<< HEAD
         Session.objects.filter(session_key=session).delete()
-=======
-        Session.objects.filter(session_key=session).delete()
->>>>>>> 4683ab7bcb6708fa0bed7ec3346f6794caf58fd0
