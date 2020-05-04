@@ -88,7 +88,6 @@ def list_services(request):
         return HttpResponseRedirect("/apps/")
 
 
-@login_required
 def login_whitelist(request):
     print("LOGIN_WHITELIST: Rendering whitelist.html")
     brand = settings.APPLICATION_BRAND

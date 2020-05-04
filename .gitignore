@@ -2,5 +2,7 @@
 *.log
 *~
 .idea/
+log/*
+!log/.gitkeep
 project_allauth
 venv
