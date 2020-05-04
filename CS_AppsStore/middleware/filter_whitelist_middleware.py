@@ -5,11 +5,14 @@ from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 
 from apps_core_services.models import AuthorizedUser
+from django.contrib.auth.models import Group
 
+from django.contrib.sessions.models import Session
 
-# logger = logging.getLogger (__name__)
-# FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
-# logging.basicConfig(format=FORMAT)
+import logging
+#logger = logging.getLogger (__name__)
+#FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+#logging.basicConfig(format=FORMAT)
 
 class AllowWhiteListedUserOnly(MiddlewareMixin):
     def process_request(self, request):
@@ -23,7 +26,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
             if not request.path.startswith(settings.LOGIN_URL) \
                     and not request.path.startswith(settings.LOGIN_WHITELIST_URL) \
                     and not request.path.startswith(settings.ADMIN_URL) \
-                    and not request.path.startswith(settings.STATIC_URL):
+                    and not request.path.startswith(settings.STATIC_URL) \
+                    and not request.path.startswith(settings.LOGIN_WHITELIST_URL):
+
                 if self.is_authorized(user):
                     print(f"Adding user {user} to whitelist")
                     whitelist_group = Group.objects.get(name='whitelisted')
