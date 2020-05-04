@@ -37,13 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
     'rest_framework',
     'rest_framework.authtoken',
     'rest_auth',
     'rest_auth.registration',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform'
@@ -74,13 +74,13 @@ DEFAULT_SUPPORT_EMAIL = 'bot.commonsshare@gmail.com'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS =1
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
-ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400 # 1 day in seconds
-ACCOUNT_LOGOUT_REDIRECT_URL ='/accounts/login/'
+ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
+ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
 
-SOCIALACCOUNT_QUERY_EMAIL=ACCOUNT_EMAIL_REQUIRED
+SOCIALACCOUNT_QUERY_EMAIL = ACCOUNT_EMAIL_REQUIRED
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.RemoteUserBackend',
@@ -94,8 +94,8 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 
 SOCIALACCOUNT_PROVIDERS = \
     {'google':
-        {'SCOPE': ['profile', 'email'],
-         'AUTH_PARAMS': {'access_type': 'online'}}}
+         {'SCOPE': ['profile', 'email'],
+          'AUTH_PARAMS': {'access_type': 'online'}}}
 
 ROOT_URLCONF = 'CS_AppsStore.urls'
 
@@ -122,10 +122,10 @@ WSGI_APPLICATION = 'CS_AppsStore.wsgi.application'
 TEMPLATE_CONTEXT_PROCESSORS = 'allauth.socialaccount.context_processors.socialaccount'
 
 DATABASES = {
- 'default': {
-       'ENGINE': 'django.db.backends.sqlite3',
-       'NAME': os.path.join(BASE_DIR, 'DATABASE.sqlite3'),
-   }
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'DATABASE.sqlite3'),
+    }
 }
 
 ##################
@@ -135,8 +135,8 @@ DATABASES = {
 # Allow any settings to be defined in local_settings.py which should be
 # ignored in your version control system allowing for settings to be
 # defined per machine.
-#local_settings = __import__(local_settings_module, globals(), locals(), ['*'])
-#for k in dir(local_settings):
+# local_settings = __import__(local_settings_module, globals(), locals(), ['*'])
+# for k in dir(local_settings):
 #    locals()[k] = getattr(local_settings, k)
 
 # Internationalization
@@ -162,7 +162,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL.strip("/"))
 
 # PIVOT HAIL APP specific settings
 INITIAL_COST_CPU = 6
-INITIAL_COST_MEM = 6 # in MB
+INITIAL_COST_MEM = 6  # in MB
 
 # phenotype specific settings
 PHENOTYPE_REDIRECT_URL = "https://monarchinitiative.org/analyze/phenotypes"
@@ -178,7 +178,79 @@ LOGIN_WHITELIST_URL = '/login_whitelist/'
 REST_USE_JWT = True
 
 DEFAULT_AUTHENTICATION_CLASSES = [
-            'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-            'rest_framework.authentication.BasicAuthentication',
+    'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+    'rest_framework.authentication.BasicAuthentication',
+]
+min_django_level = 'INFO'
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,  # keep Django's default loggers
+    'formatters': {
+        'verbose': {
+            'format': "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            'datefmt': "%d/%b/%Y %H:%M:%S"
+        },
+        'simple': {
+            'format': '[%(asctime)s] %(levelname)s %(message)s',
+            'datefmt': "%d/%b/%Y %H:%M:%S"
+        },
+        'timestampthread': {
+            'format': "%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s] [%(name)-25.25s  ]  %(message)s",
+        },
+    },
+    'handlers': {
+        'syslog': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'log/system_warnings.log',
+            'formatter': 'timestampthread',
+            'maxBytes': 1024 * 1024 * 15,  # 15MB
+            'backupCount': 10,
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'djangoLog': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'log/django_debug.log',
+            'formatter': 'timestampthread',
+            'maxBytes': 1024 * 1024 * 15,  # 15MB
+            'backupCount': 10,
+        },
+        'app_store_log': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': 'log/app_store.log',
+            'formatter': 'timestampthread',
+            'maxBytes': 1024 * 1024 * 15,  # 15MB
+            'backupCount': 10,
+        },
+    },
+    'loggers': {
 
-    ]
+        '': {
+            'handlers': ['app_store_log', 'console'],
+            'propagate': False,
+            'level': 'DEBUG'
+            # 'level': 'INFO',
+        },
+        'django': {
+            'handlers': ['syslog', 'djangoLog'],
+            'level': min_django_level,
+            'propagate': False,
+
+        },
+        # https://docs.djangoproject.com/en/1.11/topics/logging/#django-template
+        'django.template': {
+            'handlers': ['syslog', 'djangoLog'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'django.db.backends': {
+            'handlers': ['syslog'],
+            'level': 'WARNING',
+            'propagate': False,
+        }
+    },
+}

@@ -239,6 +239,7 @@
 
 
 
+
     </script>
 
     <!-- Application Display -->
@@ -299,7 +300,6 @@
         console.log("APPLICATION SID TO DELETE: " + sid);
         var params = "id=" + sid + "&action=delete";
         console.log("REQUEST PARAMS: " + params);
-
         const url = "/list_pods/";
         var xhr = new XMLHttpRequest();
         xhr.open("POST", url, true);
@@ -312,6 +312,7 @@
         console.log("Setting timer to refresh app display . . .")
         setTimeout(refreshAppDisplay, 4000)
       }
+
 
 
     </script>

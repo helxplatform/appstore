@@ -1,8 +1,9 @@
-import os
-import yaml
 from tycho.client import TychoClientFactory
-from tycho.client import TychoApps
 import json
+
+from tycho.client import TychoApps
+from tycho.client import TychoClientFactory
+
 
 def deploy(request):
     if "HTTP_REFERER" in request.META:
@@ -43,15 +44,15 @@ def deploy(request):
     username = request.META["REMOTE_USER"]
 
     request = {
-            "name": "imagej",
-            "username": request.META["REMOTE_USER"],
-            "env": settings_dict,
-            "system": structure,
-            "services": {
-                "imagej": {
+        "name": "imagej",
+        "username": request.META["REMOTE_USER"],
+        "env": settings_dict,
+        "system": structure,
+        "services": {
+            "imagej": {
                 "port": settings_dict['HOST_PORT']
-                }
-             }
+            }
+        }
     }
 
     print("Request sent to tycho client start to start imagej client app:")
