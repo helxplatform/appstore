@@ -1,4 +1,3 @@
-from tycho.client import TychoClientFactory
 import json
 
 from tycho.client import TychoApps
