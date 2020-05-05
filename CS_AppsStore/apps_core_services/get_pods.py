@@ -9,7 +9,7 @@ def get_pods_services(username):
         print(f"TYCHO URL: {tycho_url}")
         print("======")
     except Exception as e:
-        print("ee",e)
+        print("ee", e)
         tycho_url = "http://localhost:5000/system"
         print(f"TYCHO URL: {tycho_url}")
 

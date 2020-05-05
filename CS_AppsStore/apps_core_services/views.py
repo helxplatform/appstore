@@ -2,9 +2,8 @@ import logging
 from time import sleep
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import render
 from django.views import generic
 
@@ -102,3 +101,18 @@ def login_whitelist(request):
 
     print(f"BRAND: {brand}, FULL_BRAND: {full_brand}")
     return render(request, "whitelist.html", {"brand": brand, "full_brand": full_brand})
+
+
+def auth(request):
+    if request.user:
+        try:
+            response = HttpResponse(content_type="application/json", status=200)
+            response["REMOTE_USER"] = request.user
+            print(f"{response['REMOTE_USER']}")
+        except Exception as e:
+            response = HttpResponse(content_type="application/json", status=403)
+            response["REMOTE_USER"] = request.user
+    else:
+        response = HttpResponse(content_type="application/json", status=403)
+        response["REMOTE_USER"] = request.user
+    return response
