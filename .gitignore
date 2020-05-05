@@ -6,3 +6,4 @@ log/*
 !log/.gitkeep
 project_allauth
 venv
+DATABASE.sqlite3
