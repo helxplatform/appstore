@@ -19,7 +19,7 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 DEBUG = "True"
 
 # "TRUE" | "FALSE"  
-ALLOW_DJANGO_LOGIN = "TRUE"
+ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN', 'FALSE')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'n2mb4kf5(_%_p!raq@e58ub+mws^!a+zvn4!#a1ijm(5cob_d*'
