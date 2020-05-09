@@ -1,4 +1,0 @@
-2020-05-01 20:07:32,618 django.utils.autoreload INFO     Watching for file changes with StatReloader
-2020-05-01 20:07:32,900 git.cmd      DEBUG    Popen(['git', 'version'], cwd=/Users/singh/Desktop/app_store/appstore/CS_AppsStore, universal_newlines=False, shell=None, istream=None)
-2020-05-01 20:07:32,911 git.cmd      DEBUG    Popen(['git', 'version'], cwd=/Users/singh/Desktop/app_store/appstore/CS_AppsStore, universal_newlines=False, shell=None, istream=None)
-2020-05-01 20:09:15,479 django.utils.autoreload INFO     /Users/singh/Desktop/app_store/appstore/CS_AppsStore/CS_AppsStore/settings/base.py changed, reloading.

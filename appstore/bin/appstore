@@ -1,0 +1,143 @@
+###############################################################################
+## Appstore UI
+##
+##  This script presents shell utilities for interacting with the appstore.
+##   
+##  Usage: see the help command below.
+##
+###############################################################################
+#!/bin/bash
+set -e #x
+
+# Configure the environment
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+APPSTORE_HOME=$( dirname $DIR )
+export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
+dockerhub_repo=heliumdatastage
+image_ver=0.0.1
+TYCHO_BRANCH=cicd
+
+# Ensure Tycho is available on the path.
+if [ ! -d $APPSTORE_HOME/tycho ]; then
+#     git clone --single-branch \
+#	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git 
+    git clone https://github.com/helxplatform/tycho.git
+    cd tycho
+    git checkout development
+    cd ..
+fi
+if [ -f ~/.appstore ]; then
+    source ~/.appstore
+fi
+if [ -z "$DJANGO_SECRET_KEY" ]; then
+    echo "Required environment variables are not set.
+Either create ~/.appstore and add 
+
+DJANGO_SECRET_KEY 
+
+or export those variables before running this script."
+fi
+echo "-----------------------------------------------"
+###############################################################################
+##
+## Create a superuser programmatically, facilitating use of secrets.
+##
+###############################################################################
+createsuperuser () {
+    # In production, set environment variables.
+    # In kubernetes, set the environment variables via secrets.
+    SUPERUSERNAME=${SUPERUSERNAME:-admin}
+    SUPERUSEREMAIL=${SUPERUSEREMAIL:-admin@admin.org}
+    SUPERUSERPASSWORD=${SUPERUSERPASSWORD:-admin}
+    echo "from django.contrib.auth.models import User; \
+          User.objects.create_superuser('$SUPERUSERNAME', \
+					'$SUPERUSEREMAIL', \
+                                        '$SUPERUSERPASSWORD')" | \
+	python manage.py shell --settings=CS_AppsStore.settings.braini_settings
+}
+###############################################################################
+##
+## Run the appstore with customized branding, migrations, and packaging.
+##
+###############################################################################
+run () {
+    brand=$1
+    test -z ${brand} && help
+    settings=CS_AppsStore.settings.${brand}_settings && \
+	python manage.py migrate       --settings=$settings && \
+	python manage.py collectstatic --settings=$settings --no-input && \
+	python manage.py runserver     --settings=$settings
+}
+
+###############################################################################
+##
+## Run the appstore's unit tests with product specific customizations.
+##
+###############################################################################
+tests () {
+    brand=$1
+    test -z ${brand} && help
+    settings=CS_AppsStore.settings.${brand}_settings && \
+	DEV_PHASE=local python manage.py test --settings=$settings
+}
+###############################################################################
+##
+## Build docker image.
+##
+###############################################################################
+dock () {
+    build () {
+	docker build . \
+	       -t $dockerhub_repo/appstore:latest \
+	       -t $dockerhub_repo/appstore:$image_ver $*
+    }
+    push () {
+	docker push . \
+	       -t $dockerhub_repo/appstore:latest \
+	       -t $dockerhub_repo/appstore:$image_ver $*
+    }
+
+    run () {
+	brand=$1
+	test -z ${brand} && help
+	DEBUG_LEVEL=DEBUG
+	shift
+	settings=CS_AppsStore.settings.${brand}_settings && \
+	    docker run --rm --name appstore -p 8000:8000 \
+		   -e DJANGO_SETTINGS=$brand \
+		   $dockerhub_repo/appstore:$image_ver $*
+    }
+    run () {
+	brand=$1
+	test -z ${brand} && help
+	DEBUG_LEVEL=DEBUG
+	settings=CS_AppsStore.settings.${brand}_settings && \
+	    docker run --rm --name appstore -p 8000:8000 \
+		   --entrypoint=gunicorn \
+		   $dockerhub_repo/appstore:$image_ver \
+		   --bind :8000 --timeout=5000 \
+		   --env DJANGO_SETTINGS_MODULE=$settings \
+		   --log-level $DEBUG_LEVEL CS_AppsStore.wsgi:application
+    }
+    $*
+}
+###############################################################################
+##
+## Show help.
+##
+###############################################################################
+help () {
+    printf """bin/appstore management interface.
+
+Usage:
+   createsuperuser
+   run   [ braini | scidas | catalyst ]
+   tests [ braini | scidas | catalyst ]
+   build <image_version>
+   push  <image_version>
+"""
+    exit 1
+}
+
+$*
+       
