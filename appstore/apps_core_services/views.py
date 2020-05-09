@@ -27,8 +27,10 @@ def form_service_url (app_id, service, username):
     url = None
     logger.debug ("-- ip address: {service.ip_address}")
     if service.ip_address:
+        """ If there's an ip address and port, go there. This is a dev only scenario. """
         url = f"http://{service.ip_address}:{service.port}"
     else:
+        """ Otherwise build a URL assuming a reverse proxy is configured. """
         url = f"/private/{app_id}/{username}/{service.identifier}/"
     return url
 

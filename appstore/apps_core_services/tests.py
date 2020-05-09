@@ -15,14 +15,13 @@ class AppTests(TestCase):
         logger.info (f"-- testing app list")
         response = self.client.get('/apps/')
         self.assertEqual(response.status_code, 200)
-        self.log_context (response)
+        logger.info (f"-- response.context {response.context}")
         
     def test_app_start(self):
         """ Test starting an app. """
         logger.info (f"-- testing app start")
         response = self.client.get('/start?app_id=x')
         self.assertEqual(response.status_code, 301)
-        self.log_context (response)
 
     def test_app_delete(self):
         """ Test deleting a running app. """
@@ -31,7 +30,6 @@ class AppTests(TestCase):
             "sid" : "xyz"
         })
         self.assertEqual(response.status_code, 302)
-        self.log_context (response)
 
     def log_context(self, response):
         logger.info (f"-- response.context: {response.context}")

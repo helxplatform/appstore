@@ -22,6 +22,7 @@ class AllowWhiteListedUserOnlyTests(TestCase):
         
     def test_request_processing(self):
         """ Test processing a request. """
+        self.client.login(username='admin', password='adminx')
         response = self.middleware.process_request(self.request)
         self.assertIsNone(response)
 

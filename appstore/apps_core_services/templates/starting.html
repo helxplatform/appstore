@@ -1,6 +1,13 @@
 <html>
   <head>
     <title>Starting</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/nav.css">
+    <link rel="stylesheet" href="/static/css/modal.css">
+    <link rel="stylesheet" href="/static/css/table.css">
     <style>
       .center {
 	  display: block;
@@ -56,11 +63,11 @@
   </head>
   <body style="background-color: #E5E4E2;">
     <div id="main">
-      <p style="text-align: center">Connecting to {{ name }}</p>
-      <!--
-      <image src="/static/images/loading.gif" class="center"></image>
-      -->
       <image src="{{ icon }}" class="center"></image>
+      <p style="text-align: center">Connecting to {{ name }}</p>
+      <image src="/static/images/loading.gif" class="center"></image>
+      <!--
+      -->
     </div>
   </body>
 </html>

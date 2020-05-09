@@ -17,11 +17,15 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = "True"
-DEV_PHASE=os.environ.get('DEV_PHASE', 'dev') # local, dev, val, prod.
-TYCHO_MODE=os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'local' else 'live')
+DEV_PHASE=os.environ.get('DEV_PHASE', 'local') # stub, local, dev, val, prod.
+TYCHO_MODE=os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'live')
 
-# "TRUE" | "FALSE"  
-ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN', 'FALSE')
+# "TRUE" | "FALSE"
+ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
+                                    'TRUE' if DEV_PHASE == "local" else 'FALSE')
+import sys
+print (f"____________________ {DEV_PHASE} {ALLOW_DJANGO_LOGIN}")
+#sys.exit (0)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
