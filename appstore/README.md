@@ -86,7 +86,7 @@ during local development and ways to provide secrets in proudction.
 |bin/appstore help                 | Run automated unit tests with {product} settings.            |
 
 #### Testing
-Testing uses the Python standard `unittest` and Django testing frameworks.
+Automated testing uses the Python standard `unittest` and Django testing frameworks.
 Tests should be fast enough to run conveniently, and maximize coverage. For example, the Django testing framework
 allows for testing URL routes, middleware and other use interface elements in addition to the logic of components.
 #### Packaging
@@ -108,17 +108,19 @@ During development, environment variables can be set to control execution:
 Making application development easy is key to bringing the widest range of useful tools to the platform so we prefer
 metadata to code wherever possible for creating HeLx Apps. Apps are systems of cooperating processes. These are expressed 
 using [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/). Appstore uses
-the [Tycho](https://helxplatform.github.io/tycho-docs/gen/html/index.html) engine to discover and manage Apps.
-#### Docker Compose
-#### Managing Metadata
+the [Tycho](https://helxplatform.github.io/tycho-docs/gen/html/index.html) engine to discover and manage Apps. The [Tycho app metadata](https://github.com/helxplatform/tycho/blob/metadata/tycho/conf/app-registry.yaml) format specifies the details of each application, contexts to which applications belong, and inheritance relationships between contexts.
+
+Docker compose syntax is used to express cooperating containers comprising an application. The specificatinos are stored in [GitHub](https://github.com/helxplatform/app-support-prototype/tree/develop/dockstore-yaml-proposals), each in an application specific subfolder. Along with the docker compose, a `.env` file specifies environment variables for the application. If a file called icon.png is provided, that is used as the application's icon.
 # Next
+HeLx is alpha. This sectionoutlines a few areas of anticipated focus for upcoming improvements.
 ## Architecture
 ### Semantic Search
-#### Link App Metadata [ See [EDAM](http://edamontology.org/page) & [Biolink](https://biolink.github.io/biolink-model/) ]
-### Kubernetes Instrumentation
+Our team has a [semantic search](https://github.com/helxplatform/dug) engine for mapping to research data sets based on full text search. We anticipate extending the
+Tycho metadata model to include semantic links to ontologies, incorporating analytical tools into the semantic search capability. See [EDAM](http://edamontology.org/page) & [Biolink](https://biolink.github.io/biolink-model/) for more information.
 #### Utilization Metrics
-#### Namespace Management
+Basic per application resource utilization information is already provided. But we anticipate creating scalable policy based resource management able to cope with the range of implications of the analytic workspaces we provide, ranging from single user notebooks, to GPU accelerated workflows, to Spark clusters.
 ### Proxy Management
+HeLx uses software defined 
 ### Helm 3 Deployment
 ## Apps 
 ### Develop Verticals
