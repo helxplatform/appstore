@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import generic
 from time import sleep
@@ -23,15 +24,9 @@ tycho = ContextFactory.get (
     product=settings.APPLICATION_BRAND)
 
 def form_service_url (app_id, service, username):
-    logger.debug (f"--- service: {service} --- username: {username}")
-    url = None
-    logger.debug ("-- ip address: {service.ip_address}")
-    if service.ip_address:
-        """ If there's an ip address and port, go there. This is a dev only scenario. """
-        url = f"http://{service.ip_address}:{service.port}"
-    else:
-        """ Otherwise build a URL assuming a reverse proxy is configured. """
-        url = f"/private/{app_id}/{username}/{service.identifier}/"
+    url = f"http://{service.ip_address}:{service.port}" if service.ip_address \
+        else f"/private/{app_id}/{username}/{service.identifier}/"
+    logger.debug (f"-- app-networking constructed url: {url}")
     return url
 
 class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
@@ -55,19 +50,19 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
         for service in status.services:
             name = service.name.split("-")[0]
             lname = name.capitalize()
-            app_id = service.name.replace (f"-{service.identifier}", "")
-            app_icon = tycho.apps.get (app_id, {}).get("icon", "unknown-icon")
+            app_id = service.app_id.replace (f"-{service.identifier}","")
+            app = tycho.apps.get (app_id, {})
             services.append({
                 'app_id'        : app_id,
                 'full_name'     : service.name,                
                 'name'          : form_service_url (app_id, service, self.request.user.username),
                 'lname'         : lname,
-                'display_name'  : tycho.apps[app_id]['name'],
+                'display_name'  : app.get ('name'),
                 'logo_name'     : f'{lname} Logo',
-                'logo_path'     : app_icon,
+                'logo_path'     : app.get("icon", "/static/images/app.png"),
                 'ip_address'    : "",
                 'port'          : "",
-                'docs'          : tycho.apps[app_id]['docs'],
+                'docs'          : app.get ('docs'),
                 'identifier'    : service.identifier,
                 'creation_time' : service.creation_time,
                 'cpu'           : service.total_util['cpu'],
@@ -76,10 +71,9 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
         brand_map = get_brand_details (brand)
         for app_id, app in tycho.apps.items ():
             app['app_id'] = app_id
-            #logger.debug (f"-- app: {json.dumps(app, indent=2)}")
         apps = sorted(tycho.apps.values (), key=lambda v: v['name'])
         return {
-            "brand"        : brand, #brand_map['name'],
+            "brand"        : brand,
             "logo_url"     : f"/static/images/{brand}/{brand_map['logo']}",
             "logo_alt"     : f"{brand_map['name']} Image",
             "svcs_list"    : services,
@@ -87,14 +81,9 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
         }
     
 class AppStart(generic.TemplateView, LoginRequiredMixin):
-
-    """ Application manager controller. """
-    template_name = 'starting.html'
-    
+    """ Start an application by invoking the app context. """
+    template_name = 'starting.html'    
     def get_context_data(self, *args, **kwargs):
-        """
-        Start an application.
-        """
         principal = Principal (self.request.user.username)
         app_id = self.request.GET['app_id']
         system = tycho.start (principal, app_id)
@@ -105,10 +94,8 @@ class AppStart(generic.TemplateView, LoginRequiredMixin):
         }
 
 class AppConnect(generic.TemplateView, LoginRequiredMixin):
-
-    """ Application manager controller. """
-    template_name = 'starting.html'
-    
+    """ Show a splash screen while starting the application. """
+    template_name = 'starting.html'    
     def get_context_data(self, *args, **kwargs):
         """ Return to a running application. """
         return {
@@ -117,10 +104,9 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
             "name" : self.request.GET.get ("name")
         }
 
-from django.http import JsonResponse
-def probe_service (request):    
-    """
-    Test availability of a running application.
+def probe_service (request):
+    """ Do a quick network connectivity test on an app endpoint.
+    This is a JSON interface hence no class and no template.
     """
     result = { "status" : "fail" }
     try:
@@ -131,10 +117,9 @@ def probe_service (request):
     except requests.exceptions.ConnectionError as e:
         pass # we're testing connectivity and this URL is failing to connect.
     return JsonResponse(result)
-    
-class AppTest(generic.View, LoginRequiredMixin):
 
-    """ Application manager controller. """
+'''
+class AppTest(generic.View, LoginRequiredMixin):
     template_name = 'starting.html'
     
     def get(self, *args, **kwargs):
@@ -150,8 +135,9 @@ class AppTest(generic.View, LoginRequiredMixin):
         except requests.exceptions.ConnectionError as e:
             pass # we're testing connectivity and this URL is failing to connect.
         return result
-    
+'''   
 def list_services(request):
+    """ Should probably move this to an Ajax JSON request like the probe. """
     if request.method == "POST":
         action = request.POST.get("action")
         sid = request.POST.get("id")
@@ -198,6 +184,9 @@ def get_brand_details (brand):
     }[brand]
 
 def auth(request):
+    """ Provide an endpoint for getting the user identity.
+    Supports the use case where a reverse proxy like nginx is being
+    used to test authentication of a principal before proxying a request upstream. """
     if request.user:
         try:
             response = HttpResponse(content_type="application/json", status=200)

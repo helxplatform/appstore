@@ -7,7 +7,13 @@
 ##
 ###############################################################################
 #!/bin/bash
-set -e #x
+set -ex
+
+# Secrets
+export DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-djangosecretkey}
+export SUPERUSERNAME=admin
+export SUPERUSEREMAIL=admin@admin.com
+export SUPERUSERPASSWORD=${SUPERUSERPASSWORD:-admin}
 
 # Configure the environment
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -26,18 +32,6 @@ if [ ! -d $APPSTORE_HOME/tycho ]; then
     git checkout development
     cd ..
 fi
-if [ -f ~/.appstore ]; then
-    source ~/.appstore
-fi
-if [ -z "$DJANGO_SECRET_KEY" ]; then
-    echo "Required environment variables are not set.
-Either create ~/.appstore and add 
-
-DJANGO_SECRET_KEY 
-
-or export those variables before running this script."
-fi
-echo "-----------------------------------------------"
 ###############################################################################
 ##
 ## Create a superuser programmatically, facilitating use of secrets.
@@ -57,6 +51,18 @@ createsuperuser () {
 }
 ###############################################################################
 ##
+## Upgrade the database running migrations and collecting static objects.
+##
+###############################################################################
+updatedb () {
+    brand=$1
+    test -z ${brand} && help
+    settings=CS_AppsStore.settings.${brand}_settings && \
+	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
+	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
+}    
+###############################################################################
+##
 ## Run the appstore with customized branding, migrations, and packaging.
 ##
 ###############################################################################
@@ -64,11 +70,8 @@ run () {
     brand=$1
     test -z ${brand} && help
     settings=CS_AppsStore.settings.${brand}_settings && \
-	python manage.py migrate       --settings=$settings && \
-	python manage.py collectstatic --settings=$settings --no-input && \
 	python manage.py runserver     --settings=$settings
 }
-
 ###############################################################################
 ##
 ## Run the appstore's unit tests with product specific customizations.
@@ -78,14 +81,14 @@ tests () {
     brand=$1
     test -z ${brand} && help
     settings=CS_AppsStore.settings.${brand}_settings && \
-	DEV_PHASE=local python manage.py test --settings=$settings
+	DEV_PHASE=stub python manage.py test --settings=$settings
 }
 ###############################################################################
 ##
 ## Build docker image.
 ##
 ###############################################################################
-dock () {
+image () {
     build () {
 	docker build . \
 	       -t $dockerhub_repo/appstore:latest \
@@ -121,6 +124,19 @@ dock () {
     }
     $*
 }
+
+###############################################################################
+##
+## Test everything we can. Then build and push.
+##
+###############################################################################
+cicd () {
+    for product in braini scidas catalyst; do
+	createsuperuser
+	tests $product
+    done
+    rm CS_AppsStore/DATABSE.sqlite3
+}
 ###############################################################################
 ##
 ## Show help.
@@ -130,14 +146,14 @@ help () {
     printf """bin/appstore management interface.
 
 Usage:
-   createsuperuser
-   run   [ braini | scidas | catalyst ]
-   tests [ braini | scidas | catalyst ]
-   build <image_version>
-   push  <image_version>
+   createsuperuser                           \t Create a superuser based on environment variables.
+   run         [ braini | scidas | catalyst ]\t Run the application.
+   tests       [ braini | scidas | catalyst ]\t Run all unit tests.
+   image build                               \t Build the docker image.
+   image push  [ braini | scidas | catalyst ]\t Push the image to the repository.
+   image run   [ braini | scidas | catalyst ]\t Run the docker image.
 """
     exit 1
 }
 
 $*
-       

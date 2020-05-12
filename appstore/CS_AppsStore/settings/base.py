@@ -22,10 +22,7 @@ TYCHO_MODE=os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'live
 
 # "TRUE" | "FALSE"
 ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
-                                    'TRUE' if DEV_PHASE == "local" else 'FALSE')
-import sys
-print (f"____________________ {DEV_PHASE} {ALLOW_DJANGO_LOGIN}")
-#sys.exit (0)
+                                    'TRUE' if DEV_PHASE == "local" or DEV_PHASE == 'stub' else 'FALSE')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
