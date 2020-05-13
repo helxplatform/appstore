@@ -45,3 +45,4 @@ websocket-client==0.56.0
 gitpython
 
 requests-cache==0.5.2
+mock==4.0.2
