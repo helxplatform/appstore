@@ -29,7 +29,7 @@ if [ ! -d $APPSTORE_HOME/tycho ]; then
 #	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git 
     git clone https://github.com/helxplatform/tycho.git
     cd tycho
-    git checkout development
+    git checkout $TYCHO_BRANCH
     cd ..
 fi
 ###############################################################################
