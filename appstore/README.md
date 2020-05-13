@@ -145,7 +145,7 @@ bin/appstore updatedb $product
 bin/appstore createsuperuser
 # execute automated tests
 bin/appstore tests $product
-# run the appstore at localhost:8080
+# run the appstore at localhost:8000
 bin/appstore run $product
 ```
 # Next
