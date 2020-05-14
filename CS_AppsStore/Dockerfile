@@ -3,8 +3,9 @@ FROM python:3.7
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-#Print existing directory
-PWD
+#Print existing directory and locate requirements.txt
+RUN /bin/bash -c /bin/pwd; \
+find . -name requirements.txt
 
 COPY ./requirements.txt /usr/src/inst-mgmt/requirements.txt
 COPY ./tycho_api-5.0.2-py3-none-any.whl /usr/src/inst-mgmt/tycho_api-5.0.2-py3-none-any.whl
