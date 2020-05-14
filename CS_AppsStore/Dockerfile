@@ -3,6 +3,12 @@ FROM python:3.7
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
+#Print existing directory
+PWD
+
+COPY ./requirements.txt /usr/src/inst-mgmt/requirements.txt
+COPY ./tycho_api-5.0.2-py3-none-any.whl /usr/src/inst-mgmt/tycho_api-5.0.2-py3-none-any.whl
+
 #Switch the working directory.
 WORKDIR /usr/src/inst-mgmt
 
@@ -15,8 +21,8 @@ RUN apt-get install -y postgresql-client
 # Install Virtual Environment
 RUN pip install --upgrade pip
 RUN pip install virtualenv
-COPY ./requirements.txt /usr/src/inst-mgmt/requirements.txt
-COPY ./tycho_api-5.0.2-py3-none-any.whl /usr/src/inst-mgmt/tycho_api-5.0.2-py3-none-any.whl
+#COPY ./requirements.txt /usr/src/inst-mgmt/requirements.txt
+#COPY ./tycho_api-5.0.2-py3-none-any.whl /usr/src/inst-mgmt/tycho_api-5.0.2-py3-none-any.whl
 RUN virtualenv /usr/src/inst-mgmt/python_allauth
 RUN /bin/bash -c "source /usr/src/inst-mgmt/python_allauth/bin/activate"
 RUN pip install -r /usr/src/inst-mgmt/requirements.txt
