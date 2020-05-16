@@ -28,7 +28,7 @@ urlpatterns = [
     path('login_whitelist/', app_core_views.login_whitelist, name='login-whitelist-view'),
     path('start/', app_core_views.AppStart.as_view(), name='start'),
     path('connect/', app_core_views.AppConnect.as_view(), name='connect'),
-    path('probe/', app_core_views.probe_service, name='probe_service'),
+    path('probe/', app_core_views.ProbeServices.as_view(), name='probe_service'),
 
     path('', TemplateView.as_view(template_name='index.html')),
     path('rest-auth/', include('rest_auth.urls')),

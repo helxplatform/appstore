@@ -25,12 +25,12 @@ TYCHO_BRANCH=metadata
 
 # Ensure Tycho is available on the path.
 if [ ! -d $APPSTORE_HOME/tycho ]; then
-#     git clone --single-branch \
-#	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git 
-    git clone https://github.com/helxplatform/tycho.git
+     git clone --single-branch \
+	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git
+   # git clone https://github.com/helxplatform/tycho.git
     cd tycho
-    git checkout development
-    cd ..
+    git checkout $TYCHO_BRANCH
+    cd .
 fi
 ###############################################################################
 ##
@@ -40,14 +40,25 @@ fi
 createsuperuser () {
     # In production, set environment variables.
     # In kubernetes, set the environment variables via secrets.
-    SUPERUSERNAME=${SUPERUSERNAME:-admin}
-    SUPERUSEREMAIL=${SUPERUSEREMAIL:-admin@admin.org}
-    SUPERUSERPASSWORD=${SUPERUSERPASSWORD:-admin}
-    echo "from django.contrib.auth.models import User; \
-          User.objects.create_superuser('$SUPERUSERNAME', \
-					'$SUPERUSEREMAIL', \
-                                        '$SUPERUSERPASSWORD')" | \
-	python manage.py shell --settings=CS_AppsStore.settings.braini_settings
+    brand=$1
+    test -z ${brand} && help
+    settings=CS_AppsStore.settings.${brand}_settings && \
+    create_superuser() {
+    local SUPERUSERNAME=${SUPERUSERNAME:-admin}
+    local SUPERUSEREMAIL=""
+    local SUPERUSERPASSWORD=${SUPERUSERPASSWORD:-admin}
+    cat <<EOF | python manage.py shell --settings=$settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+if not User.objects.filter(username="$SUPERUSERNAME").exists():
+    User.objects.create_superuser("$SUPERUSERNAME", "$SUPERUSEREMAIL", "$SUPERUSERPASSWORD")
+else:
+    print('User "{}" already exists, not created'.format("$$SUPERUSERNAME"))
+EOF
+  }
+  create_superuser
 }
 ###############################################################################
 ##
@@ -60,7 +71,7 @@ updatedb () {
     settings=CS_AppsStore.settings.${brand}_settings && \
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
-}    
+}
 ###############################################################################
 ##
 ## Run the appstore with customized branding, migrations, and packaging.
@@ -77,11 +88,24 @@ run () {
 ## Run the appstore's unit tests with product specific customizations.
 ##
 ###############################################################################
+migrate_data(){
+
+    brand=$1
+    test -z ${brand} && help
+
+    settings=CS_AppsStore.settings.${brand}_settings && \
+  python manage.py makemigrations --settings=$settings && \
+   python manage.py migrate --settings=$settings && \
+ python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
+  python manage.py collectstatic --no-input --settings=$settings
+}
+
 tests () {
     brand=$1
     test -z ${brand} && help
+
     settings=CS_AppsStore.settings.${brand}_settings && \
-	DEV_PHASE=stub python manage.py test --settings=$settings
+	 python manage.py test --settings=$settings
 }
 ###############################################################################
 ##
@@ -109,18 +133,6 @@ image () {
 	    docker run --rm --name appstore -p 8000:8000 \
 		   -e DJANGO_SETTINGS=$brand \
 		   $dockerhub_repo/appstore:$image_ver $*
-    }
-    run () {
-	brand=$1
-	test -z ${brand} && help
-	DEBUG_LEVEL=DEBUG
-	settings=CS_AppsStore.settings.${brand}_settings && \
-	    docker run --rm --name appstore -p 8000:8000 \
-		   --entrypoint=gunicorn \
-		   $dockerhub_repo/appstore:$image_ver \
-		   --bind :8000 --timeout=5000 \
-		   --env DJANGO_SETTINGS_MODULE=$settings \
-		   --log-level $DEBUG_LEVEL CS_AppsStore.wsgi:application
     }
     $*
 }

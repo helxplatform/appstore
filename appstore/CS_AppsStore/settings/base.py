@@ -124,11 +124,13 @@ WSGI_APPLICATION = 'CS_AppsStore.wsgi.application'
 
 TEMPLATE_CONTEXT_PROCESSORS = 'allauth.socialaccount.context_processors.socialaccount'
 
+DB_DIR=os.environ.get('OAUTH_DB_DIR', BASE_DIR)
+DB_FILE=os.environ.get('OAUTH_DB_FILE', 'DATABASE.sqlite3')
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'DATABASE.sqlite3'),
-    }
+ 'default': {
+       'ENGINE': 'django.db.backends.sqlite3',
+       'NAME': os.path.join(DB_DIR, DB_FILE),
+   }
 }
 
 ##################
@@ -255,7 +257,7 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
-        'tests': {
+        'admin': {
             'handlers': ['console'],
             'level': 'DEBUG',
         },
