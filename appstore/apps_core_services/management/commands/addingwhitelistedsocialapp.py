@@ -8,25 +8,26 @@ from django.core.management.base import BaseCommand
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
-        oauth_providers = os.environ['OAUTH_PROVIDERS'].split(',')
-        for provider in oauth_providers:
-            if not SocialApp.objects.filter(provider=provider.lower()):
-                social_app = SocialApp.objects.create(
-                    name=os.environ[f'{provider.upper()}_NAME'],
-                    client_id=os.environ[f'{provider.upper()}_CLIENT_ID'],
-                    secret=os.environ.get(f'{provider.upper()}_SECRET'),
-                    provider=provider,
-                    key='',
-                )
-                for site in os.environ[f'{provider.upper()}_SITES'].split(','):
-                    try:
-                        new_site = Site.objects.get(domain=site)
-                    except Exception as E:
-                        new_site = Site.objects.create(name=site, domain=site)
+        if os.environ.get('OAUTH_PROVIDERS'):
+            oauth_providers = os.environ['OAUTH_PROVIDERS'].split(',')
+            for provider in oauth_providers:
+                if not SocialApp.objects.filter(provider=provider.lower()):
+                    social_app = SocialApp.objects.create(
+                        name=os.environ[f'{provider.upper()}_NAME'],
+                        client_id=os.environ[f'{provider.upper()}_CLIENT_ID'],
+                        secret=os.environ.get(f'{provider.upper()}_SECRET'),
+                        provider=provider,
+                        key='',
+                    )
+                    for site in os.environ[f'{provider.upper()}_SITES'].split(','):
+                        try:
+                            new_site = Site.objects.get(domain=site)
+                        except Exception as E:
+                            new_site = Site.objects.create(name=site, domain=site)
 
-                social_app.sites.add(Site.objects.get(id=4))
+                    social_app.sites.add(Site.objects.get(id=4))
 
-            print(f"Added social applications {provider}.")
+                print(f"Added social applications {provider}.")
 
     if not Group.objects.filter(name='whitelisted'):
         Group.objects.create(name='whitelisted')

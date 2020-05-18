@@ -91,7 +91,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http"
+ACCOUNT_DEFAULT_HTTP_PROTOCOL ="http"
 
 SOCIALACCOUNT_QUERY_EMAIL = True
 

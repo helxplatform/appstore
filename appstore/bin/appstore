@@ -115,8 +115,19 @@ image () {
 	DEBUG_LEVEL=DEBUG
 	shift
 	settings=CS_AppsStore.settings.${brand}_settings && \
-	    docker run --rm --name appstore -p 8000:8000 \
+	    docker run --rm --name appstore -p 8000:8000\
 		   -e DJANGO_SETTINGS=$brand \
+		   -e OAUTH_PROVIDERS=${OAUTH_PROVIDERS} \
+           -e GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
+           -e GOOGLE_SECRET=${GOOGLE_SECRET} \
+           -e GOOGLE_NAME=${GOOGLE_NAME} \
+           -e GOOGLE_KEY=${GOOGLE_KEY} \
+           -e GOOGLE_SITES=${GOOGLE_SITES} \
+           -e GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID} \
+           -e GITHUB_SECRET=${GITHUB_SECRET} \
+           -e GITHUB_NAME=${GITHUB_NAME} \
+           -e GITHUB_KEY=${GITHUB_KEY} \
+           -e GITHUB_SITES=${GITHUB_SITES}\
 		   $dockerhub_repo/appstore:$image_ver $*
     }
   #  run () {

@@ -50,6 +50,6 @@ EXPOSE 8000
 #	"--env", "DJANGO_SETTINGS_MODULE=CS_AppsStore.settings.braini_settings", \
 #	"CS_AppsStore.wsgi:application" ]
 
-CMD ["/bin/bash","-c" ,"bin/appstore createsuperuser && bin/appstore run ${DJANGO_SETTINGS}"]
+CMD ["/bin/bash","-c" ,"bin/appstore createsuperuser && bin/appstore updatedb ${DJANGO_SETTINGS} && bin/appstore run ${DJANGO_SETTINGS}"]
 
 #CMD ["python manage.py runserver --settings=CS_AppsStore.settings.${DJANGO_SETTINGS}_settings 0.0.0.0:8000"]
