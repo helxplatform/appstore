@@ -52,7 +52,7 @@ User = get_user_model()
 if not User.objects.filter(username="$SUPERUSERNAME").exists():
     User.objects.create_superuser("$SUPERUSERNAME", "$SUPERUSEREMAIL", "$SUPERUSERPASSWORD")
 else:
-    print('User "{}" already exists, not created'.format("$$SUPERUSERNAME"))
+    print('User "{}" already exists, not created'.format("$SUPERUSERNAME"))
 EOF
   }
   create_superuser
@@ -80,7 +80,7 @@ run () {
     brand=$1
     test -z ${brand} && help
     settings=CS_AppsStore.settings.${brand}_settings && \
-	python manage.py runserver     --settings=$settings
+	python manage.py runserver    --settings=$settings 0.0.0.0:8000
 }
 
 ###############################################################################

@@ -21,15 +21,16 @@ RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && 
 #Switch the working directory.
 WORKDIR $APP_HOME
 
-#Install pycopg2 for postgresql.
-RUN pip install psycopg2~=2.6
-RUN apt-get update
-RUN apt-get install -y postgresql-client
+RUN set -x && apt-get update && \
+	chown -R $UID:$UID $APP_HOME && \
+	apt-get install -y postgresql-server-dev-all \
+	postgresql-client git build-essential
 
 
 # Install Virtual Environment
 RUN pip install --upgrade pip
 COPY . .
+
 RUN git clone --branch metadata https://github.com/helxplatform/tycho.git
 
 RUN set -x && \
@@ -40,6 +41,7 @@ RUN set -x && \
 # why is this not in requirements.txt?
 	pip install psycopg2~=2.6 netifaces
 
+
 EXPOSE 8000
 
 #CMD [ "gunicorn", "--bind", ":8000", "--timeout=5000", \
@@ -47,6 +49,6 @@ EXPOSE 8000
 #	"--env", "DJANGO_SETTINGS_MODULE=CS_AppsStore.settings.braini_settings", \
 #	"CS_AppsStore.wsgi:application" ]
 
-#CMD ["bash" ,"bin/appstore run ${DJANGO_SETTINGS}"]
+CMD ["/bin/bash","-c" ,"bin/appstore createsuperuser && bin/appstore run ${DJANGO_SETTINGS}"]
 
-CMD ["python manage.py runserver --settings=CS_AppsStore.settings.${DJANGO_SETTINGS}_settings 0.0.0.0:8000 "]
+#CMD ["python manage.py runserver --settings=CS_AppsStore.settings.${DJANGO_SETTINGS}_settings 0.0.0.0:8000"]
