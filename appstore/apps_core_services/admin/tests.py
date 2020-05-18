@@ -11,13 +11,13 @@ class AdminAccessTest(TestCase):
         """ Create SuperUser """
         self.superuser = User.objects.create_superuser(username='admin', email="admin@admin.com", password='admin')
 
-    def a_test_non_admin_aceess(self):
+    def test_non_admin_aceess(self):
         credentials = {'username': 'non_admin', 'password': 'pass'}
         self.client.login(**credentials)
         response = self.client.get('/admin/auth/')
         self.assertEqual(response.status_code, 302)
 
-    def v_test_admin_access(self):
+    def test_admin_access(self):
         credentials = {'username': 'admin', 'password': 'admin'}
         self.client.login(**credentials)
         response = self.client.get('/admin/auth/')

@@ -1,10 +1,11 @@
-FROM python:3.7
+ARG BASE_CONTAINER=python:3.7.6-slim
+FROM $BASE_CONTAINER
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Configurable via the docker build command line with -p
-ARG TYCHO_BRANCH=master
+ARG TYCHO_BRANCH=metadata
 # Least privilege: Run as a non-root user.
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
@@ -22,14 +23,14 @@ WORKDIR $APP_HOME
 
 #Install pycopg2 for postgresql.
 RUN pip install psycopg2~=2.6
-RUN apt-get update 
+RUN apt-get update
 RUN apt-get install -y postgresql-client
 
 
 # Install Virtual Environment
 RUN pip install --upgrade pip
 COPY . .
-#RUN git clone --branch metadata https://github.com/helxplatform/tycho.git
+RUN git clone --branch metadata https://github.com/helxplatform/tycho.git
 
 RUN set -x && \
 # Upgrade Pip and install app dependencies
@@ -45,5 +46,7 @@ EXPOSE 8000
 #	"--log-level", "debug", \
 #	"--env", "DJANGO_SETTINGS_MODULE=CS_AppsStore.settings.braini_settings", \
 #	"CS_AppsStore.wsgi:application" ]
+
+#CMD ["bash" ,"bin/appstore run ${DJANGO_SETTINGS}"]
 
 CMD ["python manage.py runserver --settings=CS_AppsStore.settings.${DJANGO_SETTINGS}_settings 0.0.0.0:8000 "]

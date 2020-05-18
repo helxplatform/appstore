@@ -107,6 +107,7 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
             "name": self.request.GET.get("name")
         }
 
+
 class ProbeServices(generic.View):
     """ Do a quick network connectivity test on an app endpoint.
     This is a JSON interface hence no class and no template.

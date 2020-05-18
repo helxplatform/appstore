@@ -3,7 +3,6 @@ from django.contrib.auth.models import User, Group
 from django.http import HttpResponseRedirect
 from django.test import TestCase
 from mock import Mock
-
 from apps_core_services.models import AuthorizedUser
 from middleware.filter_whitelist_middleware import AllowWhiteListedUserOnly
 
@@ -27,7 +26,7 @@ class AllowWhiteListedUserOnlyTests(TestCase):
         self.request.session = {}
         self.groups = Group.objects.create(name='whitelisted')
 
-    def a_test_request_processing(self):
+    def test_request_processing(self):
         """ Test processing a request. """
         self.client.login(username='admin', password='adminx')
         response = self.middleware.process_request(self.request)
@@ -41,7 +40,7 @@ class AllowWhiteListedUserOnlyTests(TestCase):
         self.client.login(usernam=username, password=passowrd)
         return user
 
-    def b_test_login_whitelisted_user(self):
+    def test_login_whitelisted_user(self):
         user = self._create_user_and_login(username='Steve_whitelist', email='steve@renci.com', passowrd='admin')
         AuthorizedUser.objects.create(email=user.email)
         self.request.user = user
@@ -49,7 +48,7 @@ class AllowWhiteListedUserOnlyTests(TestCase):
         response = self.middleware.process_request(self.request)
         self.assertEqual(list(self.request.user.groups.values_list('name', flat=True))[0], self.groups.name)
 
-    def c_test_redirect_non_whitelisted_user(self):
+    def test_redirect_non_whitelisted_user(self):
         user = self._create_user_and_login(username='Steve_nonwhitelist', email='steve@non-whitelestd.com',
                                            passowrd='admin')
         self.request.user = user

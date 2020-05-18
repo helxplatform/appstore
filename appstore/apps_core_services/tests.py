@@ -1,12 +1,15 @@
 import logging
 
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.http import HttpResponseRedirect
 from django.test import TestCase
-from tycho.context import ContextFactory, Principal
+
+from apps_core_services.views import form_service_url
 
 logger = logging.getLogger(__name__)
+
+
+class DictObjects:
+    def __init__(self, **data):
+        self.__dict__.update(data)
 
 
 class AppTests(TestCase):
@@ -15,76 +18,38 @@ class AppTests(TestCase):
     """
 
     def setUp(self):
-        self.tycho = ContextFactory.get(
-            context_type=settings.TYCHO_MODE,
-            product=settings.APPLICATION_BRAND)
-        self.user = User.objects.create_superuser(username='admin', email="admin@admin.com", password='admin')
-        self.app_id = 'jupyter-ds'
-        self.app = self.tycho.apps.get(self.app_id)
-        self.client.login(username='admin', password='admin')
+        self.data = {'ip_address': 'x.y.z', 'port': '9090', 'identifier': '123456'}
+        self.service = DictObjects(**self.data)
 
     def test_app_list(self):
         """ Test listing running apps. """
         logger.info(f"-- testing app list")
         response = self.client.get('/apps/')
         self.assertEqual(response.status_code, 200)
-        logger.info(f"-- response.context {response.context['svcs_list']}")
+        logger.info(f"-- response.context {response.context}")
 
-    def app_start(self):
-        """ Test starting an app. (Jupyter-ds) """
+    def test_app_start(self):
+        """ Test starting an app. """
         logger.info(f"-- testing app start")
-        self.principal = Principal('admin')
-        self.tycho.start(self.principal, self.app_id)
-        response = self.client.get(f'/start?app_id={self.app_id}')
-        logger.info(f"test start_app {response.status_code} ")
+        response = self.client.get('/start?app_id=x')
         self.assertEqual(response.status_code, 301)
 
-    # def app_connect(self):
-    #     """ Test starting an app. """
-    #     self.services = self.tycho.status({
-    #         'username': 'admin'
-    #     }).services
-    #     for service in self.services:
-    #         self.url = form_service_url(self.app_id, service, 'steve')
-    #         response = self.client.get(
-    #             f'/connect/?url={self.url}&name={self.app.get("name")}&icon={self.app.get("icon", "/static/images/app.png")}')
-    #         logger.info(f'Test connect_url {response}')
-    #         sleep(30)
-    #         self.assertEqual(response.status_code, 301)
+    def test_app_delete(self):
+        """ Test deleting a running app. """
+        logger.info(f"-- testing app delete")
+        response = self.client.post("/list_pods/", {
+            "id": "xyz",
+            'action': 'delete'
+        })
+        self.assertEqual(response.status_code, 302)
 
-    # def app_probe(self):
-    #     """ Test starting an app. """
-    #     logger.info(f"-- testing probe connection 1")
-    #     self.services = self.tycho.status({
-    #         'username': 'admin'
-    #     }).services
-    #     print("======================",self.services)
-    #     for service in self.services:
-    #         self.url = form_service_url(self.app_id, service, 'admin')
-    #         test_output = 'ok'
-    #         while True:
-    #             response = self.client.get(f'/probe/?url={self.url}')
-    #             logger.info(f"response prob {response.json()}")
-    #             if response.json()['status'] == test_output:
-    #                 break
-    #         self.assertEqual(response.json()['status'], test_output)
+    def test_form_service_url(self):
+        """Testing the form service url by passing mock data."""
+        url = form_service_url(app_id='x', service=self.service, username='admin')
+        logger.info(f"---- Testing form-service_url{url}")
+        self.assertEqual(url, 'http://x.y.z:9090')
 
-    def app_delete(self):
-        """ Test deleting a running app.1 """
-
-        services = self.tycho.status({
-            'username': 'admin'
-        }).services
-        for service in services:
-            response = self.client.post("/list_pods/", {
-                "id": service.identifier,
-                "action": "delete"
-            })
-            self.assertTrue(isinstance(response, HttpResponseRedirect))
-            self.assertEqual(response.url, '/apps/')
-
-    def test_application_process(self):
-        self.app_start()
-        # self.app_probe()
-        # self.app_connect()
-        self.app_delete()
+    def test_prob_service(self):
+        logger.info("---Test Prob URL")
+        response = self.client.get("/probe/?url=127.0.0.0:31242")
+        self.assertEqual(response.json()['status'], 'fail')
