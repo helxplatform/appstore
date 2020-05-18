@@ -10,10 +10,7 @@
 set -ex
 
 # Secrets
-export DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-djangosecretkey}
-export SUPERUSERNAME=admin
-export SUPERUSEREMAIL=admin@admin.com
-export SUPERUSERPASSWORD=${SUPERUSERPASSWORD:-admin}
+export SECRET_KEY=${SECRET_KEY:-djangosecretkey}
 
 # Configure the environment
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -41,9 +38,9 @@ createsuperuser () {
     # In production, set environment variables.
     # In kubernetes, set the environment variables via secrets.
     create_superuser() {
-    local SUPERUSERNAME=${SUPERUSERNAME:-admin}
+    local SUPERUSERNAME=${APPSTORE_DJANGO_USERNAME:-admin}
     local SUPERUSEREMAIL=""
-    local SUPERUSERPASSWORD=${SUPERUSERPASSWORD:-admin}
+    local SUPERUSERPASSWORD=${APPSTORE_DJANGO_PASSWORD:-admin}
     cat <<EOF | python manage.py shell --settings=CS_AppsStore.settings.braini_settings
 from django.contrib.auth import get_user_model
 

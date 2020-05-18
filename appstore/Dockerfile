@@ -14,7 +14,7 @@ ENV HOME /home/$USER
 ENV UID 1000
 ENV DJANGO_SETTINGS braini
 ENV TYCHO_URL http://docker.for.mac.localhost:5000
-ENV DJANGO_SECRET_KEY djangosecretkey
+ENV SECRET_KEY djangosecretkey
 
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME
@@ -37,7 +37,7 @@ RUN set -x && \
 # Upgrade Pip and install app dependencies
 	pip install --upgrade pip && \
 	pip install -r tycho/requirements.txt && \
-	pip install -r ./requirements.txt && \
+	pip install -r ./requirements.txt
 # why is this not in requirements.txt?
 	pip install psycopg2~=2.6 netifaces
 
