@@ -8,4 +8,5 @@ log/*
 project_allauth
 venv
 *.env
+.DS_Store 
 *.sqlite3
