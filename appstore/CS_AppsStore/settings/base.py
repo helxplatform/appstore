@@ -25,7 +25,7 @@ ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
                                     'TRUE' if DEV_PHASE == "local" or DEV_PHASE == 'stub' else 'FALSE')
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
+SECRET_KEY = os.environ['SECRET_KEY']
 
 ALLOWED_HOSTS = ["*"]
 
@@ -72,8 +72,8 @@ EMAIL_PORT = '587'
 EMAIL_HOST_USER = 'bot.commonsshare@gmail.com'
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'bot.commonsshare@gmail.com'
-DEFAULT_SUPPORT_EMAIL = 'bot.commonsshare@gmail.com'
+DEFAULT_FROM_EMAIL = os.environ.get("APPSTORE_DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+DEFAULT_SUPPORT_EMAIL = os.environ.get("APPSTORE_DEFAULT_SUPPORT_EMAIL", EMAIL_HOST_USER)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 ACCOUNT_EMAIL_REQUIRED = True
@@ -91,7 +91,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http"
+ACCOUNT_DEFAULT_HTTP_PROTOCOL ="http"
 
 SOCIALACCOUNT_QUERY_EMAIL = True
 
@@ -124,11 +124,13 @@ WSGI_APPLICATION = 'CS_AppsStore.wsgi.application'
 
 TEMPLATE_CONTEXT_PROCESSORS = 'allauth.socialaccount.context_processors.socialaccount'
 
+DB_DIR=os.environ.get('OAUTH_DB_DIR', BASE_DIR)
+DB_FILE=os.environ.get('OAUTH_DB_FILE', 'DATABASE.sqlite3')
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'DATABASE.sqlite3'),
-    }
+ 'default': {
+       'ENGINE': 'django.db.backends.sqlite3',
+       'NAME': os.path.join(DB_DIR, DB_FILE),
+   }
 }
 
 ##################
@@ -255,7 +257,7 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
-        'tests': {
+        'admin': {
             'handlers': ['console'],
             'level': 'DEBUG',
         },

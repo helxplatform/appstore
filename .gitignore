@@ -1,9 +1,11 @@
 *.pyc
 *.log
+*.log.1
 *~
 .idea/
 log/*
 !log/.gitkeep
 project_allauth
 venv
-DATABASE.sqlite3
+*.env
+*.sqlite3

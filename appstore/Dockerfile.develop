@@ -28,7 +28,6 @@ RUN pip install kubernetes
 RUN pip install requests
 
 EXPOSE 8000
-EXPOSE 5432
 COPY . /usr/src/inst-mgmt
 
 CMD ["gunicorn", "--bind", ":8000", "CS_AppsStore.wsgi:application"]

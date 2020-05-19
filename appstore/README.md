@@ -103,6 +103,29 @@ During development, environment variables can be set to control execution:
 |:---------------------------------------|:------------------------------------------------------------------|
 |DEV_PHASE=[stub, local, dev, val, prod  | In stub, does not require a Tycho service.                        |
 |ALLOW_DJANGO_LOGIN=[TRUE, FALSE]        | When true, presents username and password authentication options. |
+|SECRET_KEY                              | Key for securing the application.                                 |
+|OAUTH_PROVIDERS                         | Contains all the providers(google, github).                       |
+|GOOGLE_CLIENT_ID                        | Contains the client_id of the provider.                           |         
+|GOOGLE_SECRET                           | Contains the secret key for provider.                             |
+|GOOGLE_NAME                             | Sets the name for the provider.                                   |
+|GOOGLE_KEY                              | Holds the key value for provider.                                 |
+|GOOGLE_SITES                            | Contains the sites for the provider.                              |   
+|GITHUB_CLIENT_ID                        | Contains the client_id of the provider.                           |   
+|GITHUB_SECRET                           | Contains the secret key of the provider.                          |
+|GITHUB_NAME                             | Sets the name for the provider.                                   |
+|GITHUB_KEY                              | Holds the key value for provider.                                 |
+|GITHUB_SITES                            | Contains the sites for the provider.                              |
+|APPSTORE_DJANGO_USERNAME                | Holds superuser username credentials.                             |
+|APPSTORE_DJANGO_PASSWORD                | Holds superuser password credentials.                             |
+|TYCHO_URL                               | Contains the url of the running tycho host.                       |
+|OAUTH_DB_DIR                            | Contains the path for the database directory.                     |
+|OAUTH_DB_FILE                           | Contains the path for the database file.                          |   
+|POSTGRES_DB                             | Contains the connection of the database.                          |
+|POSTGRES_HOST                           | Contains the database host.                                       | 
+|DATABASE_USER                           | Contains the database username credentials.                       |
+|DATABASE_PASSWORD                       | Contains the database password credentials.                       |
+|APPSTORE_DEFAULT_FROM_EMAIL             | Default email address for appstore.                               | 
+|APPSTORE_DEFAULT_SUPPORT_EMAIL          | Default support email for appstore.                               |
 
 ### App Metadata
 Making application development easy is key to bringing the widest range of useful tools to the platform so we prefer
