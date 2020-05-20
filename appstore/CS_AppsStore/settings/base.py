@@ -17,8 +17,8 @@ TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = "True"
-DEV_PHASE=os.environ.get('DEV_PHASE', 'local') # stub, local, dev, val, prod.
-TYCHO_MODE=os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'live')
+DEV_PHASE = os.environ.get('DEV_PHASE', 'local')  # stub, local, dev, val, prod.
+TYCHO_MODE = os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'live')
 
 # "TRUE" | "FALSE"
 ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
@@ -91,7 +91,7 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-ACCOUNT_DEFAULT_HTTP_PROTOCOL ="http"
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', "http")
 
 SOCIALACCOUNT_QUERY_EMAIL = True
 
@@ -124,13 +124,13 @@ WSGI_APPLICATION = 'CS_AppsStore.wsgi.application'
 
 TEMPLATE_CONTEXT_PROCESSORS = 'allauth.socialaccount.context_processors.socialaccount'
 
-DB_DIR=os.environ.get('OAUTH_DB_DIR', BASE_DIR)
-DB_FILE=os.environ.get('OAUTH_DB_FILE', 'DATABASE.sqlite3')
+DB_DIR = os.environ.get('OAUTH_DB_DIR', BASE_DIR)
+DB_FILE = os.environ.get('OAUTH_DB_FILE', 'DATABASE.sqlite3')
 DATABASES = {
- 'default': {
-       'ENGINE': 'django.db.backends.sqlite3',
-       'NAME': os.path.join(DB_DIR, DB_FILE),
-   }
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(DB_DIR, DB_FILE),
+    }
 }
 
 ##################
@@ -241,7 +241,7 @@ LOGGING = {
             # 'level': 'INFO',
         },
         'django': {
-            'handlers': ['syslog', 'djangoLog','console'],
+            'handlers': ['syslog', 'djangoLog', 'console'],
             'level': min_django_level,
             'propagate': False,
 
