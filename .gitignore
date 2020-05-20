@@ -7,6 +7,7 @@ log/*
 !log/.gitkeep
 project_allauth
 venv
+tycho
 *.env
 *.sqlite
 *.sqlite3
