@@ -8,5 +8,4 @@ class AuthorizedUserAdmin(admin.ModelAdmin):
     list_display = 'email'
 
 
-# Option 1 - Basic
 admin.site.register(AuthorizedUser)

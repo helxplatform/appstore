@@ -1,7 +1,6 @@
 import logging
 
-from django.test import TestCase
-
+from apps_core_services.admin_tests import *
 from apps_core_services.views import form_service_url
 
 logger = logging.getLogger(__name__)

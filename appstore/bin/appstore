@@ -63,6 +63,8 @@ updatedb () {
     brand=$1
     test -z ${brand} && help
     settings=CS_AppsStore.settings.${brand}_settings && \
+    DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
+    DEV_PHASE=stub python manage.py migrate  --fake apps_core_services  --settings=$settings && \
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
 	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
@@ -175,5 +177,10 @@ Usage:
 """
     exit 1
 }
-
+start(){
+     product=$1
+     updatedb $product
+     createsuperuser
+     run $product
+}
 $*

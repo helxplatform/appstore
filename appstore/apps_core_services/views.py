@@ -1,6 +1,7 @@
 import logging
 from time import sleep
 
+import irods.test.helpers as helpers
 import requests
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -108,6 +109,19 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
         }
 
 
+# class IrodsLogin(generic.TemplateView):
+#     template_name = 'irods_login.html'
+#
+#     def get(self, *args, **kwargs):
+#         session = helpers.make_session()
+#         print(session.users.get('test_user'),"=========")
+#         return render(self.request, self.template_name)
+#
+#     def post(self, *args, **kwargs):
+#         print(self.request.POST.get("irods_email"))
+#         return render(self.request, self.template_name)
+
+
 class ProbeServices(generic.View):
     """ Do a quick network connectivity test on an app endpoint.
     This is a JSON interface hence no class and no template.
@@ -125,7 +139,6 @@ class ProbeServices(generic.View):
             logger.info(f"probe services Error  ===> {e}")
             pass  # we're testing connectivity and this URL is failing to connect.
         return JsonResponse(result)
-
 
 
 '''
@@ -170,6 +183,7 @@ def login_whitelist(request):
         "brand": settings.APPLICATION_BRAND,
         "full_brand": full_brand
     })
+
 
 def get_brand_details(brand):
     """
