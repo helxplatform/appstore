@@ -28,7 +28,7 @@ urlpatterns = [
     path('connect/', app_core_views.AppConnect.as_view(), name='connect'),
     path('probe/', app_core_views.ProbeServices.as_view(), name='probe_service'),
 
-    #path('irods/login', app_core_views.IrodsLogin.as_view(), name='irods_login'),
+    # path('irods/login', app_core_views.IrodsLogin.as_view(), name='irods_login'),
     path('', TemplateView.as_view(template_name='index.html')),
     path('rest-auth/', include('rest_auth.urls')),
     path('rest-auth/registration/', include('rest_auth.registration.urls')),

@@ -113,8 +113,9 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
 #     template_name = 'irods_login.html'
 #
 #     def get(self, *args, **kwargs):
-#         session = helpers.make_session()
-#         print(session.users.get('test_user'),"=========")
+#         #session = helpers.make_session()
+#         #user = session.users.get('aniroo94')
+#         #print("===>" ,session.query(user.name).first())
 #         return render(self.request, self.template_name)
 #
 #     def post(self, *args, **kwargs):
