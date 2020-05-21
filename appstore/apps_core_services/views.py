@@ -23,7 +23,10 @@ tycho = ContextFactory.get(
     product=settings.APPLICATION_BRAND)
 
 def get_host(request):
-    host = request.META["HTTP_HOST"]
+    if "HTTP_HOST" in request.META:
+        host = request.META["HTTP_HOST"]
+    else:
+        host = "127.0.0.1"
     return host
 
 def form_service_url(host, app_id, service, username, system=None):
