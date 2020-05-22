@@ -1,4 +1,5 @@
 import logging
+import os
 from time import sleep
 
 import irods.test.helpers as helpers
@@ -30,11 +31,12 @@ def get_host(request):
     return host
 
 def form_service_url(host, app_id, service, username, system=None):
+    protocol = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', 'http')
     if service.ip_address:
         url = f"http://{service.ip_address}:{service.port}"
     else:
-        url = f"http://{host}/private/{app_id}/{username}/{system.identifier}/" if system \
-            else f"http://{host}/private/{app_id}/{username}/{service.identifier}/"
+        url = f"{protocol}://{host}/private/{app_id}/{username}/{system.identifier}/" if system \
+            else f"{protocol}://{host}/private/{app_id}/{username}/{service.identifier}/"
     logger.debug(f"-- app-networking constructed url: {url}")
     return url
 
