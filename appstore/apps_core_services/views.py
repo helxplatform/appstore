@@ -1,7 +1,6 @@
 import logging
 from time import sleep
 
-import irods.test.helpers as helpers
 import requests
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -9,6 +8,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import generic
+from irods.session import iRODSSession
 from tycho.context import ContextFactory
 from tycho.context import Principal
 
@@ -109,18 +109,54 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
         }
 
 
-# class IrodsLogin(generic.TemplateView):
-#     template_name = 'irods_login.html'
-#
-#     def get(self, *args, **kwargs):
-#         #session = helpers.make_session()
-#         #user = session.users.get('aniroo94')
-#         #print("===>" ,session.query(user.name).first())
-#         return render(self.request, self.template_name)
-#
-#     def post(self, *args, **kwargs):
-#         print(self.request.POST.get("irods_email"))
-#         return render(self.request, self.template_name)
+class IrodsLogin(generic.TemplateView):
+    template_name = 'irods_login.html'
+
+    def get(self, *args, **kwargs):
+        zone = 'NeuroZone'
+        # password = uuid.uuid4()
+        from irods.models import User
+        with iRODSSession(host='localhost', port=1247, user='anirudh', password='changeme',
+                         zone=zone) as session:
+
+           print(session.query(User.name, User.type).all())
+
+           #session.users.get('anirudhsurya94@gmail.com').remove()
+           print(session.query(User.name, User.type).all())
+           # session.data_objects.create(f"/{zone}/home/anirudhsurya94@gmail.com/test1.wmv")
+
+        return render(self.request, self.template_name)
+
+    def post(self, *args, **kwargs):
+        email = self.request.POST.get("irods_email")
+        from irods.exception import UserDoesNotExist
+        from django.core.mail import EmailMessage
+        import uuid
+        zone = 'NeuroZone'
+        password = str(uuid.uuid4())[:6]
+        creds = {'user': 'anirudh', 'password': 'changeme', 'zone': zone}
+        with iRODSSession(**creds, host='localhost', port=1247) as session:
+            try:
+                user = session.users.get(email)
+            except UserDoesNotExist:
+                user = session.users.create(email, 'rodsuser')
+                #password = 'admin'
+                with iRODSSession(host='localhost',
+                                  port=1257,
+                                  **creds) as user_session:
+
+                    user_session.users.modify(user.name, 'password', password)
+                    user_session.cleanup()
+                message = EmailMessage(
+                    'Password Identity',
+                    f'Hi {email},\n This is your existing password  {password} \n Thank You',
+                    to=[f'{email}']
+                )
+                message.send()
+
+            session.users.modify(user.name, 'info', user.name)
+
+        return render(self.request, self.template_name, {'successful_submit': True})
 
 
 class ProbeServices(generic.View):

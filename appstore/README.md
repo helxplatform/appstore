@@ -126,6 +126,7 @@ During development, environment variables can be set to control execution:
 |DATABASE_PASSWORD                       | Contains the database password credentials.                       |
 |APPSTORE_DEFAULT_FROM_EMAIL             | Default email address for appstore.                               | 
 |APPSTORE_DEFAULT_SUPPORT_EMAIL          | Default support email for appstore.                               |
+|ACCOUNT_DEFAULT_HTTP_PROTOCOL           | Allows to switch between http and https protocol.                 |
 
 ### App Metadata
 Making application development easy is key to bringing the widest range of useful tools to the platform so we prefer

@@ -33,7 +33,6 @@ COPY . .
 
 RUN if [ ! -d $APP_HOME/tycho ]; then git clone --branch metadata https://github.com/helxplatform/tycho.git ; fi
 
-
 RUN set -x && \
 # Upgrade Pip and install app dependencies
 	pip install --upgrade pip && \

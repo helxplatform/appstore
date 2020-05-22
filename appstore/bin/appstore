@@ -176,6 +176,7 @@ Usage:
 """
     exit 1
 }
+
 start(){
      product=$1
      updatedb $product

@@ -69,12 +69,12 @@ MIDDLEWARE = [
 # Email configuration
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = '587'
-EMAIL_HOST_USER = 'bot.commonsshare@gmail.com'
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_HOST_USER = 'commonsshare@renci.org'
+EMAIL_HOST_PASSWORD = 'qihytodlhjtlubgc'
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get("APPSTORE_DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 DEFAULT_SUPPORT_EMAIL = os.environ.get("APPSTORE_DEFAULT_SUPPORT_EMAIL", EMAIL_HOST_USER)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
