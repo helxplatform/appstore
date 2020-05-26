@@ -123,5 +123,4 @@ Add the IP Address of the local machine to the list of ALLOWED_HOSTS if you are 
 The configuration files are available in config/ directory.
 
 ## Note
-This Django project is not SSL-enabled
-
+This Django project is not SSL-enabled.
