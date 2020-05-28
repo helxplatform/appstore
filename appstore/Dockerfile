@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Configurable via the docker build command line with -p
-ARG TYCHO_BRANCH=metadata
+ARG TYCHO_BRANCH=metadata-murali
 # Least privilege: Run as a non-root user.
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
@@ -31,8 +31,7 @@ RUN set -x && apt-get update && \
 RUN pip install --upgrade pip
 COPY . .
 
-RUN if [ ! -d $APP_HOME/tycho ]; then git clone --branch metadata https://github.com/helxplatform/tycho.git ; fi
-
+RUN if [ ! -d $APP_HOME/tycho ]; then git clone --branch $TYCHO_BRANCH  https://github.com/helxplatform/tycho.git ; fi
 
 RUN set -x && \
 # Upgrade Pip and install app dependencies
@@ -51,5 +50,3 @@ EXPOSE 8000
 #	"CS_AppsStore.wsgi:application" ]
 
 CMD ["/bin/bash","-c" ,"bin/appstore start ${DJANGO_SETTINGS}"]
-
-#CMD ["python manage.py runserver --settings=CS_AppsStore.settings.${DJANGO_SETTINGS}_settings 0.0.0.0:8000"]

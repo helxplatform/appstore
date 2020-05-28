@@ -1,15 +1,18 @@
 import logging
-import os
+import uuid
 from time import sleep
-
-import irods.test.helpers as helpers
+import os
 import requests
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import generic
+from irods.access import iRODSAccess
+from irods.exception import UserDoesNotExist, CollectionDoesNotExist ,NoResultFound
+from irods.session import iRODSSession
 from tycho.context import ContextFactory
 from tycho.context import Principal
 
@@ -119,18 +122,43 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
         }
 
 
-# class IrodsLogin(generic.TemplateView):
-#     template_name = 'irods_login.html'
-#
-#     def get(self, *args, **kwargs):
-#         #session = helpers.make_session()
-#         #user = session.users.get('aniroo94')
-#         #print("===>" ,session.query(user.name).first())
-#         return render(self.request, self.template_name)
-#
-#     def post(self, *args, **kwargs):
-#         print(self.request.POST.get("irods_email"))
-#         return render(self.request, self.template_name)
+class IrodsLogin(generic.TemplateView):
+    template_name = 'irods_login.html'
+
+    def post(self, *args, **kwargs):
+        email = self.request.POST.get("irods_email")
+        zone =settings.IRODS_ZONE
+        collection = settings.IRODS_COLLECTION.split(',')
+        password = str(uuid.uuid4())[:5]
+        creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
+        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=1247) as session:
+            try:
+                user = session.users.get(email)
+            except UserDoesNotExist:
+                user = session.users.create(email, 'rodsuser')
+                with iRODSSession(host=os.environ.get('NRC_MICROSCOPY_IRODS'),
+                                  port=1247,
+                                  **creds) as user_session:
+
+                    user_session.users.modify(user.name, 'password', password)
+                    user_session.cleanup()
+                message = EmailMessage(
+                    'Password Identity',
+                    f'Hi {email},\nThis is your existing password  {password} for iRODS login \nThank You',
+                    to=[f'{email}']
+                )
+                message.send()
+            session.users.modify(user.name, 'info', user.name)
+
+            for coll in collection:
+                coll_obj = session.collections.get(coll)
+                access = iRODSAccess('read', coll_obj.path, email, zone)
+                session.permissions.set(access, admin=True, recursive=True)
+
+                for i in coll_obj.data_objects:
+                    access = iRODSAccess('read', i.path, email, zone)
+                    session.permissions.set(access, admin=True)
+        return render(self.request, self.template_name, {'successful_submit': True})
 
 
 class ProbeServices(generic.View):

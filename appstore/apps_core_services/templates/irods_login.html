@@ -15,4 +15,25 @@
     </form>
 
 </div>
+<div class="modal fade" id="exampleModal" role="dialog" aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h5>Please check your email for a password to access iRODS</h5>
+                <button id = 'redirect' type="button" class="btn btn-primary">Go to braini-rods</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% if successful_submit %}
+<script type="text/javascript">
+        $("#exampleModal").modal('show');
+        $("#redirect").click(function(event){
+         event.preventDefault();
+         window.open("https://braini-rods.renci.org")
+        })
+</script>
+{% endif %}
 {% endblock %}
+

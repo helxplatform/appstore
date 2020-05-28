@@ -124,4 +124,3 @@ The configuration files are available in config/ directory.
 
 ## Note
 This Django project is not SSL-enabled.
-

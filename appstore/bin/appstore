@@ -18,7 +18,7 @@ APPSTORE_HOME=$( dirname $DIR )
 export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
 dockerhub_repo=heliumdatastage
 image_ver=0.0.1
-TYCHO_BRANCH=metadata
+TYCHO_BRANCH=metadata-murali
 
 # Ensure Tycho is available on the path.
 if [ ! -d $APPSTORE_HOME/tycho ]; then
@@ -129,6 +129,12 @@ image () {
            -e GITHUB_NAME=${GITHUB_NAME} \
            -e GITHUB_KEY=${GITHUB_KEY} \
            -e GITHUB_SITES=${GITHUB_SITES}\
+           -e BRAINI_RODS=${BRAINI_RODS}\
+           -e NRC_MICROSCOPY_IRODS=${NRC_MICROSCOPY_IRODS}\
+           -e RODS_USERNAME=${RODS_USERNAME}\
+           -e RODS_PASSWORD=${RODS_PASSWORD}\
+           -e EMAIL_HOST_USER=${EMAIL_HOST_USER}\
+           -e EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} \
 		   $dockerhub_repo/appstore:$image_ver $*
     }
   #  run () {
@@ -176,6 +182,7 @@ Usage:
 """
     exit 1
 }
+
 start(){
      product=$1
      updatedb $product
