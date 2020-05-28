@@ -18,7 +18,7 @@ APPSTORE_HOME=$( dirname $DIR )
 export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
 dockerhub_repo=heliumdatastage
 image_ver=0.0.1
-TYCHO_BRANCH=metadata
+TYCHO_BRANCH=metadata-murali
 
 # Ensure Tycho is available on the path.
 if [ ! -d $APPSTORE_HOME/tycho ]; then

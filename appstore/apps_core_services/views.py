@@ -125,30 +125,20 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
 class IrodsLogin(generic.TemplateView):
     template_name = 'irods_login.html'
 
-    def get(self,*args,**kwargs):
-        # from irods.models import User
-        # zone = 'NeuroZone'
-        # creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
-        # print("====================",creds,os.environ.get('BRAINI_RODS'),type(os.environ.get('BRAINI_RODS')))
-        #
-        # with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=1247) as session:
-        #     session.users.get('singh@renci.org').remove()
-        return render(self.request, self.template_name, {'successful_submit': False})
 
     def post(self, *args, **kwargs):
         email = self.request.POST.get("irods_email")
         zone = 'NeuroZone'
-        collection = ["/NeuroZone/projects/Top1/raw", "/NeuroZone/projects/Top1/analyzed"]
+        collection = ["/NeuroZone/projects/Top1/raw", "/NeuroZone/projects/Top1/analyzed","/NeuroZone/projects/Top1", "/NeuroZone/projects"  ]
         password = str(uuid.uuid4())[:5]
         creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
-        print("====================",creds)
         with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=1247) as session:
             try:
                 user = session.users.get(email)
             except UserDoesNotExist:
                 user = session.users.create(email, 'rodsuser')
                 with iRODSSession(host=os.environ.get('NRC_MICROSCOPY_IRODS'),
-                                  port=1257,
+                                  port=1247,
                                   **creds) as user_session:
 
                     user_session.users.modify(user.name, 'password', password)
