@@ -125,11 +125,10 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
 class IrodsLogin(generic.TemplateView):
     template_name = 'irods_login.html'
 
-
     def post(self, *args, **kwargs):
         email = self.request.POST.get("irods_email")
-        zone = 'NeuroZone'
-        collection = ["/NeuroZone/projects/Top1/raw", "/NeuroZone/projects/Top1/analyzed","/NeuroZone/projects/Top1", "/NeuroZone/projects"  ]
+        zone =settings.IRODS_ZONE
+        collection = settings.IRODS_COLLECTION.split(',')
         password = str(uuid.uuid4())[:5]
         creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
         with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=1247) as session:
@@ -145,7 +144,7 @@ class IrodsLogin(generic.TemplateView):
                     user_session.cleanup()
                 message = EmailMessage(
                     'Password Identity',
-                    f'Hi {email},\nThis is your existing password  {password} \nThank You',
+                    f'Hi {email},\nThis is your existing password  {password} for iRODS login \nThank You',
                     to=[f'{email}']
                 )
                 message.send()
