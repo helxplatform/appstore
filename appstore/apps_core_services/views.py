@@ -1,13 +1,17 @@
 import logging
+import uuid
 from time import sleep
-
+import os
 import requests
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import generic
+from irods.access import iRODSAccess
+from irods.exception import UserDoesNotExist, CollectionDoesNotExist ,NoResultFound
 from irods.session import iRODSSession
 from tycho.context import ContextFactory
 from tycho.context import Principal
@@ -112,36 +116,29 @@ class AppConnect(generic.TemplateView, LoginRequiredMixin):
 class IrodsLogin(generic.TemplateView):
     template_name = 'irods_login.html'
 
-    def get(self, *args, **kwargs):
-        zone = 'NeuroZone'
-        # password = uuid.uuid4()
-        from irods.models import User
-        with iRODSSession(host='localhost', port=1247, user='anirudh', password='changeme',
-                         zone=zone) as session:
-
-           print(session.query(User.name, User.type).all())
-
-           #session.users.get('anirudhsurya94@gmail.com').remove()
-           print(session.query(User.name, User.type).all())
-           # session.data_objects.create(f"/{zone}/home/anirudhsurya94@gmail.com/test1.wmv")
-
-        return render(self.request, self.template_name)
+    def get(self,*args,**kwargs):
+        # from irods.models import User
+        # zone = 'NeuroZone'
+        # creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
+        # print("====================",creds,os.environ.get('BRAINI_RODS'),type(os.environ.get('BRAINI_RODS')))
+        #
+        # with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=1247) as session:
+        #     session.users.get('singh@renci.org').remove()
+        return render(self.request, self.template_name, {'successful_submit': False})
 
     def post(self, *args, **kwargs):
         email = self.request.POST.get("irods_email")
-        from irods.exception import UserDoesNotExist
-        from django.core.mail import EmailMessage
-        import uuid
         zone = 'NeuroZone'
-        password = str(uuid.uuid4())[:6]
-        creds = {'user': 'anirudh', 'password': 'changeme', 'zone': zone}
-        with iRODSSession(**creds, host='localhost', port=1247) as session:
+        collection = ["/NeuroZone/projects/Top1/raw", "/NeuroZone/projects/Top1/analyzed"]
+        password = str(uuid.uuid4())[:5]
+        creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
+        print("====================",creds)
+        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=1247) as session:
             try:
                 user = session.users.get(email)
             except UserDoesNotExist:
                 user = session.users.create(email, 'rodsuser')
-                #password = 'admin'
-                with iRODSSession(host='localhost',
+                with iRODSSession(host=os.environ.get('NRC_MICROSCOPY_IRODS'),
                                   port=1257,
                                   **creds) as user_session:
 
@@ -149,13 +146,20 @@ class IrodsLogin(generic.TemplateView):
                     user_session.cleanup()
                 message = EmailMessage(
                     'Password Identity',
-                    f'Hi {email},\n This is your existing password  {password} \n Thank You',
+                    f'Hi {email},\nThis is your existing password  {password} \nThank You',
                     to=[f'{email}']
                 )
                 message.send()
-
             session.users.modify(user.name, 'info', user.name)
 
+            for coll in collection:
+                coll_obj = session.collections.get(coll)
+                access = iRODSAccess('read', coll_obj.path, email, zone)
+                session.permissions.set(access, admin=True, recursive=True)
+
+                for i in coll_obj.data_objects:
+                    access = iRODSAccess('read', i.path, email, zone)
+                    session.permissions.set(access, admin=True)
         return render(self.request, self.template_name, {'successful_submit': True})
 
 
