@@ -26,13 +26,22 @@ tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE,
     product=settings.APPLICATION_BRAND)
 
+def get_host(request):
+    if "HTTP_HOST" in request.META:
+        host = request.META["HTTP_HOST"]
+    else:
+        host = "127.0.0.1"
+    return host
 
-def form_service_url(app_id, service, username):
-    url = f"http://{service.ip_address}:{service.port}" if service.ip_address \
-        else f"/private/{app_id}/{username}/{service.identifier}/"
+def form_service_url(host, app_id, service, username, system=None):
+    protocol = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', 'http')
+    if service.ip_address:
+        url = f"http://{service.ip_address}:{service.port}"
+    else:
+        url = f"{protocol}://{host}/private/{app_id}/{username}/{system.identifier}/" if system \
+            else f"{protocol}://{host}/private/{app_id}/{username}/{service.identifier}/"
     logger.debug(f"-- app-networking constructed url: {url}")
     return url
-
 
 class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
     """ Application manager controller. """
@@ -59,7 +68,7 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
             services.append({
                 'app_id': app_id,
                 'full_name': service.name,
-                'name': form_service_url(app_id, service, self.request.user.username),
+                'name': form_service_url(get_host(self.request), app_id, service, self.request.user.username),
                 'lname': lname,
                 'display_name': app.get('name'),
                 'logo_name': f'{lname} Logo',
@@ -96,7 +105,7 @@ class AppStart(generic.TemplateView, LoginRequiredMixin):
         return {
             "name": tycho.apps[app_id]['name'],
             "icon": tycho.apps[app_id]['icon'],
-            "url": form_service_url(app_id, system.services[0], self.request.user.username)
+            "url": form_service_url(get_host(self.request), app_id, system.services[0], self.request.user.username, system)
         }
 
 
@@ -175,6 +184,8 @@ class ProbeServices(generic.View):
             print("Response Request ==>", response)
             # The service is returning a result, regardless of wheher it is nominal
             # or an error, this is not a network failure. Send the redirect.
+            if response.status_code == 404:
+                sleep(20)
             result = {"status": "ok"}
         except Exception as e:
             logger.info(f"probe services Error  ===> {e}")

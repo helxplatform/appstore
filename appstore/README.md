@@ -135,6 +135,43 @@ using [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker
 the [Tycho](https://helxplatform.github.io/tycho-docs/gen/html/index.html) engine to discover and manage Apps. The [Tycho app metadata](https://github.com/helxplatform/tycho/blob/metadata/tycho/conf/app-registry.yaml) format specifies the details of each application, contexts to which applications belong, and inheritance relationships between contexts.
 
 Docker compose syntax is used to express cooperating containers comprising an application. The specificatinos are stored in [GitHub](https://github.com/helxplatform/app-support-prototype/tree/develop/dockstore-yaml-proposals), each in an application specific subfolder. Along with the docker compose, a `.env` file specifies environment variables for the application. If a file called icon.png is provided, that is used as the application's icon.
+### Development Environment
+More information coming soon. The following script outlines the process:
+```
+#!/bin/bash
+
+set -ex
+
+# start fresh
+rm -rf appstore
+#  get a vritualenv
+if [ ! -d venv ]; then
+    python3 -m venv venv
+fi
+source venv/bin/activate
+# clone appstore
+if [ ! -d appstore ]; then
+    git clone git@github.com:helxplatform/appstore.git
+fi
+cd appstore
+# use metadata branch and install requirements
+git checkout metadata
+cd appstore
+pip install -r requirements.txt
+
+# configure helx product => braini
+product=braini
+# configure dev mode to stub (run w/o tycho api)
+export DEV_PHASE=stub
+# create and or migrate the database
+bin/appstore updatedb $product
+# create the superuser (admin/admin by default)
+bin/appstore createsuperuser
+# execute automated tests
+bin/appstore tests $product
+# run the appstore at localhost:8000
+bin/appstore run $product
+```
 # Next
 HeLx is alpha. This sectionoutlines a few areas of anticipated focus for upcoming improvements.
 ## Architecture

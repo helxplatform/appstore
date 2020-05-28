@@ -42,7 +42,6 @@ RUN set -x && \
 	#pip install psycopg2~=2.6 netifaces
 
 
-
 EXPOSE 8000
 
 #CMD [ "gunicorn", "--bind", ":8000", "--timeout=5000", \
@@ -51,5 +50,3 @@ EXPOSE 8000
 #	"CS_AppsStore.wsgi:application" ]
 
 CMD ["/bin/bash","-c" ,"bin/appstore start ${DJANGO_SETTINGS}"]
-
-#CMD ["python manage.py runserver --settings=CS_AppsStore.settings.${DJANGO_SETTINGS}_settings 0.0.0.0:8000"]

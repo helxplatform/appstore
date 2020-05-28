@@ -44,7 +44,7 @@ class AppTests(TestCase):
 
     def test_form_service_url(self):
         """Testing the form service url by passing mock data."""
-        url = form_service_url(app_id='x', service=self.service, username='admin')
+        url = form_service_url(host="127.0.0.1", app_id='x', service=self.service, username='admin')
         logger.info(f"---- Testing form-service_url{url}")
         self.assertEqual(url, 'http://x.y.z:9090')
 
