@@ -8,7 +8,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render ,redirect
 from django.views import generic
 from irods.access import iRODSAccess
 from irods.exception import UserDoesNotExist, CollectionDoesNotExist ,NoResultFound
@@ -32,6 +32,7 @@ def get_host(request):
     else:
         host = "127.0.0.1"
     return host
+
 
 def form_service_url(host, app_id, service, username, system=None):
     protocol = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', 'http')
@@ -127,7 +128,7 @@ class IrodsLogin(generic.TemplateView):
 
     def post(self, *args, **kwargs):
         email = self.request.POST.get("irods_email")
-        zone =settings.IRODS_ZONE
+        zone = settings.IRODS_ZONE
         collection = settings.IRODS_COLLECTION.split(',')
         password = str(uuid.uuid4())[:5]
         creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
@@ -137,7 +138,7 @@ class IrodsLogin(generic.TemplateView):
             except UserDoesNotExist:
                 user = session.users.create(email, 'rodsuser')
                 with iRODSSession(host=os.environ.get('NRC_MICROSCOPY_IRODS'),
-                                  port=1247,
+                                  port=1257,
                                   **creds) as user_session:
 
                     user_session.users.modify(user.name, 'password', password)
