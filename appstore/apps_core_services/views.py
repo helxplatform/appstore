@@ -8,10 +8,10 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
-from django.shortcuts import render ,redirect
+from django.shortcuts import render, redirect
 from django.views import generic
 from irods.access import iRODSAccess
-from irods.exception import UserDoesNotExist, CollectionDoesNotExist ,NoResultFound
+from irods.exception import UserDoesNotExist, CollectionDoesNotExist, NoResultFound
 from irods.session import iRODSSession
 from tycho.context import ContextFactory
 from tycho.context import Principal
@@ -25,6 +25,7 @@ Manages application metadata, discovers and invokes TychoClient, etc.
 tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE,
     product=settings.APPLICATION_BRAND)
+
 
 def get_host(request):
     if "HTTP_HOST" in request.META:
@@ -43,6 +44,7 @@ def form_service_url(host, app_id, service, username, system=None):
             else f"{protocol}://{host}/private/{app_id}/{username}/{service.identifier}/"
     logger.debug(f"-- app-networking constructed url: {url}")
     return url
+
 
 class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
     """ Application manager controller. """
@@ -106,7 +108,8 @@ class AppStart(generic.TemplateView, LoginRequiredMixin):
         return {
             "name": tycho.apps[app_id]['name'],
             "icon": tycho.apps[app_id]['icon'],
-            "url": form_service_url(get_host(self.request), app_id, system.services[0], self.request.user.username, system)
+            "url": form_service_url(get_host(self.request), app_id, system.services[0], self.request.user.username,
+                                    system)
         }
 
 
@@ -138,7 +141,7 @@ class IrodsLogin(generic.TemplateView):
             except UserDoesNotExist:
                 user = session.users.create(email, 'rodsuser')
                 with iRODSSession(host=os.environ.get('NRC_MICROSCOPY_IRODS'),
-                                  port=1257,
+                                  port=1247,
                                   **creds) as user_session:
 
                     user_session.users.modify(user.name, 'password', password)
@@ -186,7 +189,7 @@ class ProbeServices(generic.View):
 '''
 class AppTest(generic.View, LoginRequiredMixin):
     template_name = 'starting.html'
-    
+
     def get(self, *args, **kwargs):
         """
         Test availability of a running application.
