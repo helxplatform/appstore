@@ -20,7 +20,7 @@ spec:
         image: heliumdatastage/commonsshare_appstore:latest
         imagePullPolicy: Always
         command: ['/bin/bash', '-c']
-        args: ['python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && gunicorn --timeout 300 --workers 2 --bind 0.0.0.0:8000 CS_AppsStore.wsgi:application']
+        args: ['python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && gunicorn --timeout 300 --workers 2 --bind 0.0.0.0:8000 appstore.wsgi:application']
         env:
         - name: OAUTH_SERVICE_SERVER_URL
           valueFrom:

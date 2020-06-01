@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps_core_services.models import AuthorizedUser
+from core.models import AuthorizedUser
 
 
 class AuthorizedUserAdmin(admin.ModelAdmin):

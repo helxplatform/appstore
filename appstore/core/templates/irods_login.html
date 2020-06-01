@@ -26,14 +26,17 @@
         </div>
     </div>
 </div>
-{% if successful_submit %}
+
 <script type="text/javascript">
-        $("#exampleModal").modal('show');
-        $("#redirect").click(function(event){
-         event.preventDefault();
-         window.open("https://braini-rods.renci.org")
-        })
+        {% if existing_user == 'yes' %}
+            $("#exampleModal").modal('show');
+            $("#redirect").click(function(event){
+             event.preventDefault();
+             window.open("https://braini-rods.renci.org")
+            })
+        {% elif existing_user == 'no' %}
+            window.open("https://braini-rods.renci.org")
+        {% endif %}
 </script>
-{% endif %}
 {% endblock %}
 

@@ -46,7 +46,7 @@ EXPOSE 8000
 
 #CMD [ "gunicorn", "--bind", ":8000", "--timeout=5000", \
 #	"--log-level", "debug", \
-#	"--env", "DJANGO_SETTINGS_MODULE=CS_AppsStore.settings.braini_settings", \
-#	"CS_AppsStore.wsgi:application" ]
+#	"--env", "DJANGO_SETTINGS_MODULE=appstore.settings.braini_settings", \
+#	"appstore.wsgi:application" ]
 
 CMD ["/bin/bash","-c" ,"bin/appstore start ${DJANGO_SETTINGS}"]
