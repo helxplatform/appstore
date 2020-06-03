@@ -22,7 +22,7 @@ TYCHO_MODE = os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'li
 
 # "TRUE" | "FALSE"
 ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
-                                    'TRUE' if DEV_PHASE == "local" or DEV_PHASE == 'stub' else 'FALSE')
+                                    "TRUE" if DEV_PHASE == "local" or DEV_PHASE == 'stub' else "FALSE")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']

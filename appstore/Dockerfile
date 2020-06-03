@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Configurable via the docker build command line with -p
-ARG TYCHO_BRANCH=metadata-murali
+ARG TYCHO_BRANCH=metadata
 # Least privilege: Run as a non-root user.
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
@@ -14,7 +14,7 @@ ENV HOME /home/$USER
 ENV UID 1000
 ENV DJANGO_SETTINGS braini
 ENV TYCHO_URL http://docker.for.mac.localhost:5000
-ENV SECRET_KEY djangosecretkey
+ENV SECRET_KEY C tr -dc "a-zA-Z0-9\!@#$%^&*()_+?><~\`;'" < /dev/urandom | fold -w ${1:-50} | head -n 1
 
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME

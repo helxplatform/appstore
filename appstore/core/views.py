@@ -27,7 +27,6 @@ tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE,
     product=settings.APPLICATION_BRAND)
 
-
 def get_host(request):
     if "HTTP_HOST" in request.META:
         host = request.META["HTTP_HOST"]
