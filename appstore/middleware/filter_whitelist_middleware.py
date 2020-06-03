@@ -6,7 +6,7 @@ from django.contrib.sessions.models import Session
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 
-from apps_core_services.models import AuthorizedUser
+from core.models import AuthorizedUser
 
 logger = logging.getLogger(__name__)
 FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'

@@ -1,7 +1,8 @@
 import logging
+import os
 import uuid
 from time import sleep
-import os
+
 import requests
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -11,7 +12,7 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from django.views import generic
 from irods.access import iRODSAccess
-from irods.exception import UserDoesNotExist, CollectionDoesNotExist, NoResultFound
+from irods.exception import UserDoesNotExist
 from irods.session import iRODSSession
 from tycho.context import ContextFactory
 from tycho.context import Principal
@@ -25,7 +26,6 @@ Manages application metadata, discovers and invokes TychoClient, etc.
 tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE,
     product=settings.APPLICATION_BRAND)
-
 
 def get_host(request):
     if "HTTP_HOST" in request.META:
@@ -133,15 +133,17 @@ class IrodsLogin(generic.TemplateView):
         email = self.request.POST.get("irods_email")
         zone = settings.IRODS_ZONE
         collection = settings.IRODS_COLLECTION.split(',')
+        context = {'existing_user': 'no'}
         password = str(uuid.uuid4())[:5]
         creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
-        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=1247) as session:
+        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=os.environ.get('BRAINI_PORT')) as session:
             try:
                 user = session.users.get(email)
             except UserDoesNotExist:
+                context['existing_user'] = 'yes'
                 user = session.users.create(email, 'rodsuser')
                 with iRODSSession(host=os.environ.get('NRC_MICROSCOPY_IRODS'),
-                                  port=1247,
+                                  port=os.environ.get('NRC_PORT'),
                                   **creds) as user_session:
 
                     user_session.users.modify(user.name, 'password', password)
@@ -158,11 +160,11 @@ class IrodsLogin(generic.TemplateView):
                 coll_obj = session.collections.get(coll)
                 access = iRODSAccess('read', coll_obj.path, email, zone)
                 session.permissions.set(access, admin=True, recursive=True)
-
                 for i in coll_obj.data_objects:
                     access = iRODSAccess('read', i.path, email, zone)
                     session.permissions.set(access, admin=True)
-        return render(self.request, self.template_name, {'successful_submit': True})
+
+        return super(generic.TemplateView, self).render_to_response(context)
 
 
 class ProbeServices(generic.View):

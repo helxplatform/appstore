@@ -18,7 +18,7 @@ APPSTORE_HOME=$( dirname $DIR )
 export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
 dockerhub_repo=heliumdatastage
 image_ver=0.0.1
-TYCHO_BRANCH=metadata-murali
+TYCHO_BRANCH=metadata
 
 # Ensure Tycho is available on the path.
 if [ ! -d $APPSTORE_HOME/tycho ]; then
@@ -41,7 +41,7 @@ createsuperuser () {
     local SUPERUSERNAME=${APPSTORE_DJANGO_USERNAME:-admin}
     local SUPERUSEREMAIL=""
     local SUPERUSERPASSWORD=${APPSTORE_DJANGO_PASSWORD:-admin}
-    cat <<EOF | python manage.py shell --settings=CS_AppsStore.settings.braini_settings
+    cat <<EOF | python manage.py shell --settings=appstore.settings.braini_settings
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -62,7 +62,7 @@ EOF
 updatedb () {
     brand=$1
     test -z ${brand} && help
-    settings=CS_AppsStore.settings.${brand}_settings && \
+    settings=appstore.settings.${brand}_settings && \
     DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
@@ -77,7 +77,7 @@ updatedb () {
 run () {
     brand=$1
     test -z ${brand} && help
-    settings=CS_AppsStore.settings.${brand}_settings && \
+    settings=appstore.settings.${brand}_settings && \
 	python manage.py runserver    --settings=$settings 0.0.0.0:8000
 }
 
@@ -90,7 +90,7 @@ run () {
 tests () {
     brand=$1
     test -z ${brand} && help
-    settings=CS_AppsStore.settings.${brand}_settings && \
+    settings=appstore.settings.${brand}_settings && \
 	DEV_PHASE=stub python manage.py test --settings=$settings
 }
 ###############################################################################
@@ -115,7 +115,7 @@ image () {
 	test -z ${brand} && help
 	DEBUG_LEVEL=DEBUG
 	shift
-	settings=CS_AppsStore.settings.${brand}_settings && \
+	settings=appstore.settings.${brand}_settings && \
 	    docker run --rm --name appstore -p 8000:8000\
 		   -e DJANGO_SETTINGS=$brand \
 		   -e OAUTH_PROVIDERS=${OAUTH_PROVIDERS} \
@@ -141,13 +141,13 @@ image () {
 	#brand=$1
 #	test -z ${brand} && help
 #	DEBUG_LEVEL=DEBUG
-#	settings=CS_AppsStore.settings.${brand}_settings && \
+#	settings=appstore.settings.${brand}_settings && \
 #	    docker run --rm --name appstore -p 8000:8000 \
 #		   --entrypoint=gunicorn \
 #		   $dockerhub_repo/appstore:$image_ver \
 #		   --bind :8000 --timeout=5000 \
 #		   --env DJANGO_SETTINGS_MODULE=$settings \
-#		   --log-level $DEBUG_LEVEL CS_AppsStore.wsgi:application
+#		   --log-level $DEBUG_LEVEL appstore.wsgi:application
  #   }
     $*
 }
@@ -162,7 +162,7 @@ cicd () {
 	createsuperuser
 	tests $product
     done
-    rm CS_AppsStore/DATABSE.sqlite3
+    rm appstore/DATABSE.sqlite3
 }
 ###############################################################################
 ##

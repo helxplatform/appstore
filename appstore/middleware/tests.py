@@ -3,7 +3,7 @@ from django.contrib.auth.models import User, Group
 from django.http import HttpResponseRedirect
 from django.test import TestCase
 from mock import Mock
-from apps_core_services.models import AuthorizedUser
+from core.models import AuthorizedUser
 from middleware.filter_whitelist_middleware import AllowWhiteListedUserOnly
 
 

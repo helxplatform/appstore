@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Configurable via the docker build command line with -p
-ARG TYCHO_BRANCH=metadata-murali
+ARG TYCHO_BRANCH=metadata
 # Least privilege: Run as a non-root user.
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
@@ -14,7 +14,7 @@ ENV HOME /home/$USER
 ENV UID 1000
 ENV DJANGO_SETTINGS braini
 ENV TYCHO_URL http://docker.for.mac.localhost:5000
-ENV SECRET_KEY djangosecretkey
+ENV SECRET_KEY C tr -dc "a-zA-Z0-9\!@#$%^&*()_+?><~\`;'" < /dev/urandom | fold -w ${1:-50} | head -n 1
 
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME
@@ -46,7 +46,7 @@ EXPOSE 8000
 
 #CMD [ "gunicorn", "--bind", ":8000", "--timeout=5000", \
 #	"--log-level", "debug", \
-#	"--env", "DJANGO_SETTINGS_MODULE=CS_AppsStore.settings.braini_settings", \
-#	"CS_AppsStore.wsgi:application" ]
+#	"--env", "DJANGO_SETTINGS_MODULE=appstore.settings.braini_settings", \
+#	"appstore.wsgi:application" ]
 
 CMD ["/bin/bash","-c" ,"bin/appstore start ${DJANGO_SETTINGS}"]

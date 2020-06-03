@@ -10,7 +10,7 @@ from rest_framework_jwt.views import refresh_jwt_token
 from rest_framework_jwt.views import verify_jwt_token
 from rest_framework_simplejwt import views as jwt_views
 
-from apps_core_services import views as  app_core_views
+from core import views as  app_core_views
 
 admin.autodiscover()
 urlpatterns = [
