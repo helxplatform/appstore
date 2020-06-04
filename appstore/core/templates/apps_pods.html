@@ -60,7 +60,9 @@
 												      class="material-icons">add</i>New Application</a>
                 <a class="dropdown-item" href="#current-pods"><i class="material-icons">storage</i>Current
                   Applications</a>
+                {% if APPLICATION_BRAND == "braini" %}
                <a class="dropdown-item" href="{% url 'irods_login' %}"><i class="material-icons">login</i>Irod Login</a>
+                {% endif %}
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="{% url  'sign-out'%}">
 		  <i class="material-icons">exit_to_app</i>Logout</a>
