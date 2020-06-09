@@ -136,7 +136,7 @@ class IrodsLogin(generic.TemplateView):
         context = {'existing_user': 'no'}
         password = str(uuid.uuid4())[:5]
         creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
-        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=os.environ.get('BRAINI_PORT')) as session:
+        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS', "1247"), port=os.environ.get('BRAINI_PORT', "1247")) as session:
             try:
                 user = session.users.get(email)
             except UserDoesNotExist:
