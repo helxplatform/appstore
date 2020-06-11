@@ -10,6 +10,7 @@ from rest_framework_jwt.views import refresh_jwt_token
 from rest_framework_jwt.views import verify_jwt_token
 from rest_framework_simplejwt import views as jwt_views
 
+
 from core import views as  app_core_views
 
 admin.autodiscover()
@@ -38,6 +39,7 @@ urlpatterns = [
     path('api-token-refresh/', refresh_jwt_token),
     path('api-token-verify/', verify_jwt_token),
     path('auth/', app_core_views.auth, name='auth'),
+    path('saml2/', include('djangosaml2.urls')),
 ]
 
 urlpatterns += [

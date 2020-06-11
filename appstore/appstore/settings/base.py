@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
-    'bootstrapform'
+    'bootstrapform',
+    'djangosaml2'
 ]
 
 SITE_ID = 4
@@ -89,6 +90,7 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.RemoteUserBackend',
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
+    'djangosaml2.backends.Saml2Backend',
 )
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', "http")
@@ -145,7 +147,12 @@ IRODS_ZONE = os.environ.get('IROD_ZONE', "")
 # local_settings = __import__(local_settings_module, globals(), locals(), ['*'])
 # for k in dir(local_settings):
 #    locals()[k] = getattr(local_settings, k)
+"""Onyen """
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
+import saml2
+
+SAML_LOGOUT_REQUEST_PREFERRED_BINDING = saml2.BINDING_HTTP_POST
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
@@ -272,4 +279,58 @@ LOGGING = {
             'level': 'DEBUG',
         },
     },
+}
+import saml2  # noqa
+from saml2.saml import NAMEID_FORMAT_EMAILADDRESS  # noqa
+from saml2.sigver import get_xmlsec_binary  # noqa
+
+SAML_CONFIG = {
+    'debug': DEBUG,
+    'xmlsec_binary': get_xmlsec_binary(['/opt/local/bin', '/usr/bin/xmlsec1']),
+    'entityid': 'http://localhost:8000/saml2/metadata/',
+
+    'service': {
+        'sp': {
+            'name': 'http://localhost:8000/saml2/metadata/',
+            'endpoints': {
+                'assertion_consumer_service': [
+                    ('http://localhost:8000/saml2/acs/', saml2.BINDING_HTTP_POST),
+                ],
+                'single_logout_service': [
+                    ('http://localhost:8000/saml2/ls/', saml2.BINDING_HTTP_REDIRECT),
+                    ('http://localhost:8000/saml2/ls/post/', saml2.BINDING_HTTP_POST),
+                ],
+            },
+            'name_id_format': [NAMEID_FORMAT_EMAILADDRESS],
+            'authn_requests_signed': True,
+            'want_response_signed': True,
+            'want_assertions_signed': True,
+            'allow_unsolicited': True,
+        },
+    },
+    'attribute_map_dir': os.path.join(BASE_DIR, 'attribute-maps/attribute-maps'),
+    'metadata': {
+        'local': [os.path.join(BASE_DIR, 'idp_metadata.xml')],
+    },
+    # Signing
+   # 'key_file': BASE_DIR + '/certificates/private.key',
+    'cert_file': BASE_DIR + '/certificates/public.cert',
+    # Encryption
+    'encryption_keypairs': [{
+    #    'key_file': BASE_DIR + '/certificates/private.key',
+        'cert_file': BASE_DIR + '/certificates/public.cert',
+    }],
+    'valid_for': 365 * 24,
+}
+
+SAML_USE_NAME_ID_AS_USERNAME = True
+SAML_DJANGO_USER_MAIN_ATTRIBUTE = 'username'
+SAML_DJANGO_USER_MAIN_ATTRIBUTE_LOOKUP = '__iexact'
+SAML_CREATE_UNKNOWN_USER = True
+
+SAML_ATTRIBUTE_MAPPING = {
+    'uid': ('username', ),
+    'mail': ('email', ),
+    'pid': ('pid', ),
+    'affiliation': ('affiliation', ),
 }

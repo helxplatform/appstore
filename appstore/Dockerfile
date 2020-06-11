@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Configurable via the docker build command line with -p
-ARG TYCHO_BRANCH=metadata
+ARG TYCHO_BRANCH=master
 # Least privilege: Run as a non-root user.
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
@@ -40,7 +40,6 @@ RUN set -x && \
 	pip install -r ./requirements.txt
     # why is this not in requirements.txt?
 	#pip install psycopg2~=2.6 netifaces
-
 
 EXPOSE 8000
 
