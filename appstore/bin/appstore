@@ -78,13 +78,9 @@ run () {
     brand=$1
     test -z ${brand} && help
     settings=appstore.settings.${brand}_settings && \
-<<<<<<< HEAD
     #export DJANGO_SETTINGS_MODULE=$settings
 	#gunicorn --bind 0.0.0.0:8000 --log-level=debug appstore.wsgi:application --workers=5
 	python manage.py runserver --settings=$settings
-=======
-	gunicorn --bind 0.0.0.0:8000 --log-level=debug appstore.wsgi:application --workers=5
->>>>>>> 73d5da045ff28bd4136eb33ffa738ea2b0e375ad
 }
 
 ###############################################################################
