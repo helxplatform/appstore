@@ -18,7 +18,7 @@ APPSTORE_HOME=$( dirname $DIR )
 export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
 dockerhub_repo=heliumdatastage
 image_ver=0.0.1
-TYCHO_BRANCH=metadata
+TYCHO_BRANCH=master
 
 # Ensure Tycho is available on the path.
 if [ ! -d $APPSTORE_HOME/tycho ]; then
@@ -78,7 +78,8 @@ run () {
     brand=$1
     test -z ${brand} && help
     settings=appstore.settings.${brand}_settings && \
-	python manage.py runserver    --settings=$settings 0.0.0.0:8000
+        gunicorn --bind 0.0.0.0:8000 --log-level=debug appstore.wsgi:application --workers=5
+	#python manage.py runserver    --settings=$settings 0.0.0.0:8000
 }
 
 ###############################################################################
