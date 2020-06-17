@@ -10,13 +10,17 @@ from rest_framework_jwt.views import refresh_jwt_token
 from rest_framework_jwt.views import verify_jwt_token
 from rest_framework_simplejwt import views as jwt_views
 
-from core import views as  app_core_views
+from core import views as app_core_views
+
+import django_saml2_auth
 
 admin.autodiscover()
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='index.html'), name='index'),
 
+    path('saml2_auth/', include('django_saml2_auth.urls')),
+    path('accounts/saml/', django_saml2_auth.views.signin),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('sign-out', RedirectView.as_view(url='/accounts/logout/'), name='sign-out'),
     path('accounts/', include('allauth.urls')),
