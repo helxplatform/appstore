@@ -1,4 +1,14 @@
 *.pyc
+*.log
+*.log.1
+*~
 .idea/
+log/*
+!log/.gitkeep
 project_allauth
 venv
+tycho
+*.env
+*.sqlite
+*.sqlite3
+*.DS_Store

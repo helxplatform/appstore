@@ -1,0 +1,193 @@
+###############################################################################
+## Appstore UI
+##
+##  This script presents shell utilities for interacting with the appstore.
+##   
+##  Usage: see the help command below.
+##
+###############################################################################
+#!/bin/bash
+set -ex
+
+# Secrets
+export SECRET_KEY=${SECRET_KEY:-djangosecretkey}
+
+# Configure the environment
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+APPSTORE_HOME=$( dirname $DIR )
+export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
+dockerhub_repo=heliumdatastage
+image_ver=0.0.1
+TYCHO_BRANCH=master
+
+# Ensure Tycho is available on the path.
+if [ ! -d $APPSTORE_HOME/tycho ]; then
+     git clone --single-branch \
+	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git
+#    git clone https://github.com/helxplatform/tycho.git
+    cd tycho
+    git checkout $TYCHO_BRANCH
+    cd ..
+fi
+###############################################################################
+##
+## Create a superuser programmatically, facilitating use of secrets.
+##
+###############################################################################
+createsuperuser () {
+    # In production, set environment variables.
+    # In kubernetes, set the environment variables via secrets.
+    create_superuser() {
+    local SUPERUSERNAME=${APPSTORE_DJANGO_USERNAME:-admin}
+    local SUPERUSEREMAIL=""
+    local SUPERUSERPASSWORD=${APPSTORE_DJANGO_PASSWORD:-admin}
+    cat <<EOF | python manage.py shell --settings=appstore.settings.braini_settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+if not User.objects.filter(username="$SUPERUSERNAME").exists():
+    User.objects.create_superuser("$SUPERUSERNAME", "$SUPERUSEREMAIL", "$SUPERUSERPASSWORD")
+else:
+    print('User "{}" already exists, not created'.format("$SUPERUSERNAME"))
+EOF
+  }
+  create_superuser
+}
+###############################################################################
+##
+## Upgrade the database running migrations and collecting static objects.
+##
+###############################################################################
+updatedb () {
+    brand=$1
+    test -z ${brand} && help
+    settings=appstore.settings.${brand}_settings && \
+    DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
+	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
+	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
+	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
+}
+###############################################################################
+##
+## Run the appstore with customized branding, migrations, and packaging.
+##
+###############################################################################
+
+run () {
+    brand=$1
+    test -z ${brand} && help
+    settings=appstore.settings.${brand}_settings && \
+        gunicorn --bind 0.0.0.0:8000 --log-level=debug appstore.wsgi:application --workers=5
+	#python manage.py runserver    --settings=$settings 0.0.0.0:8000
+}
+
+###############################################################################
+##
+## Run the appstore's unit tests with product specific customizations.
+##
+###############################################################################
+
+tests () {
+    brand=$1
+    test -z ${brand} && help
+    settings=appstore.settings.${brand}_settings && \
+	DEV_PHASE=stub python manage.py test --settings=$settings
+}
+###############################################################################
+##
+## Build docker image.
+##
+###############################################################################
+image () {
+    build () {
+	docker build . \
+	       -t $dockerhub_repo/appstore:latest \
+	       -t $dockerhub_repo/appstore:$image_ver $*
+    }
+    push () {
+	docker push . \
+	       -t $dockerhub_repo/appstore:latest \
+	       -t $dockerhub_repo/appstore:$image_ver $*
+    }
+
+    run () {
+	brand=$1
+	test -z ${brand} && help
+	DEBUG_LEVEL=DEBUG
+	shift
+	settings=appstore.settings.${brand}_settings && \
+	    docker run --rm --name appstore -p 8000:8000\
+		   -e DJANGO_SETTINGS=$brand \
+		   -e OAUTH_PROVIDERS=${OAUTH_PROVIDERS} \
+           -e GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
+           -e GOOGLE_SECRET=${GOOGLE_SECRET} \
+           -e GOOGLE_NAME=${GOOGLE_NAME} \
+           -e GOOGLE_KEY=${GOOGLE_KEY} \
+           -e GOOGLE_SITES=${GOOGLE_SITES} \
+           -e GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID} \
+           -e GITHUB_SECRET=${GITHUB_SECRET} \
+           -e GITHUB_NAME=${GITHUB_NAME} \
+           -e GITHUB_KEY=${GITHUB_KEY} \
+           -e GITHUB_SITES=${GITHUB_SITES}\
+           -e BRAINI_RODS=${BRAINI_RODS}\
+           -e NRC_MICROSCOPY_IRODS=${NRC_MICROSCOPY_IRODS}\
+           -e RODS_USERNAME=${RODS_USERNAME}\
+           -e RODS_PASSWORD=${RODS_PASSWORD}\
+           -e EMAIL_HOST_USER=${EMAIL_HOST_USER}\
+           -e EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} \
+		   $dockerhub_repo/appstore:$image_ver $*
+    }
+  #  run () {
+	#brand=$1
+#	test -z ${brand} && help
+#	DEBUG_LEVEL=DEBUG
+#	settings=appstore.settings.${brand}_settings && \
+#	    docker run --rm --name appstore -p 8000:8000 \
+#		   --entrypoint=gunicorn \
+#		   $dockerhub_repo/appstore:$image_ver \
+#		   --bind :8000 --timeout=5000 \
+#		   --env DJANGO_SETTINGS_MODULE=$settings \
+#		   --log-level $DEBUG_LEVEL appstore.wsgi:application
+ #   }
+    $*
+}
+
+###############################################################################
+##
+## Test everything we can. Then build and push.
+##
+###############################################################################
+cicd () {
+    for product in braini scidas catalyst; do
+	createsuperuser
+	tests $product
+    done
+    rm appstore/DATABSE.sqlite3
+}
+###############################################################################
+##
+## Show help.
+##
+###############################################################################
+help () {
+    printf """bin/appstore management interface.
+
+Usage:
+   createsuperuser                           \t Create a superuser based on environment variables.
+   run         [ braini | scidas | catalyst ]\t Run the application.
+   tests       [ braini | scidas | catalyst ]\t Run all unit tests.
+   image build                               \t Build the docker image.
+   image push  [ braini | scidas | catalyst ]\t Push the image to the repository.
+   image run   [ braini | scidas | catalyst ]\t Run the docker image.
+"""
+    exit 1
+}
+
+start(){
+     product=$1
+     updatedb $product
+     createsuperuser
+     run $product
+}
+$*
