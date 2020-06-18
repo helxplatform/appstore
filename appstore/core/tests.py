@@ -1,6 +1,7 @@
 import logging
 
 from core.admin_tests import *
+from core.ui_test import *
 from core.views import form_service_url
 
 logger = logging.getLogger(__name__)
