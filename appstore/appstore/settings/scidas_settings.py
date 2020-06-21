@@ -1,3 +1,3 @@
 from .base import *
 
-APPLICATION_BRAND = "scidas"
+APPLICATION_BRAND = "restartr"

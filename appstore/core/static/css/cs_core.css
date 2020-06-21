@@ -35,6 +35,10 @@ h1.hl small, h2.hl small, h3.hl small, h4.hl small, h5.hl small, h6.hl small {
     padding-top: 5px;
 }
 
+.navbar-brand-restartr {
+    padding: 1px;
+    padding-top: 1px;
+}
 
 #img-brand-logo {
     width: 145px;
@@ -43,6 +47,11 @@ h1.hl small, h2.hl small, h3.hl small, h4.hl small, h5.hl small, h6.hl small {
 #img-brand-scidas-logo {
     width: 62px;
     height: auto;
+}
+
+#img-brand-restartr-logo {
+    width: 125px;
+    height: 45px;
 }
 
 .container>.navbar-header, .container>.navbar-collapse {

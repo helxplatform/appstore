@@ -61,9 +61,9 @@ EOF
 ###############################################################################
 updatedb () {
     brand=$1
-    test -z ${brand} && help
+    test -z ${brand} && help44
     settings=appstore.settings.${brand}_settings && \
-    DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
+    DEV_PHASE=stub python manage.py makemigrations --settings=$settings
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
 	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
@@ -175,11 +175,11 @@ help () {
 
 Usage:
    createsuperuser                           \t Create a superuser based on environment variables.
-   run         [ braini | scidas | catalyst ]\t Run the application.
-   tests       [ braini | scidas | catalyst ]\t Run all unit tests.
+   run         [ braini | scidas | catalyst | restartr ]\t Run the application.
+   tests       [ braini | scidas | catalyst | restartr ]\t Run all unit tests.
    image build                               \t Build the docker image.
-   image push  [ braini | scidas | catalyst ]\t Push the image to the repository.
-   image run   [ braini | scidas | catalyst ]\t Run the docker image.
+   image push  [ braini | scidas | catalyst | restartr ]\t Push the image to the repository.
+   image run   [ braini | scidas | catalyst | restartr ]\t Run the docker image.
 """
     exit 1
 }
