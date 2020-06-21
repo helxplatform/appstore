@@ -253,7 +253,7 @@ def get_brand_details(brand):
         },
         "restartr": {
             "name": "UNC Restarting Research",
-            "logo": ""
+            "logo": "restartingresearch.png"
         },
         "commonsshare": {
             "name": "CommonsShare",

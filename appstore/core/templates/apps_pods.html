@@ -24,6 +24,11 @@
           <img src="{{ logo_url }}" width="120px" height="auto" alt="{{ logo_alt }}">
           <span class="navbar-brand navbar-brand-scidas-main">App Store</span>
         </a>
+        {% elif brand == "restartr" %}
+        <a class="navbar-brand-restartr">
+          <img src="{{ logo_url }}" width="170px" height="auto" alt="{{ logo_alt }}">
+          <span class="navbar-brand-text">App Store</span>
+        </a>
 	{% else %}
         <a class="navbar-brand" href="#">
           <img src="{{ logo_url }}" width="320px" alt="{{ logo_alt }}">
