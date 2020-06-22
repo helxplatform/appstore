@@ -23,7 +23,8 @@ WORKDIR $APP_HOME
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
 	apt-get install -y postgresql-server-dev-all \
-	postgresql-client git build-essential curl
+	postgresql-client git build-essential \
+	xmlsec1
 
 
 # Install Virtual Environment
