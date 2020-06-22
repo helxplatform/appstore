@@ -14,7 +14,6 @@ ENV HOME /home/$USER
 ENV UID 1000
 ENV DJANGO_SETTINGS braini
 ENV TYCHO_URL http://docker.for.mac.localhost:5000
-ENV SECRET_KEY C tr -dc "a-zA-Z0-9\!@#$%^&*()_+?><~\`;'" < /dev/urandom | fold -w ${1:-50} | head -n 1
 
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME
@@ -24,7 +23,7 @@ WORKDIR $APP_HOME
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
 	apt-get install -y postgresql-server-dev-all \
-	postgresql-client git build-essential
+	postgresql-client git build-essential curl
 
 
 # Install Virtual Environment
