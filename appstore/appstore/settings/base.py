@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
-    'django_saml2_auth'
+    'django_saml2_auth',
 ]
 
 SITE_ID = 4
