@@ -1,3 +1,4 @@
+import os
 import time
 
 from django.contrib.auth.models import User
@@ -61,8 +62,7 @@ class LaunchAppTest(StaticLiveServerTestCase):
         for app_id in self.app_id:
             self.launch_app(app_id)
         self.selenium.refresh()
-        self.assertEqual(sorted(self.app_id), self.check_app())
+        if os.environ.get('DEV_PHASE') != 'stub':
+            self.assertEqual(sorted(self.app_id), self.check_app())
         self.delete_app()
         time.sleep(5)
-
-

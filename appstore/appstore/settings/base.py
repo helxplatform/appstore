@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'middleware',
+    'django_saml2_auth',
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
@@ -51,7 +52,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
-    'django_saml2_auth',
+
 ]
 
 SITE_ID = 4
