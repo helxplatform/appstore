@@ -28,6 +28,8 @@ ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
 SECRET_KEY = os.environ['SECRET_KEY']
 ALLOWED_HOSTS = ["*"]
 
+APPEND_SLASH = True
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -60,10 +62,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',
+    'middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly',
 ]
 
 # Email configuration
@@ -282,7 +284,7 @@ SAML2_AUTH = {
     'METADATA_AUTO_CONF_URL': 'https://sso.unc.edu/metadata/unc',
 
     # Optional settings below
-    'DEFAULT_NEXT_URL': '/apps/',  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
+    'DEFAULT_NEXT_URL': '/admin',  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
     'CREATE_USER': 'TRUE', # Create a new Django user when a new user logs in. Defaults to True.
     'NEW_USER_PROFILE': {
         'USER_GROUPS': [],  # The default group name when a new user logs in
@@ -291,7 +293,7 @@ SAML2_AUTH = {
         'SUPERUSER_STATUS': False,  # The superuser status for new users
     },
     'ATTRIBUTES_MAP': {  # Change Email/UserName/FirstName/LastName to corresponding SAML2 userprofile attributes.
-        'email': 'email',
+        'email': 'mail',
         'username': 'uid',
         'first_name': 'givenName',
         'last_name': 'surname',
