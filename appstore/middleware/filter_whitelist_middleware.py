@@ -15,6 +15,7 @@ logging.basicConfig(format=FORMAT)
 
 class AllowWhiteListedUserOnly(MiddlewareMixin):
     def process_request(self, request):
+        logger.info(request)
         user = request.user
         logger.info(f"testing user: {user}")
         if user.is_authenticated and not user.is_superuser:
