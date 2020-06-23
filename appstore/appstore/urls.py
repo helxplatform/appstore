@@ -20,7 +20,7 @@ admin.autodiscover()
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', TemplateView.as_view(template_name='index.html'), name='index'),
-
+    path('saml2_auth/', include('django_saml2_auth.urls')),
     path('accounts/saml/', django_saml2_auth.views.signin),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('sign-out', RedirectView.as_view(url='/accounts/logout/'), name='sign-out'),
@@ -43,6 +43,7 @@ urlpatterns = [
     path('api-token-refresh/', refresh_jwt_token),
     path('api-token-verify/', verify_jwt_token),
     path('auth/', app_core_views.auth, name='auth'),
+    path('saml2/', include('djangosaml2.urls')),
 ]
 
 urlpatterns += [

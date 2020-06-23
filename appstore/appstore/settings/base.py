@@ -16,7 +16,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = "True"
+DEBUG = os.environ.get('DEBUG', 'True')
 DEV_PHASE = os.environ.get('DEV_PHASE', 'local')  # stub, local, dev, val, prod.
 TYCHO_MODE = os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'live')
 
@@ -26,7 +26,6 @@ ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']
-
 ALLOWED_HOSTS = ["*"]
 
 APPEND_SLASH = True
@@ -39,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'middleware',
+    'django_saml2_auth',
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
-    'django_saml2_auth',
+
 ]
 
 SITE_ID = 4
