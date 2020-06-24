@@ -49,12 +49,5 @@ six==1.11.0
 uritemplate==3.0.0
 urllib3==1.24.2
 websocket-client==0.56.0
-<<<<<<< HEAD
 webdriver-manager==3.2.1
 selenium==3.141.0
-
-
-
-=======
-django_saml2_auth
->>>>>>> 3cde2f051b075e5070cea03cc20ebadcd9b5499d

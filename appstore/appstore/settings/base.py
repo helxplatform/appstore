@@ -24,6 +24,9 @@ TYCHO_MODE = os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'li
 ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
                                     "TRUE" if DEV_PHASE == "local" or DEV_PHASE == 'stub' else "FALSE")
 
+# "TRUE" | "FALSE"
+ALLOW_SAML_LOGIN = os.environ.get('ALLOW_SAML_LOGIN', 'TRUE')
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']
 ALLOWED_HOSTS = ["*"]

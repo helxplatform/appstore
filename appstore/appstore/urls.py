@@ -12,8 +12,6 @@ from rest_framework_simplejwt import views as jwt_views
 
 from core import views as app_core_views
 
-import django_saml2_auth
-
 import django_saml2_auth.views
 
 admin.autodiscover()
@@ -43,7 +41,6 @@ urlpatterns = [
     path('api-token-refresh/', refresh_jwt_token),
     path('api-token-verify/', verify_jwt_token),
     path('auth/', app_core_views.auth, name='auth'),
-    path('saml2/', include('djangosaml2.urls')),
 ]
 
 urlpatterns += [

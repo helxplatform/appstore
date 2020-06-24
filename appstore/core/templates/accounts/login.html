@@ -7,7 +7,7 @@
 {% block content %}
   
 <div id="content-container" class="container p-none">
-<h1>{% trans "Sign In" %}</h1>
+<h1>{% trans "SIGN In" %}</h1>
 {% get_providers as socialaccount_providers %}
 {% if socialaccount_providers %}
 <p>{% blocktrans with site.name as site_name %}Please sign in with one
@@ -19,6 +19,19 @@
     </ul>
 </div>
 {% include "socialaccount/snippets/login_extra.html" %}
+{% endif %}
+
+{% if ALLOW_SAML_LOGIN == "TRUE" %}
+    <div class="saml_login">
+        <ul class="saml_provider">
+            <li>
+                <a title="SAML Login"
+                    class="socialaccount_provider"
+                    href="/accounts/saml">SAML Login
+                </a>
+            </li>
+        </ul>
+    </div>
 {% endif %}
 
 {% if ALLOW_DJANGO_LOGIN == "TRUE" %}
