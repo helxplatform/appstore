@@ -7,31 +7,26 @@
 {% block content %}
   
 <div id="content-container" class="container p-none">
-<h1>{% trans "SIGN In" %}</h1>
+<h1>{% trans "Sign In" %}</h1>
 {% get_providers as socialaccount_providers %}
 {% if socialaccount_providers %}
 <p>{% blocktrans with site.name as site_name %}Please sign in with one
     of your existing third party accounts:{% endblocktrans %}</p>
 
 <div class="socialaccount_ballot">
-  <ul class="socialaccount_providers">
+    <ul class="socialaccount_providers">
         {% include "socialaccount/snippets/provider_list.html" with process="login" %}
-    </ul>
-</div>
-{% include "socialaccount/snippets/login_extra.html" %}
-{% endif %}
-
-{% if ALLOW_SAML_LOGIN == "TRUE" %}
-    <div class="saml_login">
-        <ul class="saml_provider">
+        {% if ALLOW_SAML_LOGIN == "TRUE" %}
             <li>
                 <a title="SAML Login"
                     class="socialaccount_provider"
                     href="/accounts/saml">SAML Login
                 </a>
             </li>
-        </ul>
-    </div>
+        {% endif %}
+    </ul>
+</div>
+{% include "socialaccount/snippets/login_extra.html" %}
 {% endif %}
 
 {% if ALLOW_DJANGO_LOGIN == "TRUE" %}
