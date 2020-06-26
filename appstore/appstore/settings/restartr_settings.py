@@ -21,6 +21,6 @@ SAML2_AUTH = {
         'first_name': 'givenName',
         'last_name': 'sn',
     },
-    'ASSERTION_URL': 'https://restartingresearch-dev.renci.org',
-    'ENTITY_ID': 'https://restartingresearch-dev.renci.org/saml2_auth/acs/', # Populates the Issuer element in authn request
+    'ASSERTION_URL': 'https://restartr.cloudapps.unc.edu/saml2_auth/acs/',
+    'ENTITY_ID': 'https://restartr.cloudapps.unc.edu/saml2_auth/acs/', # Populates the Issuer element in authn request
 }
