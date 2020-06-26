@@ -61,9 +61,9 @@ EOF
 ###############################################################################
 updatedb () {
     brand=$1
-    test -z ${brand} && help44
+    test -z ${brand} && help
     settings=appstore.settings.${brand}_settings && \
-    DEV_PHASE=stub python manage.py makemigrations --settings=$settings
+    DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
 	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
