@@ -251,6 +251,10 @@ def get_brand_details(brand):
             "name": "BioData Catalyst",
             "logo": "bdc-logo.svg"
         },
+        "restartr": {
+            "name": "UNC Restarting Research",
+            "logo": "restartingresearch.png"
+        },
         "commonsshare": {
             "name": "CommonsShare",
             "logo": "logo-lg.png"

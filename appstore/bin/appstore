@@ -175,11 +175,11 @@ help () {
 
 Usage:
    createsuperuser                           \t Create a superuser based on environment variables.
-   run         [ braini | scidas | catalyst ]\t Run the application.
-   tests       [ braini | scidas | catalyst ]\t Run all unit tests.
+   run         [ braini | scidas | catalyst | restartr ]\t Run the application.
+   tests       [ braini | scidas | catalyst | restartr ]\t Run all unit tests.
    image build                               \t Build the docker image.
-   image push  [ braini | scidas | catalyst ]\t Push the image to the repository.
-   image run   [ braini | scidas | catalyst ]\t Run the docker image.
+   image push  [ braini | scidas | catalyst | restartr ]\t Push the image to the repository.
+   image run   [ braini | scidas | catalyst | restartr ]\t Run the docker image.
 """
     exit 1
 }
