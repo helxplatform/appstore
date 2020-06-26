@@ -18,9 +18,9 @@
         {% include "socialaccount/snippets/provider_list.html" with process="login" %}
         {% if ALLOW_SAML_LOGIN == "TRUE" %}
             <li>
-                <a title="SAML Login"
+                <a title="SAML"
                     class="socialaccount_provider"
-                    href="/accounts/saml">SAML Login
+                    href="/accounts/saml">UNC Chapel Hill Single Sign-On
                 </a>
             </li>
         {% endif %}

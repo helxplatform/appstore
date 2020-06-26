@@ -24,8 +24,7 @@ TYCHO_MODE = os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'li
 ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
                                     "TRUE" if DEV_PHASE == "local" or DEV_PHASE == 'stub' else "FALSE")
 
-# "TRUE" | "FALSE"
-ALLOW_SAML_LOGIN = os.environ.get('ALLOW_SAML_LOGIN', 'TRUE')
+ALLOW_SAML_LOGIN = os.environ.get('ALLOW_SAML_LOGIN', "TRUE")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']
@@ -281,26 +280,4 @@ LOGGING = {
             'level': 'DEBUG',
         },
     },
-}
-
-SAML2_AUTH = {
-    # Metadata is required, choose either remote url or local file path
-    'METADATA_AUTO_CONF_URL': 'https://sso.unc.edu/metadata/unc',
-
-    # Optional settings below
-    'DEFAULT_NEXT_URL': '/admin',  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
-    'CREATE_USER': 'TRUE', # Create a new Django user when a new user logs in. Defaults to True.
-    'NEW_USER_PROFILE': {
-        'USER_GROUPS': [],  # The default group name when a new user logs in
-        'ACTIVE_STATUS': True,  # The default active status for new users
-        'STAFF_STATUS': True,  # The staff status for new users
-        'SUPERUSER_STATUS': False,  # The superuser status for new users
-    },
-    'ATTRIBUTES_MAP': {  # Change Email/UserName/FirstName/LastName to corresponding SAML2 userprofile attributes.
-        'email': 'mail',
-        'username': 'uid',
-        'first_name': 'givenName',
-        'last_name': 'surname',
-    },
-    'ENTITY_ID': 'https://restartingresearch.renci.org/shibboleth', # Populates the Issuer element in authn request
 }
