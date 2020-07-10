@@ -21,6 +21,6 @@ SAML2_AUTH = {
         'first_name': 'givenName',
         'last_name': 'sn',
     },
-    'ASSERTION_URL': 'https://braini-dev.renci.org',
-    'ENTITY_ID': 'https://braini-dev.renci.org/saml2_auth/acs/', # Populates the Issuer element in authn request
+    'ASSERTION_URL': os.environ.get('SAML2_AUTH_ASSERTION_URL'),
+    'ENTITY_ID': os.environ.get('SAML2_AUTH_ENTITY_ID'), # Populates the Issuer element in authn request
 }
