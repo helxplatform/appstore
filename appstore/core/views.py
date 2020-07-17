@@ -179,8 +179,8 @@ class ProbeServices(generic.View):
             print("Response Request ==>", response)
             # The service is returning a result, regardless of wheher it is nominal
             # or an error, this is not a network failure. Send the redirect.
-            if response.status_code == 404:
-                sleep(20)
+            #if response.status_code == 404:
+            #    sleep(20)
             result = {"status": "ok"}
         except Exception as e:
             logger.info(f"probe services Error  ===> {e}")

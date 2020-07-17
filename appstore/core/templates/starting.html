@@ -32,30 +32,40 @@
       // Maximum number of attempts allowed.
       var max_attempts = 30;
       function connect () {
-	  // Probe the url until it's ready or we run out of attempts.
-	  $.getJSON ({
-	      url: "/probe?url=" + url
-	  }).done(function( data ) {
-	      // We got a result. Figure it out.
-	      console.log( "-- connect to service result:", data);
-	      if (data.status == "ok") {
-		  // The probe returned an ok. The network connection succeeded. Redirect.
-		  window.location = "{{ url }}";
-	      } else {
-		  // The service is still not up. 
-		  if (attempts < max_attempts) {
-		      // Pause, then try to connect again.
-		      setTimeout (connect, 2000);
-		      attempts++;
-		  } else {
-		      // We're out of attempts and the service is not there. Fail.
-		      $('main').html ("Failed to load " + app_name);
-		  }
-	      }
-	  }).fail (function (error) {
-	      // Log errors.
-	      console.log (error);
-	  });
+          // Probe the url until it's ready or we run out of attempts.
+          $.getJSON ({
+              url: "/probe?url=" + url
+          }).done(function( data ) {
+              // We got a result. Figure it out.
+              console.log( "-- connect to service result:", data);
+              if (data.status == "ok") {
+                  // The probe returned an ok. The network connection succeeded. Redirect.
+                  var counter = 0;
+                  function checkUrl(){
+                      var xhttp = new XMLHttpRequest();
+                      console.log(xhttp);
+                      counter += 1;
+                      xhttp.onreadystatechange = function() {
+                          console.log(counter)
+                          if (this.readyState == 4 && this.status == 200) {
+                              console.log(this.readyState);
+                              console.log(this.state);
+                              window.location = "{{ url }}";
+                          };
+                      };
+                      xhttp.open("GET", "{{ url }}", true);
+                      xhttp.send();
+                  };
+                  const myTimer = setInterval(function(){
+                      if (counter == 10000){
+                          console.dir(document.getElementById('error'))
+                          document.getElementById('error').innerText = "Failed to launch {{ name }}. Close the tab and try again later."
+                          clearInterval(myTimer);
+                      };
+                      checkUrl();
+                  }, 1000);
+              }
+              }).fail(error => console.log(error));
       }
       // Invoke connect to get started.
       connect ();
