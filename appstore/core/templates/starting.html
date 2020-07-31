@@ -51,6 +51,7 @@
                               console.log(this.readyState);
                               console.log(this.state);
                               window.location = "{{ url }}";
+			      clearInterval(myTimer);
                           };
                       };
                       xhttp.open("GET", "{{ url }}", true);
@@ -62,6 +63,7 @@
                           document.getElementById('error').innerText = "Failed to launch {{ name }}. Close the tab and try again later."
                           clearInterval(myTimer);
                       };
+		      console.log("Checking URL ----> Attempt counter ----> " + counter)
                       checkUrl();
                   }, 1000);
               }
