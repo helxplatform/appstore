@@ -5,7 +5,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 # Configurable via the docker build command line with -p
-ARG TYCHO_BRANCH=master
+ARG TYCHO_BRANCH=develop
 # Least privilege: Run as a non-root user.
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
@@ -47,5 +47,7 @@ EXPOSE 8000
 #	"--log-level", "debug", \
 #	"--env", "DJANGO_SETTINGS_MODULE=appstore.settings.braini_settings", \
 #	"appstore.wsgi:application" ]
+RUN chown -R 1000:0 /usr/src/inst-mgmt
+RUN chmod -R g+w /usr/src/inst-mgmt
 
 CMD ["/bin/bash","-c" ,"bin/appstore start ${DJANGO_SETTINGS}"]
