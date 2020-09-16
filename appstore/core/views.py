@@ -6,6 +6,7 @@ from time import sleep
 import requests
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
@@ -45,8 +46,20 @@ def form_service_url(host, app_id, service, username, system=None):
     logger.debug(f"-- app-networking constructed url: {url}")
     return url
 
+def principal_params(username):
+    social_token_model_objects = ContentType.objects.get(model="socialtoken").model_class().objects.all()
+    access_token = None
+    refresh_token = None
+    for obj in social_token_model_objects:
+        if obj.account.user.username == username:
+            access_token = obj.token
+            refresh_token = obj.token_secret if obj.token_secret else None
+            break
+        else:
+            continue
+    return username, access_token, refresh_token
 
-class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
+class ApplicationManager(LoginRequiredMixin, generic.TemplateView):
     """ Application manager controller. """
     template_name = 'apps_pods.html'
 
@@ -97,13 +110,18 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
         }
 
 
-class AppStart(generic.TemplateView, LoginRequiredMixin):
+class AppStart(LoginRequiredMixin, generic.TemplateView):
     """ Start an application by invoking the app context. """
     template_name = 'starting.html'
 
     def get_context_data(self, *args, **kwargs):
-        principal = Principal(self.request.user.username)
+        username = self.request.user.username
         app_id = self.request.GET['app_id']
+        if app_id == "dicom-gh":
+            params_tup = principal_params(username)
+        else:
+            params_tup = (username,)
+        principal = Principal(*params_tup)
         system = tycho.start(principal, app_id)
         return {
             "name": tycho.apps[app_id]['name'],
@@ -113,7 +131,7 @@ class AppStart(generic.TemplateView, LoginRequiredMixin):
         }
 
 
-class AppConnect(generic.TemplateView, LoginRequiredMixin):
+class AppConnect(LoginRequiredMixin, generic.TemplateView):
     """ Show a splash screen while starting the application. """
     template_name = 'starting.html'
 
