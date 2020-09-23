@@ -19,10 +19,14 @@ class AppTests(TestCase):
     def setUp(self):
         self.data = {'ip_address': 'x.y.z', 'port': '9090', 'identifier': '123456'}
         self.service = DictObjects(**self.data)
+        """ Create SuperUser """
+        self.superuser = User.objects.create_superuser(username='admin', email="admin@admin.com", password='admin')
 
     def test_app_list(self):
         """ Test listing running apps. """
         logger.info(f"-- testing app list")
+        credentials = {'username': 'admin', 'password': 'admin'}
+        self.client.login(**credentials)
         response = self.client.get('/apps/')
         self.assertEqual(response.status_code, 200)
         logger.info(f"-- response.context {response.context}")
