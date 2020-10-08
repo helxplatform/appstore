@@ -103,7 +103,9 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 SOCIALACCOUNT_PROVIDERS = \
     {'google':
          {'SCOPE': ['profile', 'email'],
-          'AUTH_PARAMS': {'access_type': 'online'}}}
+          'AUTH_PARAMS': {'access_type': 'offline'}}}
+
+SOCIALACCOUNT_STORE_TOKENS = True
 
 ROOT_URLCONF = 'appstore.urls'
 
