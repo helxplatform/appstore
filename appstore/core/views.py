@@ -9,7 +9,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.views import generic
 from irods.access import iRODSAccess
 from irods.exception import UserDoesNotExist
@@ -26,6 +26,7 @@ Manages application metadata, discovers and invokes TychoClient, etc.
 tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE,
     product=settings.APPLICATION_BRAND)
+
 
 def get_host(request):
     if "HTTP_HOST" in request.META:
@@ -56,6 +57,8 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
         Create data structures to allow the view to render results.
         """
         context = super(ApplicationManager, self).get_context_data(*args, **kwargs)
+        # form = forms.ResourceRequestForm(self.request.POST or None)
+        # context["form"] = form
         brand = settings.APPLICATION_BRAND
         logger.debug(f"-- running tycho.status() to get running systems.")
         status = tycho.status({
@@ -93,7 +96,8 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
             "logo_url": f"/static/images/{brand}/{brand_map['logo']}",
             "logo_alt": f"{brand_map['name']} Image",
             "svcs_list": services,
-            "applications": apps
+            "applications": apps,
+            # "form": context["form"]
         }
 
 
@@ -102,9 +106,32 @@ class AppStart(generic.TemplateView, LoginRequiredMixin):
     template_name = 'starting.html'
 
     def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(**kwargs)
         principal = Principal(self.request.user.username)
+        print("---------------------------------")
         app_id = self.request.GET['app_id']
-        system = tycho.start(principal, app_id)
+        cpu = self.request.GET['cpu']
+        memory = self.request.GET['memory']
+        gpu = self.request.GET['gpu']
+        print(cpu, memory, gpu)
+        print("##################################")
+        resource_request = {
+            "deploy": {
+                "resources": {
+                    "limits": {
+                        "cpus": cpu,
+                        "memory": memory,
+                        "GPU": gpu,
+                    },
+                    "reservations": {
+                        "cpus": cpu,
+                        "memory": memory,
+                        "GPU": gpu,
+                    }
+                }
+            }
+        }
+        system = tycho.start(principal, app_id, resource_request)
         return {
             "name": tycho.apps[app_id]['name'],
             "icon": tycho.apps[app_id]['icon'],
@@ -136,7 +163,8 @@ class IrodsLogin(generic.TemplateView):
         context = {'existing_user': 'no'}
         password = str(uuid.uuid4())[:5]
         creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
-        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=os.environ.get('BRAINI_PORT', "1247")) as session:
+        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'),
+                          port=os.environ.get('BRAINI_PORT', "1247")) as session:
             try:
                 user = session.users.get(email)
             except UserDoesNotExist:
@@ -179,7 +207,7 @@ class ProbeServices(generic.View):
             print("Response Request ==>", response)
             # The service is returning a result, regardless of wheher it is nominal
             # or an error, this is not a network failure. Send the redirect.
-            #if response.status_code == 404:
+            # if response.status_code == 404:
             #    sleep(20)
             result = {"status": "ok"}
         except Exception as e:
