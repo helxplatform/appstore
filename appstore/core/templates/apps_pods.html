@@ -156,10 +156,10 @@
                         <label for="cpu">CPU_Requirements:</label>
                         <input type="number" class="form-control" id="cpu">
                     </div>
-                    <div class="form-group">
-                        <label for="gpu">GPU_Requirements:</label>
-                        <input type="number" class="form-control" id="gpu">
-                    </div>
+<!--                    <div class="form-group">-->
+<!--                        <label for="gpu">GPU_Requirements:</label>-->
+<!--                        <input type="number" class="form-control" id="gpu">-->
+<!--                    </div>-->
                     <div class="form-group">
                         <label for="memory">Memory_Requirements:</label>
                         <input type="number" class="form-control" id="memory">
@@ -199,9 +199,9 @@
             const urla = activePodSelection.getAttribute('data-url');
        const app_id = activePodSelection.getAttribute('app_id');
        var cpu = document.getElementById("cpu").value
-       var gpu = document.getElementById("gpu").value
+<!--       var gpu = document.getElementById("gpu").value-->
        var memory = document.getElementById("memory").value
-       var url = urla + "?app_id=" + app_id +"&cpu="+cpu +"&gpu="+gpu +"&memory="+memory
+       var url = urla + "?app_id=" + app_id +"&cpu="+cpu +"&memory="+memory
        console.log("APPLICATION URL TO REQUEST: " + url)
       window.open(url)
 

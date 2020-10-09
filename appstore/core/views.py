@@ -121,25 +121,21 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
     def get_context_data(self, *args, **kwargs):
         context = super().get_context_data(**kwargs)
         principal = Principal(self.request.user.username)
-        print("---------------------------------")
         app_id = self.request.GET['app_id']
         cpu = self.request.GET['cpu']
         memory = self.request.GET['memory']
-        gpu = self.request.GET['gpu']
-        print(cpu, memory, gpu)
-        print("##################################")
+        # gpu = self.request.GET['gpu']
+        print(cpu, memory)
         resource_request = {
             "deploy": {
                 "resources": {
                     "limits": {
                         "cpus": cpu,
                         "memory": memory,
-                        "GPU": gpu,
                     },
                     "reservations": {
                         "cpus": cpu,
                         "memory": memory,
-                        "GPU": gpu,
                     }
                 }
             }
