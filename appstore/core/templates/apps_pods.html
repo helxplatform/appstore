@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
           integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
@@ -13,131 +13,167 @@
     <!--
     <title>App Store</title>
     -->
-  </head>
-  <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
-      <div class="container-fluid" >
-	<!-- TODO - FIX -->
-	
-	{% if brand == "scidas" %}
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+    <div class="container-fluid">
+        <!-- TODO - FIX -->
+
+        {% if brand == "scidas" %}
         <a class="navbar-brand-scidas">
-          <img src="{{ logo_url }}" width="120px" height="auto" alt="{{ logo_alt }}">
-          <span class="navbar-brand navbar-brand-scidas-main">App Store</span>
+            <img src="{{ logo_url }}" width="120px" height="auto" alt="{{ logo_alt }}">
+            <span class="navbar-brand navbar-brand-scidas-main">App Store</span>
         </a>
         {% elif brand == "restartr" %}
         <a class="navbar-brand-restartr">
-          <img src="{{ logo_url }}" width="170px" height="auto" alt="{{ logo_alt }}">
-          <span class="navbar-brand-text">App Store</span>
-        </a>
-	{% else %}
-        <a class="navbar-brand" href="#">
-          <img src="{{ logo_url }}" width="320px" alt="{{ logo_alt }}">
+            <img src="{{ logo_url }}" width="170px" height="auto" alt="{{ logo_alt }}">
             <span class="navbar-brand-text">App Store</span>
-        </a>
-	{% endif %}
-	<!--
-        {% if brand == "scidas" %}
-        <a class="navbar-brand-scidas">
-          <img src="{{ logo_url }}" width="120px" height="81px" alt="{{ logo_alt }}">
-          <span class="navbar-brand navbar-brand-scidas-main">App Store</span>
         </a>
         {% else %}
         <a class="navbar-brand" href="#">
-          <img src="{{ logo_url }}" width="185px" height="35px" alt="{{ logo_alt }}">
-          <img src="/static/images/helx.png" width="80px" height="90px" alt="HeLx">
+            <img src="{{ logo_url }}" width="320px" alt="{{ logo_alt }}">
+            <span class="navbar-brand-text">App Store</span>
         </a>
         {% endif %}
-	-->
+        <!--
+             {% if brand == "scidas" %}
+             <a class="navbar-brand-scidas">
+               <img src="{{ logo_url }}" width="120px" height="81px" alt="{{ logo_alt }}">
+               <span class="navbar-brand navbar-brand-scidas-main">App Store</span>
+             </a>
+             {% else %}
+             <a class="navbar-brand" href="#">
+               <img src="{{ logo_url }}" width="185px" height="35px" alt="{{ logo_alt }}">
+               <img src="/static/images/helx.png" width="80px" height="90px" alt="HeLx">
+             </a>
+             {% endif %}
+        -->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
                 aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
+            <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav ml-auto">
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Menu
-              </a>
-              <!-- Here's the magic. Add the .animate and .slide-in classes to your .dropdown-menu and you're all set! -->
-              <div class="dropdown-menu dropdown-menu-right animate slideIn" aria-labelledby="navbarDropdown">
-                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#createPodModal"><i
-												      class="material-icons">add</i>New Application</a>
-                <a class="dropdown-item" href="#current-pods"><i class="material-icons">storage</i>Current
-                  Applications</a>
-                {% if APPLICATION_BRAND == "braini" %}
-               <a class="dropdown-item" href="{% url 'irods_login' %}"><i class="material-icons">login</i>Irod Login</a>
-                {% endif %}
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="{% url  'sign-out'%}">
-		  <i class="material-icons">exit_to_app</i>Logout</a>
-              </div>
-            </li>
-          </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Menu
+                    </a>
+                    <!-- Here's the magic. Add the .animate and .slide-in classes to your .dropdown-menu and you're all set! -->
+                    <div class="dropdown-menu dropdown-menu-right animate slideIn" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="#" data-toggle="modal" data-target="#createPodModal"><i
+                                class="material-icons">add</i>New Application</a>
+                        <a class="dropdown-item" href="#current-pods"><i class="material-icons">storage</i>Current
+                            Applications</a>
+                        {% if APPLICATION_BRAND == "braini" %}
+                        <a class="dropdown-item" href="{% url 'irods_login' %}"><i class="material-icons">login</i>Irod
+                            Login</a>
+                        {% endif %}
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="{% url  'sign-out'%}">
+                            <i class="material-icons">exit_to_app</i>Logout</a>
+                    </div>
+                </li>
+            </ul>
         </div>
-      </div>
-    </nav>
-    <main>
-      <div class="container-fluid">
+    </div>
+</nav>
+<main>
+    <div class="container-fluid">
         <div class="row">
-          <div class="col-xs-12">
-	    <!--
-                <h1>Application Manager</h1>
-		-->
+            <div class="col-xs-12">
+                <!--
+                         <h1>Application Manager</h1>
+               -->
                 <!-- Trigger create-new-pod modal -->
                 <div class="modal-trigger-container">
-                  <button type="button" id="create-new-pod-modal" class="btn btn-primary btn-lg" data-toggle="modal"
-                          data-target="#createPodModal">
-                    <i class="material-icons">add</i>New Application
-                  </button>
+                    <button type="button" id="create-new-pod-modal" class="btn btn-primary btn-lg" data-toggle="modal"
+                            data-target="#createPodModal">
+                        <i class="material-icons">add</i>New Application
+                    </button>
                 </div>
-          </div>
+            </div>
         </div>
         <!-- Modal -->
         <div class="modal fade" id="createPodModal" tabindex="-1" role="dialog" aria-labelledby="createPodModalLabel"
              aria-hidden="true">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="createPodModalLabel">Launch New Application</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-              <div class="modal-body">
-                <div class="list-group create-pod-list">
-		  
-		  {% for application in applications %}
-                  <a href="#" class="create-pod-list-item list-group-item list-group-item-action"
-                     data-url="/start/"
-		     app_id="{{ application.app_id }}">
-                    <img class="create-pod-list-item__image" src="{{ application.icon }}" alt="{{ application.name }}">
-                    <div class="create-pod-list-item__details">
-                      <div class="create-pod-list-item__title">{{ application.name }}</div>
-                      <div class="create-pod-list-item__description">{{ application.description }}</div>
-                      <small>{{ application.details }}
-		      </small>
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="createPodModalLabel">Launch New Application</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
-                  </a>
-		  <!-- per app documentation would be nice - just need a styled place to put it.	
-		  <center>
-		    <a href={{ application.docs }} target='docs'>{{ application.name }} documentation.</a>
-		  </center>
-		  -->
-		  {% endfor %}
-		  
+                    <div class="modal-body">
+                        <div class="list-group create-pod-list">
+
+                            {% for application in applications %}
+                            <a href="#" class="create-pod-list-item list-group-item list-group-item-action"
+                               data-url="/start/"
+                               app_id="{{ application.app_id }}">
+                                <img class="create-pod-list-item__image" src="{{ application.icon }}"
+                                     alt="{{ application.name }}">
+                                <div class="create-pod-list-item__details">
+                                    <div class="create-pod-list-item__title">{{ application.name }}</div>
+                                    <div class="create-pod-list-item__description">{{ application.description }}</div>
+                                    <small>{{ application.details }}
+                                    </small>
+                                </div>
+
+                            </a>
+                            <!-- per app documentation would be nice - just need a styled place to put it.
+                            <center>
+                              <a href={{ application.docs }} target='docs'>{{ application.name }} documentation.</a>
+                            </center>
+                            -->
+                            {% endfor %}
+
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button data-target="#myModal" id="create-pod" class="btn btn-primary" data-toggle="modal"
+                                disabled
+
+                        ><i class="material-icons">launch</i>Create Application
+                        </button>
+                    </div>
                 </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <button onclick="launchApp()" id="create-pod" type="button" class="btn btn-primary" disabled
-                        data-dismiss="modal"><i class="material-icons">launch</i>Create Application
-                </button>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
+    </div>
+    <div class="modal" id="myModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title"> Insert Requirments </h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="cpu">CPU_Requirements:</label>
+                        <input type="number" class="form-control" id="cpu">
+                    </div>
+<!--                    <div class="form-group">-->
+<!--                        <label for="gpu">GPU_Requirements:</label>-->
+<!--                        <input type="number" class="form-control" id="gpu">-->
+<!--                    </div>-->
+                    <div class="form-group">
+                        <label for="memory">Memory_Requirements:</label>
+                        <input type="number" class="form-control" id="memory">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" onclick="launchApp()" class="btn btn-primary" data-dismiss="modal">
+                        Submit
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
     <!-- listen for clicks on pod creation links within modal -->
     <script>
       const createPodButton = document.querySelector('#create-pod')
@@ -161,63 +197,70 @@
         const activePodSelection = document.querySelector('.create-pod-list-item.active')
         if ( activePodSelection != null ) {
             const urla = activePodSelection.getAttribute('data-url');
-	    const app_id = activePodSelection.getAttribute('app_id');
-	    const url = urla + "?app_id=" + app_id
-          console.log("APPLICATION URL TO REQUEST: " + url)
-          window.open(url)
+       const app_id = activePodSelection.getAttribute('app_id');
+       var cpu = document.getElementById("cpu").value
+<!--       var gpu = document.getElementById("gpu").value-->
+       var memory = document.getElementById("memory").value
+       var url = urla + "?app_id=" + app_id +"&cpu="+cpu +"&memory="+memory
+       console.log("APPLICATION URL TO REQUEST: " + url)
+      window.open(url)
 
-          // Update app display with the new app:
-          console.log("Setting timer to refresh app display . . .")
-          setTimeout(refreshAppDisplay, 22000)
+      // Update app display with the new app:
+      console.log("Setting timer to refresh app display . . .")
+      setTimeout(refreshAppDisplay, 22000)
         }
       }
       function refreshAppDisplay() {
         window.location.reload(true)
         console.log("App display refreshed!")
       }
+
+
+
     </script>
     <!-- Application Display -->
     <div class="container-fluid">
-      <!-- -->
-          <div class="row">
+        <!-- -->
+        <div class="row">
             <h2 id="current-pods">Running Applications</h2>
-          </div>
-	  
-          <div class="row">
+        </div>
+
+        <div class="row">
             <table class="manage-pods-table table table-striped">
-              <thead class="thead-dark">
+                <thead class="thead-dark">
                 <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Connect</th>
-		  <th scope="col">Documentation</th>
-                  <th scope="col">Created</th>
-		  <th scope="col">CPU</th>
-		  <th scope="col">Memory</th>
-                  <th scope="col">Delete</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Connect</th>
+                    <th scope="col">Documentation</th>
+                    <th scope="col">Created</th>
+                    <th scope="col">CPU</th>
+                    <th scope="col">Memory</th>
+                    <th scope="col">Delete</th>
                 </tr>
-              </thead>
-              <tbody>
+                </thead>
+                <tbody>
                 {% for s in svcs_list %}
                 <tr>
-                  <th>
-                    <img class="pod-type-logo" src="{{ s.logo_path }}" alt="{{ s.logo_name }}">
-                  </th>
-		  <td>
-		    <a href="/connect?url={{ s.name }}&name={{ s.display_name }}&icon={{ s.logo_path }}" target="_blank">{{ s.app_id }}</a>
-		  </td>
-		  <td> <a href="{{ s.docs }}" target="_blank">documentation</a> </td>
-                  <td>{{ s.creation_time }}</td>
-                  <td>{{ s.cpu }}m</td>
-                  <td>{{ s.memory }}G</td>
-                  <td>
-                    <button onclick="deleteApp(this)" id="{{s.identifier}}" class="btn btn-danger"
-                            data-id="{{ s.identifier }}"><i class="material-icons">delete</i></button>
-                  </td>
+                    <th>
+                        <img class="pod-type-logo" src="{{ s.logo_path }}" alt="{{ s.logo_name }}">
+                    </th>
+                    <td>
+                        <a href="/connect?url={{ s.name }}&name={{ s.display_name }}&icon={{ s.logo_path }}"
+                           target="_blank">{{ s.app_id }}</a>
+                    </td>
+                    <td><a href="{{ s.docs }}" target="_blank">documentation</a></td>
+                    <td>{{ s.creation_time }}</td>
+                    <td>{{ s.cpu }}m</td>
+                    <td>{{ s.memory }}G</td>
+                    <td>
+                        <button onclick="deleteApp(this)" id="{{s.identifier}}" class="btn btn-danger"
+                                data-id="{{ s.identifier }}"><i class="material-icons">delete</i></button>
+                    </td>
                 </tr>
                 {% endfor %}
-              </tbody>
+                </tbody>
             </table>
-          </div>
+        </div>
     </div>
     <script>
       function getCookie(name) {
@@ -257,6 +300,9 @@
 
 
 
+
+
+
     </script>
 
 
@@ -290,3 +336,11 @@
 </body>
 
 </html>
+
+
+
+
+
+
+
+

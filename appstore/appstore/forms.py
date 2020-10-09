@@ -12,3 +12,9 @@ class CustomSignupForm(SignupForm):
         user.gmail_account = self.cleaned_data['gmail_account']
         user.save()
         return user
+
+
+class ResourceRequestForm(forms.Form):
+    Memory_Requirement = forms.IntegerField(label="Memory Requirement")
+    CPU_Requirement = forms.DecimalField(label="CPU_Requirement")
+    GPU_Requirement = forms.IntegerField(label="GPU_Requirement")
