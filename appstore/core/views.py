@@ -122,20 +122,21 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
         context = super().get_context_data(**kwargs)
         principal = Principal(self.request.user.username)
         app_id = self.request.GET['app_id']
-        cpu = self.request.GET['cpu']
-        memory = self.request.GET['memory']
-        # gpu = self.request.GET['gpu']
-        print(cpu, memory)
+        cpu = str(self.request.GET['cpu'])
+        memory = str(self.request.GET['memory'])+"G"
+        gpu = str(self.request.GET['gpu'])
         resource_request = {
             "deploy": {
                 "resources": {
                     "limits": {
                         "cpus": cpu,
                         "memory": memory,
+                        "gpus": gpu,
                     },
                     "reservations": {
                         "cpus": cpu,
                         "memory": memory,
+                        "gpus": gpu,
                     }
                 }
             }
@@ -149,7 +150,7 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
         else:
             params_tup = (username,)
         principal = Principal(*params_tup)
-        system = tycho.start(principal, app_id)
+        system = tycho.start(principal, app_id, resource_request)
 
         return {
             "name": tycho.apps[app_id]['name'],
