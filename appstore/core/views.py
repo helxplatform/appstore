@@ -6,6 +6,7 @@ from time import sleep
 import requests
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
@@ -310,19 +311,22 @@ def get_brand_details(brand):
     }[brand]
 
 
+@login_required
 def auth(request):
     """ Provide an endpoint for getting the user identity.
     Supports the use case where a reverse proxy like nginx is being
     used to test authentication of a principal before proxying a request upstream. """
-    if request.user:
+    if request.user and request.user.is_authenticated:
         try:
             response = HttpResponse(content_type="application/json", status=200)
             response["REMOTE_USER"] = request.user
-            logger.debug(f"{response['REMOTE_USER']}")
+            logger.debug(f"remote user added to the response ---------> {response['REMOTE_USER']}")
         except Exception as e:
             response = HttpResponse(content_type="application/json", status=403)
             response["REMOTE_USER"] = request.user
+            logger.debug(f"exception with the remote user ------------> {request.user}")
     else:
         response = HttpResponse(content_type="application/json", status=403)
         response["REMOTE_USER"] = request.user
+        logger.debug(f"user is not authenticated on the server -------> {request.user}")
     return response
