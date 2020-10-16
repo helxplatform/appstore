@@ -71,8 +71,6 @@ class ApplicationManager(LoginRequiredMixin, generic.TemplateView):
         Create data structures to allow the view to render results.
         """
         context = super(ApplicationManager, self).get_context_data(*args, **kwargs)
-        # form = forms.ResourceRequestForm(self.request.POST or None)
-        # context["form"] = form
         brand = settings.APPLICATION_BRAND
         logger.debug(f"-- running tycho.status() to get running systems.")
         status = tycho.status({
@@ -111,7 +109,6 @@ class ApplicationManager(LoginRequiredMixin, generic.TemplateView):
             "logo_alt": f"{brand_map['name']} Image",
             "svcs_list": services,
             "applications": apps,
-            # "form": context["form"]
         }
 
 
@@ -124,8 +121,9 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
         principal = Principal(self.request.user.username)
         app_id = self.request.GET['app_id']
         cpu = str(self.request.GET['cpu'])
-        memory = str(self.request.GET['memory'])+"G"
+        memory = self.request.GET['memory']
         gpu = str(self.request.GET['gpu'])
+
         resource_request = {
             "deploy": {
                 "resources": {
