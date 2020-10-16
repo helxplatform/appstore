@@ -149,27 +149,28 @@
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <h5>Please specify the units to be reserved for workspace below. </h5>
                     <div class="container">
-                        <div class="form-group">
-                            <label for="cpu">CPU:</label>
-                            <input type="number" class="form-control" placeholder="0.5" id="cpu">
+                        <div class="form-inline">
+                            <label class="mr-sm-2" for="cpu">CPU</label>
+                            <input type="number" class="form-control mb-2 mr-sm-2" value="0.5" placeholder="0.5" id="cpu">
                         </div>
-                        <h7 class="form-control"> Units: 1 = 1 CPU (ex 1, .25, .5) </h7>
-                        <div class="form-group">
-                            <label for="gpu">GPU:</label>
-                            <input type="number" class="form-control" placeholder="0" id="gpu">
+                        <h7> Units: 1 = 1 CPU (ex 1, .25, .5) </h7>
+                        <div class="form-inline">
+                            <label class="mr-sm-2" for="gpu">GPU</label>
+                            <input type="number" class="form-control mb-2 mr-sm-2" value="0" placeholder="0" id="gpu">
                         </div>
-                        <h7 class="form-control"> Units: 1 = 1 GPU (Whole numbers only) </h7>
-                        <div class="form-group">
-                            <label for="memory">Memory:</label>
-                            <input type="text" class="form-control" placeholder="2G" id="memory">
+                        <h7> Units: 1 = 1 GPU (Whole numbers only) </h7>
+                        <div class="form-inline">
+                            <label class="mr-sm-2" for="memory">Memory</label>
+                            <input type="text" class="form-control mb-2 mr-sm-2" value="2G" placeholder="2G" id="memory">
                         </div>
-                        <h7 class="form-control"> Units: 1G = 1 Gigabyte (ex .25G, .5G, 1G) </h7>
+                        <h7> Units: 1G = 1 Gigabyte (ex .25G, .5G, 1G) </h7>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" onclick="launchApp()" class="btn btn-primary" data-dismiss="modal">
-                        Submit
+                        Apply
                     </button>
                 </div>
             </div>
@@ -179,17 +180,13 @@
     <script>
       const createPodButton = document.querySelector('#create-pod')
       const createPodLinks = document.querySelectorAll('.create-pod-list a')
-      console.log(createPodLinks.length)
       const anyActivePodLinksActive = () => {
         createPodButton.disabled = true
         for (let i = 0; i < createPodLinks.length; i++) {
-            console.log("Checking create pod links")
-            console.log(createPodLinks[i])
           if (createPodLinks[i].classList.contains('active')) {
             return true
           }
         }
-        console.log("Checking anyActivePodLinksActive")
       }
       createPodLinks.forEach(link => {
         link.addEventListener('click', function(event) {
@@ -216,6 +213,7 @@
         }
       }
       function refreshAppDisplay() {
+      console.log("reloading", window.location)
         window.location.reload(true)
         console.log("App display refreshed!")
       }

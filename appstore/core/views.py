@@ -103,6 +103,7 @@ class ApplicationManager(LoginRequiredMixin, generic.TemplateView):
         for app_id, app in tycho.apps.items():
             app['app_id'] = app_id
         apps = sorted(tycho.apps.values(), key=lambda v: v['name'])
+
         return {
             "brand": brand,
             "logo_url": f"/static/images/{brand}/{brand_map['logo']}",
@@ -123,7 +124,6 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
         cpu = str(self.request.GET['cpu'])
         memory = self.request.GET['memory']
         gpu = str(self.request.GET['gpu'])
-
         resource_request = {
             "deploy": {
                 "resources": {
@@ -140,8 +140,6 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
                 }
             }
         }
-        system = tycho.start(principal, app_id, resource_request)
-
         username = self.request.user.username
         app_id = self.request.GET['app_id']
         if app_id == "dicom-gh":
