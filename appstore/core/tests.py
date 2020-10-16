@@ -34,7 +34,7 @@ class AppTests(TestCase):
     def test_app_start(self):
         """ Test starting an app. """
         logger.info(f"-- testing app start")
-        response = self.client.get('/start?app_id=x')
+        response = self.client.get('/start?app_id=x&cpu=0.5&gpu=0&memory=2G')
         self.assertEqual(response.status_code, 301)
 
     def test_app_delete(self):
