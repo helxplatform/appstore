@@ -107,7 +107,6 @@
                     </div>
                     <div class="modal-body">
                         <div class="list-group create-pod-list">
-
                             {% for application in applications %}
                             <a href="#" class="create-pod-list-item list-group-item list-group-item-action"
                                data-url="/start/"
@@ -120,7 +119,6 @@
                                     <small>{{ application.details }}
                                     </small>
                                 </div>
-
                             </a>
                             <!-- per app documentation would be nice - just need a styled place to put it.
                             <center>
@@ -128,7 +126,6 @@
                             </center>
                             -->
                             {% endfor %}
-
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -144,25 +141,30 @@
         </div>
     </div>
     <div class="modal" id="myModal">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <!-- Modal Header -->
                 <div class="modal-header">
-                    <h4 class="modal-title"> Insert Requirments </h4>
+                    <h4 class="modal-title"> Workspace Resources </h4>
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="cpu">CPU_Requirements:</label>
-                        <input type="number" class="form-control" id="cpu">
-                    </div>
-                    <div class="form-group">
-                        <label for="gpu">GPU_Requirements:</label>
-                        <input type="number" class="form-control" id="gpu">
-                    </div>
-                    <div class="form-group">
-                        <label for="memory">Memory_Requirements:</label>
-                        <input type="number" class="form-control" id="memory">
+                    <div class="container">
+                        <div class="form-group">
+                            <label for="cpu">CPU:</label>
+                            <input type="number" class="form-control" placeholder="0.5" id="cpu">
+                        </div>
+                        <h7 class="form-control"> Units: 1 = 1 CPU (ex 1, .25, .5) </h7>
+                        <div class="form-group">
+                            <label for="gpu">GPU:</label>
+                            <input type="number" class="form-control" placeholder="0" id="gpu">
+                        </div>
+                        <h7 class="form-control"> Units: 1 = 1 GPU (Whole numbers only) </h7>
+                        <div class="form-group">
+                            <label for="memory">Memory:</label>
+                            <input type="text" class="form-control" placeholder="2G" id="memory">
+                        </div>
+                        <h7 class="form-control"> Units: 1G = 1 Gigabyte (ex .25G, .5G, 1G) </h7>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -170,7 +172,6 @@
                         Submit
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
@@ -178,13 +179,17 @@
     <script>
       const createPodButton = document.querySelector('#create-pod')
       const createPodLinks = document.querySelectorAll('.create-pod-list a')
+      console.log(createPodLinks.length)
       const anyActivePodLinksActive = () => {
         createPodButton.disabled = true
         for (let i = 0; i < createPodLinks.length; i++) {
+            console.log("Checking create pod links")
+            console.log(createPodLinks[i])
           if (createPodLinks[i].classList.contains('active')) {
             return true
           }
         }
+        console.log("Checking anyActivePodLinksActive")
       }
       createPodLinks.forEach(link => {
         link.addEventListener('click', function(event) {
