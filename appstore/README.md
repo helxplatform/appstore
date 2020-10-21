@@ -180,26 +180,26 @@ bin/appstore run $product
 
 #### Installing kubectl on Linux:
 - Download the latest release
-
+    ```
     Run: curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-
+    ```
 - Make the kubectl binary executable:
-
+    ```
      chmod +x ./kubectl
-
+    ```
 - Move the binary into your PATH:
-
+    ```
     sudo mn ./kubectl /usr/local/bin/kubectl
-    
+    ```
 - Check to see if installed:
-
+    ```
     kubectl version --client
-    
-NOTE: Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
+    ```
+#### NOTE: Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
  for example the one provided to you will be exported into the terminal where tycho api would be run: 
  export KUBECONFIG=path-to-kubeconfig-file. 
 
-####Step 1:
+#### Step 1:
 
 1. Clone the Appstore repo (develop branch):
     ```
@@ -249,7 +249,7 @@ Step 2:
    bin/tycho api -d
    ```
 
-####Step 3:
+#### Step 3:
 
 1. Now Appstore is running, navigate to the admin panel by appending /admin to the url : http://localhost:8000/admin.
 2. Login in to the admin panel using admin/admin for user/password.
