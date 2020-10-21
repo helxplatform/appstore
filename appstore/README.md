@@ -195,7 +195,8 @@ bin/appstore run $product
     ```
     kubectl version --client
     ```
-#### NOTE: Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
+#### NOTE: 
+   Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
  for example the one provided to you will be exported into the terminal where tycho api would be run: 
  export KUBECONFIG=path-to-kubeconfig-file. 
 
