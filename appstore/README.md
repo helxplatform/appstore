@@ -155,7 +155,7 @@ if [ ! -d appstore ]; then
 fi
 cd appstore
 # use metadata branch and install requirements
-git checkout metadata
+git checkout develop
 cd appstore
 pip install -r requirements.txt
 
@@ -172,6 +172,89 @@ bin/appstore tests $product
 # run the appstore at localhost:8000
 bin/appstore run $product
 ```
+### Development environment with Kubernetes
+
+#### Prerequisites:
+- Have Access to a running k8s cluster.
+- Have [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) set up.
+
+#### Installing kubectl on Linux:
+- Download the latest release
+    ```
+    Run: curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+    ```
+- Make the kubectl binary executable:
+    ```
+     chmod +x ./kubectl
+    ```
+- Move the binary into your PATH:
+    ```
+    sudo mn ./kubectl /usr/local/bin/kubectl
+    ```
+- Check to see if installed:
+    ```
+    kubectl version --client
+    ```
+#### NOTE: 
+   Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
+ for example the one provided to you will be exported into the terminal where tycho api would be run: 
+ export KUBECONFIG=path-to-kubeconfig-file. 
+
+#### Step 1:
+
+1. Clone the Appstore repo (develop branch):
+    ```
+     git clone -b develop [https://github.com/helxplatform/appstore.git](https://github.com/helxplatform/appstore.git)
+    ```
+2. Activate virtual environment: 
+    ```
+    python3 -m venv venv 
+
+    source venv/bin/activate
+   ```
+3. Install the requirements: 
+    ```
+    pip install -r requirements.txt
+   ```
+4. Finally run Appstore by using the management CLI.
+    
+    ```
+   bin/appstore start {product}
+   ```
+NOTE: After running bin/appstore start {product} for the first time, please use
+bin/appstore run {product} every other time. So that migrations to the data-base will 
+only take place once. 
+
+Step 2:
+
+1. Clone the Tycho repo (develop branch):
+    ```
+    git clone -b develop [https://github.com/helxplatform/tycho.git](https://github.com/helxplatform/tycho.git)
+    ```
+2. Activate virtual environment:
+    ```
+    python3 -m venv venv 
+
+    source venv/bin/activate
+   ```
+3. Install the requirements:
+    ```
+    pip install -r requirements.txt
+   ```
+4. Export the kubeconfig to the terminal where tycho api is to be run:
+    ```
+    export KUBECONFIG=path-to-kubeconfig-file
+    ```
+5. Now run tycho api in the terminal where the kubeconfig was exported:
+    ```
+   bin/tycho api -d
+   ```
+
+#### Step 3:
+
+1. Now Appstore is running, navigate to the admin panel by appending /admin to the url : http://localhost:8000/admin.
+2. Login in to the admin panel using admin/admin for user/password.
+3. Nagivate to the application manager : http://localhost:8000/apps. From this endpoint we can launch applications.
 # Next
 HeLx is alpha. This sectionoutlines a few areas of anticipated focus for upcoming improvements.
 ## Architecture
