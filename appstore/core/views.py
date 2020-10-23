@@ -5,6 +5,8 @@ from time import sleep
 
 import requests
 from django.conf import settings
+from allauth.socialaccount.signals import pre_social_login
+from django.dispatch import receiver
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -28,6 +30,14 @@ Manages application metadata, discovers and invokes TychoClient, etc.
 tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE,
     product=settings.APPLICATION_BRAND)
+
+
+@receiver(pre_social_login)
+def pre_login(sender, request, sociallogin, **kwargs):
+    if sociallogin.token:
+        access_token = sociallogin.token
+        request.session["Authorization"] = f"Bearer {access_token}"
+        logger.debug(f"----------> Adding Bearer token to the user session")
 
 
 def get_host(request):
@@ -306,6 +316,16 @@ def get_brand_details(brand):
         }
     }[brand]
 
+def get_access_token(request):
+    access_token = ""
+    try:
+        auth_string = request.session['Authorization']
+        if auth_string and ("Bearer" in auth_string):
+            access_token = auth_string.split(" ")[1]
+    except Exception as e:
+        logger.debug("----------> Failed getting access token. ")
+        pass
+    return access_token
 
 @login_required
 def auth(request):
@@ -316,13 +336,15 @@ def auth(request):
         try:
             response = HttpResponse(content_type="application/json", status=200)
             response["REMOTE_USER"] = request.user
-            logger.debug(f"remote user added to the response ---------> {response['REMOTE_USER']}")
+            access_token = get_access_token(request)
+            response["ACCESS_TOKEN"] = access_token
+            logger.debug(f"----------> remote user and corresponding access token added to the response ----- {response['REMOTE_USER']}")
         except Exception as e:
             response = HttpResponse(content_type="application/json", status=403)
             response["REMOTE_USER"] = request.user
-            logger.debug(f"exception with the remote user ------------> {request.user}")
+            logger.debug(f"----------> exception with the remote user ----- {request.user}")
     else:
         response = HttpResponse(content_type="application/json", status=403)
         response["REMOTE_USER"] = request.user
-        logger.debug(f"user is not authenticated on the server -------> {request.user}")
+        logger.debug(f"----------> user is not authenticated on the server ----- {request.user}")
     return response
