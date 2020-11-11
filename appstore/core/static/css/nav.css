@@ -57,6 +57,12 @@ nav {
   margin-left: 2rem;
 }
 
+.navbar-brand-restartr-main {
+  color: var(--color-slate);
+  font-size: 120%;
+  margin-left: 0;
+  padding: 0px 0px 0px 10px;
+}
 
 .navbar-brand-scidas-main {
   color: var(--color-slate);

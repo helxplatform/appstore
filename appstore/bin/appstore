@@ -18,7 +18,7 @@ APPSTORE_HOME=$( dirname $DIR )
 export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
 dockerhub_repo=heliumdatastage
 image_ver=0.0.1
-TYCHO_BRANCH=master
+TYCHO_BRANCH=develop
 
 # Ensure Tycho is available on the path.
 if [ ! -d $APPSTORE_HOME/tycho ]; then
@@ -78,7 +78,8 @@ run () {
     brand=$1
     test -z ${brand} && help
     settings=appstore.settings.${brand}_settings && \
-        gunicorn --bind 0.0.0.0:8000 --log-level=debug appstore.wsgi:application --workers=5
+    export DJANGO_SETTINGS_MODULE=$settings
+     gunicorn --bind 0.0.0.0:8000 --log-level=debug appstore.wsgi:application --workers=5
 	#python manage.py runserver    --settings=$settings 0.0.0.0:8000
 }
 
@@ -175,11 +176,11 @@ help () {
 
 Usage:
    createsuperuser                           \t Create a superuser based on environment variables.
-   run         [ braini | scidas | catalyst ]\t Run the application.
-   tests       [ braini | scidas | catalyst ]\t Run all unit tests.
+   run         [ braini | scidas | catalyst | restartr ]\t Run the application.
+   tests       [ braini | scidas | catalyst | restartr ]\t Run all unit tests.
    image build                               \t Build the docker image.
-   image push  [ braini | scidas | catalyst ]\t Push the image to the repository.
-   image run   [ braini | scidas | catalyst ]\t Run the docker image.
+   image push  [ braini | scidas | catalyst | restartr ]\t Push the image to the repository.
+   image run   [ braini | scidas | catalyst | restartr ]\t Run the docker image.
 """
     exit 1
 }

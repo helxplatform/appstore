@@ -8,6 +8,8 @@
     <title>Brain-I</title>
     {% elif APPLICATION_BRAND == "catalyst" %}
     <title>Biodata Catalyst</title>
+    {% elif APPLICATION_BRAND == "restartr" %}
+    <title>Restarting Research</title>
     {% else %}
     <title>CommonsShare</title>
     {% endif %}
@@ -44,6 +46,9 @@
             {% elif APPLICATION_BRAND == "catalyst" %}
             <a href="/"><img class="navbar-brand" id="img-brand-logo" src="/static/images/catalyst/bdc-logo.svg"
                              alt="Biodata Catalyst Logo"></a>
+            {% elif APPLICATION_BRAND == "restartr" %}
+            <a href="/"><img class="navbar-brand navbar-brand-restartr" id="img-brand-restartr-logo" src="/static/images/restartr/restartingresearch.png"
+                             alt="Restarting Research Logo"></a>
             {% else %}
             <a href="/"><img class="navbar-brand" id="img-brand-logo" src="/static/images/commonsshare/logo-lg.png"
                              alt="CommonsShare Logo"></a>

@@ -19,12 +19,6 @@ class Command(BaseCommand):
                         provider=provider,
                         key='',
                     )
-                    for site in os.environ[f'{provider.upper()}_SITES'].split(','):
-                        try:
-                            new_site = Site.objects.get(domain=site)
-                        except Exception as E:
-                            new_site = Site.objects.create(name=site, domain=site)
-
                     social_app.sites.add(Site.objects.get(id=4))
 
                 print(f"Added social applications {provider}.")

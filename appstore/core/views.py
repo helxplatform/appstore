@@ -5,11 +5,15 @@ from time import sleep
 
 import requests
 from django.conf import settings
+from allauth.socialaccount.signals import pre_social_login
+from django.dispatch import receiver
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib.contenttypes.models import ContentType
 from django.core.mail import EmailMessage
 from django.http import HttpResponseRedirect, HttpResponse
 from django.http import JsonResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.views import generic
 from irods.access import iRODSAccess
 from irods.exception import UserDoesNotExist
@@ -26,6 +30,15 @@ Manages application metadata, discovers and invokes TychoClient, etc.
 tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE,
     product=settings.APPLICATION_BRAND)
+
+
+@receiver(pre_social_login)
+def pre_login(sender, request, sociallogin, **kwargs):
+    if sociallogin.token:
+        access_token = sociallogin.token
+        request.session["Authorization"] = f"Bearer {access_token}"
+        logger.debug(f"----------> Adding Bearer token to the user session")
+
 
 def get_host(request):
     if "HTTP_HOST" in request.META:
@@ -45,8 +58,20 @@ def form_service_url(host, app_id, service, username, system=None):
     logger.debug(f"-- app-networking constructed url: {url}")
     return url
 
+def principal_params(username):
+    social_token_model_objects = ContentType.objects.get(model="socialtoken").model_class().objects.all()
+    access_token = None
+    refresh_token = None
+    for obj in social_token_model_objects:
+        if obj.account.user.username == username:
+            access_token = obj.token
+            refresh_token = obj.token_secret if obj.token_secret else None
+            break
+        else:
+            continue
+    return username, access_token, refresh_token
 
-class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
+class ApplicationManager(LoginRequiredMixin, generic.TemplateView):
     """ Application manager controller. """
     template_name = 'apps_pods.html'
 
@@ -88,23 +113,52 @@ class ApplicationManager(generic.TemplateView, LoginRequiredMixin):
         for app_id, app in tycho.apps.items():
             app['app_id'] = app_id
         apps = sorted(tycho.apps.values(), key=lambda v: v['name'])
+
         return {
             "brand": brand,
             "logo_url": f"/static/images/{brand}/{brand_map['logo']}",
             "logo_alt": f"{brand_map['name']} Image",
             "svcs_list": services,
-            "applications": apps
+            "applications": apps,
         }
 
 
-class AppStart(generic.TemplateView, LoginRequiredMixin):
+class AppStart(LoginRequiredMixin, generic.TemplateView):
     """ Start an application by invoking the app context. """
     template_name = 'starting.html'
 
     def get_context_data(self, *args, **kwargs):
+        context = super().get_context_data(**kwargs)
         principal = Principal(self.request.user.username)
         app_id = self.request.GET['app_id']
-        system = tycho.start(principal, app_id)
+        cpu = str(self.request.GET['cpu'])
+        memory = self.request.GET['memory']
+        gpu = str(self.request.GET['gpu'])
+        resource_request = {
+            "deploy": {
+                "resources": {
+                    "limits": {
+                        "cpus": cpu,
+                        "memory": memory,
+                        "gpus": gpu,
+                    },
+                    "reservations": {
+                        "cpus": cpu,
+                        "memory": memory,
+                        "gpus": gpu,
+                    }
+                }
+            }
+        }
+        username = self.request.user.username
+        app_id = self.request.GET['app_id']
+        if app_id == "dicom-gh":
+            params_tup = principal_params(username)
+        else:
+            params_tup = (username,)
+        principal = Principal(*params_tup)
+        system = tycho.start(principal, app_id, resource_request)
+
         return {
             "name": tycho.apps[app_id]['name'],
             "icon": tycho.apps[app_id]['icon'],
@@ -113,7 +167,7 @@ class AppStart(generic.TemplateView, LoginRequiredMixin):
         }
 
 
-class AppConnect(generic.TemplateView, LoginRequiredMixin):
+class AppConnect(LoginRequiredMixin, generic.TemplateView):
     """ Show a splash screen while starting the application. """
     template_name = 'starting.html'
 
@@ -136,14 +190,15 @@ class IrodsLogin(generic.TemplateView):
         context = {'existing_user': 'no'}
         password = str(uuid.uuid4())[:5]
         creds = {'user': os.environ.get('RODS_USERNAME'), 'password': os.environ.get('RODS_PASSWORD'), 'zone': zone}
-        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'), port=os.environ.get('BRAINI_PORT')) as session:
+        with iRODSSession(**creds, host=os.environ.get('BRAINI_RODS'),
+                          port=os.environ.get('BRAINI_PORT', "1247")) as session:
             try:
                 user = session.users.get(email)
             except UserDoesNotExist:
                 context['existing_user'] = 'yes'
                 user = session.users.create(email, 'rodsuser')
                 with iRODSSession(host=os.environ.get('NRC_MICROSCOPY_IRODS'),
-                                  port=os.environ.get('NRC_PORT'),
+                                  port=os.environ.get('NRC_PORT', "1247"),
                                   **creds) as user_session:
 
                     user_session.users.modify(user.name, 'password', password)
@@ -179,8 +234,8 @@ class ProbeServices(generic.View):
             print("Response Request ==>", response)
             # The service is returning a result, regardless of wheher it is nominal
             # or an error, this is not a network failure. Send the redirect.
-            if response.status_code == 404:
-                sleep(20)
+            # if response.status_code == 404:
+            #    sleep(20)
             result = {"status": "ok"}
         except Exception as e:
             logger.info(f"probe services Error  ===> {e}")
@@ -251,26 +306,45 @@ def get_brand_details(brand):
             "name": "BioData Catalyst",
             "logo": "bdc-logo.svg"
         },
+        "restartr": {
+            "name": "UNC Restarting Research",
+            "logo": "restartingresearch.png"
+        },
         "commonsshare": {
             "name": "CommonsShare",
             "logo": "logo-lg.png"
         }
     }[brand]
 
+def get_access_token(request):
+    access_token = ""
+    try:
+        auth_string = request.session['Authorization']
+        if auth_string and ("Bearer" in auth_string):
+            access_token = auth_string.split(" ")[1]
+    except Exception as e:
+        logger.debug("----------> Failed getting access token. ")
+        pass
+    return access_token
 
+@login_required
 def auth(request):
     """ Provide an endpoint for getting the user identity.
     Supports the use case where a reverse proxy like nginx is being
     used to test authentication of a principal before proxying a request upstream. """
-    if request.user:
+    if request.user and request.user.is_authenticated:
         try:
             response = HttpResponse(content_type="application/json", status=200)
             response["REMOTE_USER"] = request.user
-            logger.debug(f"{response['REMOTE_USER']}")
+            access_token = get_access_token(request)
+            response["ACCESS_TOKEN"] = access_token
+            logger.debug(f"----------> remote user and corresponding access token added to the response ----- {response['REMOTE_USER']}")
         except Exception as e:
             response = HttpResponse(content_type="application/json", status=403)
             response["REMOTE_USER"] = request.user
+            logger.debug(f"----------> exception with the remote user ----- {request.user}")
     else:
         response = HttpResponse(content_type="application/json", status=403)
         response["REMOTE_USER"] = request.user
+        logger.debug(f"----------> user is not authenticated on the server ----- {request.user}")
     return response

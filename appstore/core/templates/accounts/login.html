@@ -14,8 +14,16 @@
     of your existing third party accounts:{% endblocktrans %}</p>
 
 <div class="socialaccount_ballot">
-  <ul class="socialaccount_providers">
+    <ul class="socialaccount_providers">
         {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+        {% if ALLOW_SAML_LOGIN == "true" %}
+            <li>
+                <a title="SAML"
+                    class="socialaccount_provider"
+                    href="/accounts/saml">UNC Chapel Hill Single Sign-On
+                </a>
+            </li>
+        {% endif %}
     </ul>
 </div>
 {% include "socialaccount/snippets/login_extra.html" %}
