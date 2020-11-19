@@ -54,6 +54,53 @@ EOF
   }
   create_superuser
 }
+#########################################################################################################
+##
+## Adding and Removing User to the Authorized Users table programmatically, facilitating use of secrets.
+##
+#########################################################################################################
+createauthorizedusers () {
+
+    project=$1;
+    test -z ${project} && help;
+    local AUTH_USERS=$AUTHORIZED_USERS;
+    local REMOVE_AUTH_USERS=$REMOVE_AUTHORIZED_USERS;
+
+    add () {
+        if [ ! -z "$AUTH_USERS" -a "$AUTH_USERS" != " " ]; then
+            USERS=(${AUTH_USERS//,/ })
+            for user in "${USERS[@]}"; do
+                cat <<EOF | python manage.py shell --settings=appstore.settings.${project}_settings
+from core.models import AuthorizedUser
+if AuthorizedUser.objects.filter(email="$user"):
+    print(f"User already in Authorized Users list ----> add skipping")
+else:
+    u = AuthorizedUser(email="$user")
+    u.save()
+    print(f"Added User to the Authorized Users list ----> add success")
+EOF
+            done
+        fi
+    }
+
+    remove () {
+        if [ ! -z "$REMOVE_AUTH_USERS" -a "$REMOVE_AUTH_USERS" != " " ]; then
+            USERS=(${REMOVE_AUTH_USERS//,/ })
+            for user in "${USERS[@]}"; do
+                cat <<EOF | python manage.py shell --settings=appstore.settings.${project}_settings
+from core.models import AuthorizedUser
+if AuthorizedUser.objects.filter(email="$user"):
+    AuthorizedUser.objects.filter(email="$user").delete()
+    print(f"Removed user from Authorized Users list ----> remove success")
+else:
+    print(f"User not in Authorized Users list ----> remove skipping")
+EOF
+            done
+        fi
+    }
+    add;
+    remove;
+}    
 ###############################################################################
 ##
 ## Upgrade the database running migrations and collecting static objects.
@@ -189,6 +236,7 @@ start(){
      product=$1
      updatedb $product
      createsuperuser
+     createauthorizedusers $product
      run $product
 }
 $*
