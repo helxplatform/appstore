@@ -77,7 +77,7 @@ if AuthorizedUser.objects.filter(email="$user"):
 else:
     u = AuthorizedUser(email="$user")
     u.save()
-    print(f"Added User to the Authorized Users list ----> add success")
+    print(f"Added {'$user'} to the Authorized Users list ----> add success")
 EOF
             done
         fi
@@ -89,11 +89,12 @@ EOF
             for user in "${USERS[@]}"; do
                 cat <<EOF | python manage.py shell --settings=appstore.settings.${project}_settings
 from core.models import AuthorizedUser
-if AuthorizedUser.objects.filter(email="$user"):
-    AuthorizedUser.objects.filter(email="$user").delete()
-    print(f"Removed user from Authorized Users list ----> remove success")
+a_user = AuthorizedUser.objects.filter(email="$user")
+if a_user:
+    a_user.delete()
+    print(f"Removed {'$user'} from Authorized Users list ----> remove success")
 else:
-    print(f"User not in Authorized Users list ----> remove skipping")
+    print(f"{'$user'} not in Authorized Users list ----> remove skipping")
 EOF
             done
         fi
