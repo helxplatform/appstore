@@ -59,7 +59,7 @@ EOF
 ## Adding and Removing User to the Authorized Users table programmatically, facilitating use of secrets.
 ##
 #########################################################################################################
-createauthorizedusers () {
+manageauthorizedusers () {
 
     project=$1;
     test -z ${project} && help;
@@ -223,6 +223,7 @@ help () {
     printf """bin/appstore management interface.
 
 Usage:
+   manageauthorizedusers [ braini | scidas | cat ] \t Add and Remove authorized users based on environment variables.
    createsuperuser                           \t Create a superuser based on environment variables.
    run         [ braini | scidas | catalyst | restartr ]\t Run the application.
    tests       [ braini | scidas | catalyst | restartr ]\t Run all unit tests.
@@ -237,7 +238,7 @@ start(){
      product=$1
      updatedb $product
      createsuperuser
-     createauthorizedusers $product
+     manageauthorizedusers $product
      run $product
 }
 $*
