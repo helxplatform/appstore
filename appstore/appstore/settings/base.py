@@ -69,7 +69,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',
     'middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly',
+    'middleware.session_idle_timeout.SessionIdleTimeout'
 ]
+
+# Session Timeout Configuration
+SESSION_IDLE_TIMEOUT = 300
 
 # Email configuration
 EMAIL_HOST = 'smtp.gmail.com'
