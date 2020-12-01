@@ -6,7 +6,7 @@ cffi==1.14.3
 chardet==3.0.4
 cryptography==2.8
 defusedxml==0.6.0
-djangosaml2==0.19.0
+djangosaml2==0.18.1
 Django==2.1.*
 django-allauth==0.42.0
 django-bootstrap-form==3.4
@@ -40,7 +40,7 @@ python-dateutil==2.8.1
 python-irodsclient==0.8.2
 python3-openid==3.1.0
 pytz==2018.7
-PyYAML==5.1.2
+PyYAML==3.13
 requests==2.20.1
 requests-cache==0.5.2
 requests-oauthlib==1.3.0
