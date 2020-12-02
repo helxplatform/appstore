@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'middleware',
-    'django_saml2_auth',
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
