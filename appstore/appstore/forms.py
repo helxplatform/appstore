@@ -15,8 +15,8 @@ class CustomSignupForm(SignupForm):
         send_mail(
             'Whitelisting Required',
             'A new user ' + user.email + ' has signed up for access to ' + settings.APPLICATION_BRAND
-            + 'and needs to be reviewed for whitelisting. Upon successful review, kindly whitelist the user using '
-            + settings.SITE_URL + settings.ADMIN_URL,
+            + ' and needs to be reviewed for whitelisting. Upon successful review, kindly add the user to Authorized Users on '
+            + settings.SITE_URL + settings.ADMIN_URL + '.',
             settings.EMAIL_HOST_USER,
             [settings.APPLICATION_BRAND + '-admin@lists.renci.org'],
             fail_silently=False,
