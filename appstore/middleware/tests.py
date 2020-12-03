@@ -22,7 +22,7 @@ class AllowWhiteListedUserOnlyTests(TestCase):
             "HTTP_APP_VERSION": "1.0.0",
             "HTTP_USER_AGENT": "AUTOMATED TEST"
         }
-        self.request.scheme = 'test'
+        self.request.scheme = 'http'
         self.request.path = '/apps/'
         self.request.session = {}
         self.groups = Group.objects.create(name='whitelisted')
