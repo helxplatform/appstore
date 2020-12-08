@@ -1,16 +1,15 @@
 from allauth.account.forms import SignupForm
 from django import forms
+from django.core.mail import send_mail
+from django.conf import settings
 
 
 class CustomSignupForm(SignupForm):
-    first_name = forms.CharField(max_length=30, label='First Name')
-    last_name = forms.CharField(max_length=30, label='Last Name')
-    gmail_account = forms.CharField(max_length=50, label='Gmail Account')
-    def signup(self, request, user):
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
-        user.gmail_account = self.cleaned_data['gmail_account']
-        user.save()
+    def __init__(self, *args, **kwargs):
+        super(CustomSignupForm, self).__init__(*args, **kwargs)
+
+    def save(self, request):
+        user = super(CustomSignupForm, self).save(request)
         return user
 
 

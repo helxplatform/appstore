@@ -77,8 +77,24 @@
     </div>
 </div>
 
+<script>
+    setTimeout(function(){
+        if ($('#msg').length > 0){
+            $('#msg').remove();
+        }
+    }, 10000)
+</script>
 
 <div class="main-container">
+    {% if messages %}
+    {% for message in messages %}
+    {% if "timeout" in message.tags %}
+    <div class="alert alert-success" id="msg" role="alert">
+        {{ message }}
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
     {% block content %}
     {% csrf_token %}
     {% endblock %}

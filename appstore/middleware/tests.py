@@ -20,8 +20,10 @@ class AllowWhiteListedUserOnlyTests(TestCase):
             "HTTP_OPERATING_SYSTEM_VERSION": "ICE CREAM",
             "HTTP_PLATFORM": "ANDROID",
             "HTTP_APP_VERSION": "1.0.0",
-            "HTTP_USER_AGENT": "AUTOMATED TEST"
+            "HTTP_USER_AGENT": "AUTOMATED TEST",
+            "HTTP_HOST": "localhost"
         }
+        self.request.scheme = 'http'
         self.request.path = '/apps/'
         self.request.session = {}
         self.groups = Group.objects.create(name='whitelisted')

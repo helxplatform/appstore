@@ -5,6 +5,7 @@ from django.contrib.auth.models import Group
 from django.contrib.sessions.models import Session
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
+from django.core.mail import send_mail
 
 from core.models import AuthorizedUser
 
@@ -33,6 +34,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                 else:
                     logger.info(f"Filtering user {user} is not authorized")
                     self.clear_session(request)
+                    self.send_whitelist_email(request, user)
                     return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
         logger.info(f"accepting user {user}")
         return None
@@ -56,3 +58,21 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         session_key = request.session.session_key
         session = Session.objects.get(session_key=session_key)
         Session.objects.filter(session_key=session).delete()
+
+    @staticmethod
+    def send_whitelist_email(request, user):
+        print('sending email')
+
+        msg = 'A user ' + user.email + ' is requesting access to ' + settings.APPLICATION_BRAND \
+              + ' and needs to be reviewed for whitelisting. Upon successful review, kindly add the user to' \
+              + ' Authorized Users on django admin panel using ' \
+              + request.scheme + '://' + request.META['HTTP_HOST'] + settings.ADMIN_URL + '.'
+        print(msg)
+
+        send_mail(
+            'Whitelisting Required',
+            msg,
+            settings.EMAIL_HOST_USER,
+            [settings.APPLICATION_BRAND + '-admin@lists.renci.org'],
+            fail_silently=False,
+        )

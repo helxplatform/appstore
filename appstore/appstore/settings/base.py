@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'core',
     'middleware',
-    'django_saml2_auth',
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
@@ -69,12 +68,16 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',
     'middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly',
+    'middleware.session_idle_timeout.SessionIdleTimeout'
 ]
+
+# Session Timeout Configuration
+SESSION_IDLE_TIMEOUT = 300
 
 # Email configuration
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = '587'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'bot.commonshare@gmail.com')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'appstore@renci.org')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get("APPSTORE_DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
@@ -88,6 +91,8 @@ ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
 ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
 
+ACCOUNT_FORMS = {'signup': 'appstore.forms.CustomSignupForm'}
+
 SOCIALACCOUNT_QUERY_EMAIL = ACCOUNT_EMAIL_REQUIRED
 
 AUTHENTICATION_BACKENDS = (
@@ -97,8 +102,6 @@ AUTHENTICATION_BACKENDS = (
 )
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', "http")
-
-SOCIALACCOUNT_QUERY_EMAIL = True
 
 SOCIALACCOUNT_PROVIDERS = \
     {'google':
