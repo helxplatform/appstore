@@ -16,25 +16,23 @@
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
-    <div class="container-fluid">
+    <div class="container-fluid" height="100px">
         <!-- TODO - FIX -->
 
         {% if brand == "scidas" %}
         <a class="navbar-brand-scidas">
             <img src="{{ logo_url }}" width="120px" height="auto" alt="{{ logo_alt }}">
-            <span class="navbar-brand navbar-brand-scidas-main">App Store</span>
         </a>
         {% elif brand == "restartr" %}
         <a class="navbar-brand-restartr">
             <img src="{{ logo_url }}" width="170px" height="auto" alt="{{ logo_alt }}">
-            <span class="navbar-brand-text">App Store</span>
         </a>
         {% else %}
         <a class="navbar-brand" href="#">
-            <img src="{{ logo_url }}" width="320px" alt="{{ logo_alt }}">
-            <span class="navbar-brand-text">App Store</span>
+            <img src="{{ logo_url }}" width="200px" alt="{{ logo_alt }}">
         </a>
         {% endif %}
+        <a class="navbar-brand" href="/"><img class="pt-5 pb-0" width="180px" src="/static/images/App-Store-Logo-new.png" alt="AppStore"></a>
         <!--
              {% if brand == "scidas" %}
              <a class="navbar-brand-scidas">
