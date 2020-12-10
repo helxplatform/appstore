@@ -63,9 +63,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
     def send_whitelist_email(request, user):
         print('sending email')
 
-        msg = 'A user ' + user.email + ' is requesting access to ' + settings.APPLICATION_BRAND \
+        msg = 'A user ' + user.email + ' is requesting access to AppStore on ' + settings.APPLICATION_BRAND \
               + ' and needs to be reviewed for whitelisting. Upon successful review, kindly add the user to' \
-              + ' Authorized Users on django admin panel using ' \
+              + ' Authorized Users using django admin panel at ' \
               + request.scheme + '://' + request.META['HTTP_HOST'] + settings.ADMIN_URL + '.'
         print(msg)
 
