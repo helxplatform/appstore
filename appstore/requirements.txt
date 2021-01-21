@@ -32,7 +32,7 @@ psycopg2-binary==2.8.5
 pyOpenSSL==19.1.0 
 pyasn1==0.4.8 
 pyasn1-modules==0.2.7 
-pysaml2==6.3.1 
+pysaml2==6.5.0 
 python-dateutil==2.8.1 
 python-irodsclient==0.8.2 
 python3-openid==3.1.0 
