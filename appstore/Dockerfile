@@ -36,7 +36,7 @@ COPY . .
 RUN set -x && \
 # Upgrade Pip and install app dependencies
 	pip install --upgrade pip && \
-	pip install -r ./requirements.txt && \
+	pip install -r ./requirements.txt
         #pip install tycho-api==1.0.2
     # why is this not in requirements.txt?
 	#pip install psycopg2~=2.6 netifaces
