@@ -9,11 +9,11 @@ ARG TYCHO_BRANCH=develop
 # Least privilege: Run as a non-root user.
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
-ENV PYTHONPATH $APP_HOME:$APP_HOME/tycho
+#ENV PYTHONPATH $APP_HOME:$APP_HOME/tycho
 ENV HOME /home/$USER
 ENV UID 1000
 ENV DJANGO_SETTINGS braini
-ENV TYCHO_URL http://docker.for.mac.localhost:5000
+#ENV TYCHO_URL http://docker.for.mac.localhost:5000
 
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME
@@ -31,13 +31,13 @@ RUN set -x && apt-get update && \
 RUN pip install --upgrade pip
 COPY . .
 
-RUN if [ ! -d $APP_HOME/tycho ]; then git clone --branch $TYCHO_BRANCH  https://github.com/helxplatform/tycho.git ; fi
+#RUN if [ ! -d $APP_HOME/tycho ]; then git clone --branch $TYCHO_BRANCH  https://github.com/helxplatform/tycho.git ; fi
 
 RUN set -x && \
 # Upgrade Pip and install app dependencies
 	pip install --upgrade pip && \
-	pip install -r tycho/requirements.txt && \
-	pip install -r ./requirements.txt
+	pip install -r ./requirements.txt && \
+        pip install tycho-api==1.0.2
     # why is this not in requirements.txt?
 	#pip install psycopg2~=2.6 netifaces
 

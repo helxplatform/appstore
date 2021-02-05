@@ -15,20 +15,20 @@ export SECRET_KEY=${SECRET_KEY:-djangosecretkey}
 # Configure the environment
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APPSTORE_HOME=$( dirname $DIR )
-export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
+#export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
 dockerhub_repo=heliumdatastage
 image_ver=0.0.1
-TYCHO_BRANCH=develop
+#TYCHO_BRANCH=develop
 
 # Ensure Tycho is available on the path.
-if [ ! -d $APPSTORE_HOME/tycho ]; then
-     git clone --single-branch \
-	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git
+#if [ ! -d $APPSTORE_HOME/tycho ]; then
+#     git clone --single-branch \
+#	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git
 #    git clone https://github.com/helxplatform/tycho.git
-    cd tycho
-    git checkout $TYCHO_BRANCH
-    cd ..
-fi
+#    cd tycho
+#    git checkout $TYCHO_BRANCH
+#    cd ..
+#fi
 ###############################################################################
 ##
 ## Create a superuser programmatically, facilitating use of secrets.
