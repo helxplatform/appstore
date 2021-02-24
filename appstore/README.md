@@ -199,11 +199,8 @@ bin/appstore run $product
    Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
  for example the one provided to you will be exported into the terminal where tycho api would be run: 
  export KUBECONFIG=path-to-kubeconfig-file.
- 
-### Pre-requisites:
-1. Connected to a Kubernetes Cluster. A kubeconfig copied to ~/.kube/config
 
-2. Create a .env file containing environment variables used by both Tycho and Appstore.
+- Create a .env file containing environment variables used by both Tycho and Appstore.
     ```
      export SECRET_KEY=""
    
@@ -232,7 +229,7 @@ bin/appstore run $product
    ```
     source .env
    ```  
-3. Install Nginx and Ambassador in dev mode on the cluster in your namespace.
+- Install Nginx and Ambassador in dev mode on the cluster in your namespace.
 
    A basic-values.yaml file that can be used for installing using the helm package manager.
    
