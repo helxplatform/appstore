@@ -174,7 +174,7 @@ bin/appstore run $product
 ```
 ### Development environment with Kubernetes
 
-#### Prerequisites:
+### Prerequisites:
 - Have Access to a running k8s cluster.
 - Have [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) set up.
 - Create a .env file containing environment variables used by both Tycho and Appstore.
@@ -245,7 +245,7 @@ bin/appstore run $product
  for example the one provided to you will be exported into the terminal where tycho api would be run: 
  export KUBECONFIG=path-to-kubeconfig-file.
 
-#### Step 1:
+### Step 1:
 
 1. Clone the Appstore repo (develop branch):
     ```
@@ -288,7 +288,7 @@ only take place once.
     pip install -r requirements.txt
    ```
    Continue with Step-1 (Item 4)
-#### Step 3:
+### Step 3:
 Now Appstore is running
 
 If OAuth providers are not specified in the previous steps,
