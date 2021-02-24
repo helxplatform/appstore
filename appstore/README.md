@@ -177,29 +177,6 @@ bin/appstore run $product
 #### Prerequisites:
 - Have Access to a running k8s cluster.
 - Have [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) set up.
-
-#### Installing kubectl on Linux:
-- Download the latest release
-    ```
-    Run: curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
-    ```
-- Make the kubectl binary executable:
-    ```
-     chmod +x ./kubectl
-    ```
-- Move the binary into your PATH:
-    ```
-    sudo mn ./kubectl /usr/local/bin/kubectl
-    ```
-- Check to see if installed:
-    ```
-    kubectl version --client
-    ```
-#### NOTE: 
-   Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
- for example the one provided to you will be exported into the terminal where tycho api would be run: 
- export KUBECONFIG=path-to-kubeconfig-file.
-
 - Create a .env file containing environment variables used by both Tycho and Appstore.
     ```
      export SECRET_KEY=""
@@ -245,6 +222,29 @@ bin/appstore run $product
       serverName: 
 
    ```
+
+#### Installing kubectl on Linux:
+- Download the latest release
+    ```
+    Run: curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl"
+    ```
+- Make the kubectl binary executable:
+    ```
+     chmod +x ./kubectl
+    ```
+- Move the binary into your PATH:
+    ```
+    sudo mn ./kubectl /usr/local/bin/kubectl
+    ```
+- Check to see if installed:
+    ```
+    kubectl version --client
+    ```
+#### NOTE: 
+   Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
+ for example the one provided to you will be exported into the terminal where tycho api would be run: 
+ export KUBECONFIG=path-to-kubeconfig-file.
+
 #### Step 1:
 
 1. Clone the Appstore repo (develop branch):
