@@ -190,12 +190,6 @@ LOGIN_WHITELIST_URL = '/login_whitelist/'
 SAML_URL = '/accounts/saml'
 SAML_ACS_URL = '/saml2_auth/acs/'
 
-REST_USE_JWT = True
-
-DEFAULT_AUTHENTICATION_CLASSES = [
-    'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-    'rest_framework.authentication.BasicAuthentication',
-]
 min_django_level = 'INFO'
 LOGGING = {
     'version': 1,
