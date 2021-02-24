@@ -209,6 +209,7 @@ bin/appstore run $product
 - Install Nginx and Ambassador in dev mode on the cluster in your namespace.
 
    A basic-values.yaml file that can be used for installing using the helm package manager.
+   Instructions: https://github.com/helxplatform/devops/tree/develop#installing-the-chart
    
    ```
     # Override the default values in the Nginx chart.
