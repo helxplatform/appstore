@@ -1,9 +1,0 @@
-- model: core.AuthorizedUser
-  pk: 1
-  fields:
-    email: gilaniisma@gmail.com
-- model: core.AuthorizedUser
-  pk: 2
-  fields:
-   email: igilani@renci.org
-
