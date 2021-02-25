@@ -22,10 +22,6 @@
   padding: 1rem 1.5rem;
 }
 
-.modal-body {
-  padding: 0;
-}
-
 .create-pod-list {
 }
 
@@ -91,3 +87,8 @@
 button#create-pod i {
   margin-right: 1rem;
 }
+
+.modal{
+    padding: 1;
+}
+
