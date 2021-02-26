@@ -43,6 +43,8 @@ RUN set -x && \
 
 EXPOSE 8000
 
+RUN pip install -i https://pypi.org/simple/ --extra-index-url https://pypi.org/simple tycho-api==1.0.4
+
 #CMD [ "gunicorn", "--bind", ":8000", "--timeout=5000", \
 #	"--log-level", "debug", \
 #	"--env", "DJANGO_SETTINGS_MODULE=appstore.settings.braini_settings", \
