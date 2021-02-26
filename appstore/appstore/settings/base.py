@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NESTED_SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
+APPSTORE_DIR = os.path.dirname(NESTED_SETTINGS_DIR)
+BASE_DIR = os.path.dirname(APPSTORE_DIR)
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -43,17 +45,12 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'rest_auth',
-    'rest_auth.registration',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
-
 ]
 
 SITE_ID = 4
@@ -195,12 +192,6 @@ LOGIN_WHITELIST_URL = '/login_whitelist/'
 SAML_URL = '/accounts/saml'
 SAML_ACS_URL = '/saml2_auth/acs/'
 
-REST_USE_JWT = True
-
-DEFAULT_AUTHENTICATION_CLASSES = [
-    'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-    'rest_framework.authentication.BasicAuthentication',
-]
 min_django_level = 'INFO'
 LOGGING = {
     'version': 1,

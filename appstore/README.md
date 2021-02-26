@@ -174,9 +174,55 @@ bin/appstore run $product
 ```
 ### Development environment with Kubernetes
 
-#### Prerequisites:
+### Prerequisites:
 - Have Access to a running k8s cluster.
 - Have [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) set up.
+- Create a .env file containing environment variables used by both Tycho and Appstore.
+    ```
+     export SECRET_KEY=""
+   
+   # Project specific settings. (scidas | braini | cat | reccap)
+     export DJANGO_SETTINGS_MODULE="appstore.settings.<project>_settings"
+     
+   # Optional: Google or GitHub OAuth web app credentials.
+     export OAUTH_PROVIDERS=""
+     export GOOGLE_NAME=""
+     export GOOGLE_CLIENT_ID=""
+     export GOOGLE_SECRET=""
+     
+   # To skip the whitelisting step, add emails to authorize access to Appstore Home.
+     export AUTHORIZED_USERS=""
+   
+   # Running Tycho in dev mode.
+     export DEV_PHASE=dev
+   
+   # Namespace that Tycho launches Apps into on the cluster.
+     export NAMESPACE=""
+   
+   # Default PVC used by Tycho.
+     export stdnfsPvc="stdnfs"
+   ```
+   Install the environment variables in a terminal where Appstore and Tycho are cloned.
+   ```
+    source .env
+   ```  
+- Install Nginx and Ambassador in dev mode on the cluster in your namespace.
+
+   A basic-values.yaml file that can be used for installing using the helm package manager.
+   Instructions: https://github.com/helxplatform/devops/tree/develop#installing-the-chart
+   
+   ```
+    # Override the default values in the Nginx chart.
+    nginx:
+      DEV_PHASE:
+        dev: True
+    service:
+      # Internal static IP for the Nginx service already assigned by admin.
+      IP: 
+      # Domain name already assigned by admin.
+      serverName: 
+
+   ```
 
 #### Installing kubectl on Linux:
 - Download the latest release
@@ -198,9 +244,9 @@ bin/appstore run $product
 #### NOTE: 
    Once kubectl has been setup then set the KUBECONFIG env variable to use other kubeconfigs
  for example the one provided to you will be exported into the terminal where tycho api would be run: 
- export KUBECONFIG=path-to-kubeconfig-file. 
+ export KUBECONFIG=path-to-kubeconfig-file.
 
-#### Step 1:
+### Step 1:
 
 1. Clone the Appstore repo (develop branch):
     ```
@@ -213,48 +259,72 @@ bin/appstore run $product
     source venv/bin/activate
    ```
 3. Install the requirements: 
-    ```
+   
+   NOTE: To work with Tycho and Appstore locally. Remove/Comment tycho-api==version dependency in 
+   requirements.txt. Skip to Step 2. 
+   ```
     pip install -r requirements.txt
    ```
 4. Finally run Appstore by using the management CLI.
     
-    ```
+   ```
    bin/appstore start {product}
    ```
 NOTE: After running bin/appstore start {product} for the first time, please use
 bin/appstore run {product} every other time. So that migrations to the data-base will 
 only take place once. 
 
-Step 2:
+### Step 2:
 
 1. Clone the Tycho repo (develop branch):
-    ```
-    git clone -b develop [https://github.com/helxplatform/tycho.git](https://github.com/helxplatform/tycho.git)
-    ```
-2. Activate virtual environment:
-    ```
-    python3 -m venv venv 
-
-    source venv/bin/activate
    ```
-3. Install the requirements:
-    ```
+    git clone -b develop [https://github.com/helxplatform/tycho.git](https://github.com/helxplatform/tycho.git)
+   ```
+   Add cloned Tycho repo to the PYTHONPATH.
+   ```
+    PYTHONPATH=$PYTHONPATH:/path/to/the/tycho/project/root
+   ```
+2. Install the requirements:
+   ```
     pip install -r requirements.txt
    ```
-4. Export the kubeconfig to the terminal where tycho api is to be run:
-    ```
-    export KUBECONFIG=path-to-kubeconfig-file
-    ```
-5. Now run tycho api in the terminal where the kubeconfig was exported:
-    ```
-   bin/tycho api -d
-   ```
+   Continue with Step-1 (Item 4)
+### Step 3:
+Now Appstore is running
 
-#### Step 3:
+If OAuth providers are not specified in the previous steps,
 
-1. Now Appstore is running, navigate to the admin panel by appending /admin to the url : http://localhost:8000/admin.
+1. Navigate to the admin panel by appending /admin to the url : http://localhost:8000/admin.
 2. Login in to the admin panel using admin/admin for user/password.
 3. Nagivate to the application manager : http://localhost:8000/apps. From this endpoint we can launch applications.
+
+If OAuth providers are provided in the previous steps,
+1. Continue to login with google or github.
+2. From here, can launch applications.
+
+Since this is a development environment, the Appstore cannot redirect directly to the Apps after launching one.
+There is unique URI generated for each pod with a pattern '/private/username/app-id/unique-sid'.
+One way to find the unique URI is by describing the App pod service resource under annotations.
+
+   ```
+     kubectl describe svc <service-name> 
+   ```
+The app is then accessible at,
+
+If server-name is specified while installing Nginx,
+
+   ```
+     http://<server-name>/unique-URI
+   ```
+If server-name is not specified while installing Nginx,
+port-forward the Nginx service installed on the cluster works,
+   ```
+    kubectl port-forward service/<nginx-service> <host-port>/<container-port>
+   ```
+   ```
+    http://localhost/unique-URI
+   ```
+ 
 # Next
 HeLx is alpha. This sectionoutlines a few areas of anticipated focus for upcoming improvements.
 ## Architecture
