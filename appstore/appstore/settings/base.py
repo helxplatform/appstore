@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+NESTED_SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
+APPSTORE_DIR = os.path.dirname(NESTED_SETTINGS_DIR)
+BASE_DIR = os.path.dirname(APPSTORE_DIR)
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 # SECURITY WARNING: don't run with debug turned on in production!
