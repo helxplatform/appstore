@@ -29,6 +29,8 @@ urlpatterns = [
     path('probe/', app_core_views.ProbeServices.as_view(), name='probe_service'),
 
     path('irods/login', app_core_views.IrodsLogin.as_view(), name='irods_login'),
+
+    path('', include('apps.urls')),
 ]
 
 urlpatterns += [
