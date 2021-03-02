@@ -2,12 +2,16 @@ import logging
 from dataclasses import asdict
 
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from tycho.context import ContextFactory
 
-from .models import Service, App
+from tycho.context import ContextFactory, Principal
+
+from .models import Service, ServiceSpec, App
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +24,46 @@ tycho = ContextFactory.get(
     product=settings.APPLICATION_BRAND)
 
 
+def get_host(request):
+    if "HTTP_HOST" in request.META:
+        host = request.META["HTTP_HOST"]
+    else:
+        host = "127.0.0.1"
+    return host
+
+
+# TODO fetch by user instead of iterating all?
+def get_social_tokens(username):
+    social_token_model_objects = ContentType.objects.get(
+        model="socialtoken").model_class().objects.all()
+    access_token = None
+    refresh_token = None
+    for obj in social_token_model_objects:
+        if obj.account.user.username == username:
+            access_token = obj.token
+            refresh_token = obj.token_secret if obj.token_secret else None
+            break
+        else:
+            continue
+    # with DRF and the user interaction in social auth we need username to be a string
+    # when it is passed to `tycho.start` otherwise it will be a `User` object and there
+    # will be a serialization failure from this line of code:
+    # tycho.context.TychoContext.start
+    #    principal_params = {"username": principal.username, "access_token": principal.access_token, "refresh_token": principal.refresh_token}
+    #    principal_params_json = json.dumps(principal_params, indent=4)
+    return str(username), access_token, refresh_token
+
+
 class AppView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        """
+        Provide all apps that have a blueprint in Tycho.
+        """
         apps = {}
 
-        print(tycho.apps)
-
         for app_id, app_data in tycho.apps.items():
-
             spec = App(
                 app_data['name'],
                 app_id,
@@ -44,11 +78,105 @@ class AppView(APIView):
         apps = {key: value for key, value in sorted(apps.items())}
         return Response(apps)
 
+    def post(self, request):
+        """
+        Given an app id and resources pass the information to Tycho to start a service
+        instance of an app.
+        """
+
+        # TODO: Structured Logging
+        if not all(
+                x in request.data.keys() for x in ['app_id', 'cpu', 'gpu', 'memory']):
+            logger.debug(f"\n\nMissing resource argument: \n"
+                         f"APP ID: {request.data.get('app_id', None)}\n"
+                         f"CPU: {request.data.get('cpu', None)}\n"
+                         f"GPU: {request.data.get('gpu', None)}\n"
+                         f"Memory: {request.data.get('memory', None)}\n\n")
+            return Response({"message": "app_id, cpu, gpu and memory fields required"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        app_id = str(request.data['app_id'])
+        cpu = str(request.data['cpu'])
+        gpu = str(request.data['gpu'])
+        memory = str(request.data['memory'])
+        user = request.user
+
+        logger.debug(f"\n\nResource arguments: \n"
+                     f"User: {user}\n"
+                     f"APP ID: {app_id}\n"
+                     f"CPU: {cpu}\n"
+                     f"GPU: {gpu}\n"
+                     f"Memory: {memory}\n\n")
+
+        # TODO, will the front end pass the metric? Do we ass
+        # TODO move this and the above validation to a validator?
+        # tycho/client.py:20 - mem_converter
+        valid_memory_unit = ('M', 'G', 'T', 'P', 'E')
+        if not memory.endswith(valid_memory_unit):
+            return Response({"message": f"Invalid memory unit {memory}.\n"
+                                        f"Valid memory units: {valid_memory_unit}"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        resource_request = {
+            "deploy": {
+                "resources": {
+                    "limits": {
+                        "cpus": cpu,
+                        "memory": memory,
+                        "gpus": gpu,
+                    },
+                    "reservations": {
+                        "cpus": cpu,
+                        "memory": memory,
+                        "gpus": gpu,
+                    }
+                }
+            }
+        }
+        logger.debug(f"Resources requested \n\n {resource_request} \n\n")
+
+        # TODO update social query.
+        tokens = get_social_tokens(user)
+        logger.debug("Tokens fetched for user.")
+
+        principal = Principal(*tokens)
+        logger.debug("Principal built.")
+
+        logger.debug(f"\n\nPrincipal: \n"
+                     f"{principal.username}\n"
+                     f"{principal.access_token}\n"
+                     f"{principal.refresh_token}\n\n")
+
+        system = tycho.start(principal, app_id, resource_request)
+        logger.debug(f"Spec submitted to Tycho. \n\n {system}\n\n")
+
+        s = ServiceSpec(user,
+                        app_id,
+                        tycho.apps[app_id]['name'],
+                        get_host(request),
+                        resource_request,
+                        system.services[0].ip_address,
+                        system.services[0].port,
+                        system.services[0].identifier,
+                        system.identifier)
+
+        logger.debug(f"Final service spec \n\n {s} \n\n")
+
+        # TODO: better status capture from Tycho on submission
+        if s:
+            return Response(asdict(s))
+        else:
+            return Response({"message": "failed to submit app start."},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class ServiceView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        """
+        Provide a list of all active service instances for a user.
+        """
         status = tycho.status({
             'username': self.request.user.username
         })
@@ -69,4 +197,5 @@ class ServiceView(APIView):
 
             services.append(asdict(inst))
 
+        # TODO research DRF dataclass serializer
         return Response(services)
