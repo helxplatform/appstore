@@ -1,11 +1,13 @@
 import logging
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
 
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from tycho.context import ContextFactory
+
+from .models import Service, App
 
 logger = logging.getLogger(__name__)
 
@@ -18,25 +20,28 @@ tycho = ContextFactory.get(
     product=settings.APPLICATION_BRAND)
 
 
-@dataclass
-class Service:
-    """Tycho service attributes."""
-    name: str
-    docs: str
-    identifier: str
-    fully_qualified_identifier: str
-    creation_time: str
-    cpu: int
-    gpu: int
-    memory: float
-
-
 class AppView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        apps = {k: v for k, v in sorted(tycho.apps.items(),
-                                        key=lambda v: v[1]['name'])}
+        apps = {}
+
+        print(tycho.apps)
+
+        for app_id, app_data in tycho.apps.items():
+
+            spec = App(
+                app_data['name'],
+                app_id,
+                app_data['description'],
+                app_data['details'],
+                app_data['docs'],
+                app_data['spec']
+            )
+
+            apps[app_id] = asdict(spec)
+
+        apps = {key: value for key, value in sorted(apps.items())}
         return Response(apps)
 
 
