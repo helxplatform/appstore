@@ -16,7 +16,7 @@ export SECRET_KEY=${SECRET_KEY:-djangosecretkey}
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APPSTORE_HOME=$( dirname $DIR )
 #export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
-dockerhub_repo=heliumdatastage
+dockerhub_repo=helxplatform
 image_ver=0.0.1
 #TYCHO_BRANCH=develop
 
