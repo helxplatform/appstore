@@ -114,7 +114,7 @@ updatedb () {
     DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
-	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
+	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --clear --no-input
 }
 ###############################################################################
 ##
