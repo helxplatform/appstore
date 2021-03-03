@@ -55,3 +55,6 @@ class App:
     detail: str
     docs: str
     spec: str
+    cpu: int
+    memory: str
+    gpu: int

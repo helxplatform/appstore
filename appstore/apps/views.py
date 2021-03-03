@@ -32,7 +32,48 @@ def get_host(request):
     return host
 
 
+def parse_spec_resources(app_id, spec):
+    """
+    Parse spec dictionary based on docker-compose definition files managed by tycho.
+
+    https://github.com/compose-spec/compose-spec/blob/master/deploy.md#memory
+    https://github.com/compose-spec/compose-spec/blob/master/deploy.md#cpus
+    """
+    services = spec['services']
+    app_scope = services[app_id]
+    resource_scope = app_scope['deploy']['resources']
+    limits = resource_scope['limits']
+    reservations = resource_scope['reservations']
+    return limits, reservations
+
+
+def search_for_gpu_reservation(reservations):
+    """
+    GPU info will be nested under devices. Because there could be multiple devices we
+    need to find the GPU device from the list, if it exists.
+
+    Currently exits on the first GPU spec, and assumes the spec is defining a generic
+    GPU and count. This is not a requirement of docker-compose spec, see capabilities
+    https://github.com/compose-spec/compose-spec/blob/master/deploy.md#capabilities
+    for more details.
+    """
+    for d in reservations.get('devices', {}).items():
+        if d.get('capabilities') == 'gpu':
+            # Returning 0 for now if a device id is specified, gpu spec needs to be
+            # further defined for app-prototypes and tycho.
+            # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
+            # #device_ids
+            return d.get('count', 0)
+    # TODO what is the behavior the frontend should exhibit if a spec doesn't define
+    # a GPU reservation? Do we want to pass 0, or `null`? What's the impact for the
+    # user flow?
+    # We may not find a GPU in the spec, in fact right now no specs have a GPU, but
+    # we are providing minimum reservations to the front end from the spec.
+    return 0
+
+
 # TODO fetch by user instead of iterating all?
+# sanitize input to avoid injection.
 def get_social_tokens(username):
     social_token_model_objects = ContentType.objects.get(
         model="socialtoken").model_class().objects.all()
@@ -49,7 +90,8 @@ def get_social_tokens(username):
     # when it is passed to `tycho.start` otherwise it will be a `User` object and there
     # will be a serialization failure from this line of code:
     # tycho.context.TychoContext.start
-    #    principal_params = {"username": principal.username, "access_token": principal.access_token, "refresh_token": principal.refresh_token}
+    #    principal_params = {"username": principal.username, "access_token":
+    #    principal.access_token, "refresh_token": principal.refresh_token}
     #    principal_params_json = json.dumps(principal_params, indent=4)
     return str(username), access_token, refresh_token
 
@@ -64,13 +106,27 @@ class AppView(APIView):
         apps = {}
 
         for app_id, app_data in tycho.apps.items():
+            spec = tycho.get_spec(app_id)
+            logger.debug(f"\n\n Spec data for {app_id}\n{spec}\n\n")
+            limits, reservations = parse_spec_resources(app_id, spec)
+
+            # TODO GPUs can be defined differently in docker-compose than in the
+            # submission from Tycho to k8s, how do we want to handle this?
+            # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
+            # #capabilities
+            # https://github.com/helxplatform/tycho/search?q=gpu
+            gpu = search_for_gpu_reservation(reservations)
+
             spec = App(
                 app_data['name'],
                 app_id,
                 app_data['description'],
                 app_data['details'],
                 app_data['docs'],
-                app_data['spec']
+                app_data['spec'],
+                reservations.get('cpu', 0),
+                reservations.get('memory', 0),
+                gpu
             )
 
             apps[app_id] = asdict(spec)
