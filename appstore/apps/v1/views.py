@@ -6,12 +6,12 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 
 from rest_framework import status as drf_status, viewsets, serializers
-from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from tycho.context import ContextFactory, Principal
 
+from .excpetions import AuthorizationTokenUnavailable
 from .models import Service, ServiceSpec, App
 from .serializers import ServiceSerializer, AppDetailSerializer, AppSerializer, ResourceSerializer, ServiceSpecSerializer, ServiceIdentifierSerializer, UserSerializer
 
@@ -341,11 +341,11 @@ class UsersViewSet(viewsets.GenericViewSet):
     serializer_class = UserSerializer
 
     def _get_access_token(self, request):
-        if request.session['Authorization']:
+        if request.session.get('Authorization', None):
             return request.session['Authorization'].split(" ")[1]
         else:
             logger.error(f"Authorization not set for {request.user.username}")
-            raise NotAuthenticated(detail=f"Authorization token not found for {request.user.username}")
+            raise AuthorizationTokenUnavailable(detail=f"Authorization token not found for {request.user.username}")
 
     def list(self, request):
         """
