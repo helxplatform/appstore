@@ -15,20 +15,9 @@ export SECRET_KEY=${SECRET_KEY:-djangosecretkey}
 # Configure the environment
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APPSTORE_HOME=$( dirname $DIR )
-#export PYTHONPATH=$APPSTORE_HOME:$APPSTORE_HOME/tycho
 dockerhub_repo=helxplatform
 image_ver=0.0.1
-#TYCHO_BRANCH=develop
 
-# Ensure Tycho is available on the path.
-#if [ ! -d $APPSTORE_HOME/tycho ]; then
-#     git clone --single-branch \
-#	--branch $TYCHO_BRANCH https://github.com/helxplatform/tycho.git
-#    git clone https://github.com/helxplatform/tycho.git
-#    cd tycho
-#    git checkout $TYCHO_BRANCH
-#    cd ..
-#fi
 ###############################################################################
 ##
 ## Create a superuser programmatically, facilitating use of secrets.
@@ -54,6 +43,7 @@ EOF
   }
   create_superuser
 }
+
 #########################################################################################################
 ##
 ## Adding and Removing User to the Authorized Users table programmatically, facilitating use of secrets.
@@ -101,7 +91,8 @@ EOF
     }
     add;
     remove;
-}    
+}
+
 ###############################################################################
 ##
 ## Upgrade the database running migrations and collecting static objects.
@@ -116,12 +107,12 @@ updatedb () {
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
 	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
 }
+
 ###############################################################################
 ##
 ## Run the appstore with customized branding, migrations, and packaging.
 ##
 ###############################################################################
-
 run () {
     brand=$1
     test -z ${brand} && help
@@ -136,13 +127,13 @@ run () {
 ## Run the appstore's unit tests with product specific customizations.
 ##
 ###############################################################################
-
 tests () {
     brand=$1
     test -z ${brand} && help
     settings=appstore.settings.${brand}_settings && \
 	DEV_PHASE=stub python manage.py test --settings=$settings
 }
+
 ###############################################################################
 ##
 ## Build docker image.
@@ -187,18 +178,6 @@ image () {
            -e EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD} \
 		   $dockerhub_repo/appstore:$image_ver $*
     }
-  #  run () {
-	#brand=$1
-#	test -z ${brand} && help
-#	DEBUG_LEVEL=DEBUG
-#	settings=appstore.settings.${brand}_settings && \
-#	    docker run --rm --name appstore -p 8000:8000 \
-#		   --entrypoint=gunicorn \
-#		   $dockerhub_repo/appstore:$image_ver \
-#		   --bind :8000 --timeout=5000 \
-#		   --env DJANGO_SETTINGS_MODULE=$settings \
-#		   --log-level $DEBUG_LEVEL appstore.wsgi:application
- #   }
     $*
 }
 
@@ -214,6 +193,7 @@ cicd () {
     done
     rm appstore/DATABSE.sqlite3
 }
+
 ###############################################################################
 ##
 ## Show help.
