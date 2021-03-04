@@ -1,9 +1,8 @@
-from django.urls import path
-from rest_framework.urlpatterns import format_suffix_patterns
-from apps import views
+from django.conf.urls import url
+from django.urls import include
+
+from .v1.router import v1_urlpatterns
 
 urlpatterns = [
-    path('helx_apps/', views.AppView.as_view()),
-    path('helx_services/', views.ServiceView.as_view()),
-
+    url(r'^api/v1/', include(v1_urlpatterns)),
 ]
