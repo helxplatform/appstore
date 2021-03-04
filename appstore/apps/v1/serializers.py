@@ -56,3 +56,8 @@ class ServiceSpecSerializer(serializers.Serializer):
 
 class ServiceIdentifierSerializer(serializers.Serializer):
     sid = serializers.CharField(required=True)
+
+
+class UserSerializer(serializers.Serializer):
+    REMOTE_USER = serializers.CharField(required=True)
+    ACCESS_TOKEN = serializers.CharField(required=True)

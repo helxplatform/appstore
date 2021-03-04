@@ -6,13 +6,14 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 
 from rest_framework import status as drf_status, viewsets, serializers
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from tycho.context import ContextFactory, Principal
 
-from .models import Service, ServiceSpec, App, ResourceRequest
-from .serializers import ServiceSerializer, AppDetailSerializer, AppSerializer, ResourceSerializer, ServiceSpecSerializer, ServiceIdentifierSerializer
+from .models import Service, ServiceSpec, App
+from .serializers import ServiceSerializer, AppDetailSerializer, AppSerializer, ResourceSerializer, ServiceSpecSerializer, ServiceIdentifierSerializer, UserSerializer
 
 # TODO: Structured Logging
 logger = logging.getLogger(__name__)
@@ -330,3 +331,32 @@ class ServiceViewSet(viewsets.GenericViewSet):
         time.sleep(2)
         logger.debug(f"\nDelete response: {response}")
         return Response(response)
+
+
+class UsersViewSet(viewsets.GenericViewSet):
+    """
+    User information.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
+
+    def _get_access_token(self, request):
+        if request.session['Authorization']:
+            return request.session['Authorization'].split(" ")[1]
+        else:
+            logger.error(f"Authorization not set for {request.user.username}")
+            raise NotAuthenticated(detail=f"Authorization token not found for {request.user.username}")
+
+    def list(self, request):
+        """
+        Provide logged in user details.
+
+        Supports the use case where a reverse proxy like nginx is being used to
+        test authentication of a principal before proxying a request upstream.
+        """
+        serializer = self.get_serializer(data={'REMOTE_USER': request.user.username,
+                                               'ACCESS_TOKEN': self._get_access_token(request)})
+        serializer.is_valid(raise_exception=True)
+        logger.debug(f"Access Token for {serializer.validated_data['REMOTE_USER']} provided")
+        return Response(serializer.validated_data)
+
