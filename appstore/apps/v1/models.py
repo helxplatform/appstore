@@ -6,6 +6,13 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class Resources:
+    cpus: float
+    gpus: int
+    memory: str
+
+
+@dataclass
 class App:
     """Tycho app attributes."""
 
@@ -15,9 +22,8 @@ class App:
     detail: str
     docs: str
     spec: str
-    cpu: int
-    gpu: int
-    memory: str
+    minimum_resources: dict
+    maximum_resources: dict
 
 
 @dataclass
@@ -29,8 +35,8 @@ class Service:
     sid: str
     fqsid: str
     creation_time: str
-    cpu: int
-    gpu: int
+    cpus: float
+    gpus: int
     memory: float
 
 
@@ -39,8 +45,8 @@ class ResourceRequest:
     """Resource request spec."""
 
     app_id: str
-    cpu: int
-    gpu: int
+    cpus: float
+    gpus: int
     memory: str
     resources: dict = None
 
@@ -49,14 +55,14 @@ class ResourceRequest:
             "deploy": {
                 "resources": {
                     "limits": {
-                        "cpus": self.cpu,
+                        "cpus": self.cpus,
                         "memory": self.memory,
-                        "gpus": self.gpu,
+                        "gpus": self.gpus,
                     },
                     "reservations": {
-                        "cpus": self.cpu,
+                        "cpus": self.cpus,
                         "memory": self.memory,
-                        "gpus": self.gpu,
+                        "gpus": self.gpus,
                     },
                 }
             }
@@ -95,3 +101,12 @@ class ServiceSpec:
                 f"{self.username}/{svc_id}/"
             )
         logger.debug(f"-- app-networking constructed url: {self.url}")
+
+
+@dataclass
+class LoginProvider:
+    """Login provider attributes."""
+
+    name: str
+    url: str
+    redirect: str = None

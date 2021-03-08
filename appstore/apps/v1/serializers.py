@@ -15,8 +15,8 @@ class ServiceSerializer(serializers.Serializer):
     creation_time = serializers.CharField(
         required=True
     )  # serializers.DateTimeField(format='iso-8601') - date error from tycho
-    cpu = serializers.IntegerField(required=True)
-    gpu = serializers.IntegerField(default=0)
+    cpus = serializers.FloatField(required=True)
+    gpus = serializers.IntegerField(default=0)
     # TODO switch to Float potentially, or validator
     memory = serializers.CharField(required=True)
 
@@ -28,9 +28,8 @@ class AppDetailSerializer(serializers.Serializer):
     detail = serializers.CharField(required=True)
     docs = serializers.CharField(required=True)
     spec = serializers.CharField(required=True)
-    cpu = serializers.IntegerField(required=True)
-    gpu = serializers.IntegerField(default=0)
-    memory = serializers.CharField(required=True, validators=[memory_format_validator])
+    minimum_resources = serializers.DictField()
+    maximum_resources = serializers.DictField()
 
 
 class AppSerializer(serializers.Serializer):
@@ -39,8 +38,8 @@ class AppSerializer(serializers.Serializer):
 
 class ResourceSerializer(serializers.Serializer):
     app_id = serializers.CharField(required=True)
-    cpu = serializers.IntegerField(required=True)
-    gpu = serializers.IntegerField(default=0)
+    cpus = serializers.FloatField(required=True)
+    gpus = serializers.IntegerField(default=0)
     memory = serializers.CharField(required=True, validators=[memory_format_validator])
 
     def create(self, validated_data):
@@ -64,3 +63,13 @@ class ServiceIdentifierSerializer(serializers.Serializer):
 class UserSerializer(serializers.Serializer):
     REMOTE_USER = serializers.CharField(required=True)
     ACCESS_TOKEN = serializers.CharField(required=True)
+
+
+class LoginProviderSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True)
+    url = serializers.CharField(required=True)
+    redirect = serializers.CharField(allow_null=True)
+
+
+class AppContextSerializer(serializers.Serializer):
+    brand = serializers.CharField(required=True)

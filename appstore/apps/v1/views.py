@@ -6,13 +6,15 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 
 from rest_framework import status as drf_status, viewsets, serializers
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+
+from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
 
 from .exceptions import AuthorizationTokenUnavailable
-from .models import Service, ServiceSpec, App
+from .models import Service, ServiceSpec, App, LoginProvider, Resources
 from .serializers import (
     ServiceSerializer,
     AppDetailSerializer,
@@ -21,6 +23,8 @@ from .serializers import (
     ServiceSpecSerializer,
     ServiceIdentifierSerializer,
     UserSerializer,
+    LoginProviderSerializer,
+    AppContextSerializer,
 )
 
 # TODO: Structured Logging
@@ -150,9 +154,12 @@ class AppViewSet(viewsets.GenericViewSet):
                 app_data["details"],
                 app_data["docs"],
                 app_data["spec"],
-                reservations.get("cpu", 0),
-                gpu,
-                reservations.get("memory", 0),
+                asdict(
+                    Resources(
+                        reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                    )
+                ),
+                asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
             )
 
             apps[app_id] = asdict(spec)
@@ -184,9 +191,12 @@ class AppViewSet(viewsets.GenericViewSet):
             app_data["details"],
             app_data["docs"],
             app_data["spec"],
-            reservations.get("cpu", 0),
-            gpu,
-            reservations.get("memory", 0),
+            asdict(
+                Resources(
+                    reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                )
+            ),
+            asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
         )
 
         serializer = self.get_serializer(data=asdict(app))
@@ -224,7 +234,6 @@ class ServiceViewSet(viewsets.GenericViewSet):
         Provide all active services.
         """
         active_services = self.get_queryset()
-        logger.debug(f"Active services: {active_services}")
 
         services = []
         for service in active_services:
@@ -390,4 +399,109 @@ class UsersViewSet(viewsets.GenericViewSet):
         logger.debug(
             f"Access Token for {serializer.validated_data['REMOTE_USER']} provided"
         )
+        return Response(serializer.validated_data)
+
+
+class LoginProviderViewSet(viewsets.GenericViewSet):
+    """
+    Login provider information.
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = LoginProviderSerializer
+
+    def get_queryset(self):
+        return settings
+
+    def _get_social_providers(self, request, settings):
+        """
+        Get social login providers from allauth.
+        """
+
+        provider_data = []
+
+        if (
+            "allauth.account.auth_backends.AuthenticationBackend"
+            in settings.AUTHENTICATION_BACKENDS
+        ):
+            for provider in socialaccount.providers.registry.get_list():
+                provider_data.append(
+                    asdict(
+                        LoginProvider(provider.name, provider.get_login_url(request))
+                    )
+                )
+
+        return provider_data
+
+    def _get_base_settings_providers(self, settings):
+        """
+        Check for default settings logins.
+        """
+
+        provider_data = []
+
+        if settings.ALLOW_DJANGO_LOGIN == "true":
+            provider_data.append(asdict(LoginProvider("django", settings.LOGIN_URL)))
+
+        if settings.ALLOW_SAML_LOGIN == "true":
+            provider_data.append(asdict(LoginProvider("saml", settings.SAML_URL)))
+
+        return provider_data
+
+    def _get_product_providers(self, settings):
+        """
+        Check for SSO defined in appstore settings.
+        """
+
+        if settings.APPLICATION_BRAND in ("braini", "restarts"):
+            return LoginProvider(
+                settings.APPLICATION_BRAND,
+                settings["SAML2_AUTH"]["METADATA_AUTO_CONF_URL"],
+                settings["SAML2_AUTH"]["DEFAULT_NEXT_URL"],
+            )
+
+    def _get_login_providers(self, request):
+        """
+        Aggregate defined login providers for appstore.
+        """
+        settings = self.get_queryset()
+        provider_data = []
+
+        provider_data.extend(self._get_social_providers(request, settings))
+        provider_data.extend(self._get_base_settings_providers(settings))
+
+        custom_sso = self._get_product_providers(settings)
+        if custom_sso:
+            provider_data.append(custom_sso)
+
+        return provider_data
+
+    def list(self, request):
+        providers = self._get_login_providers(request)
+        serializer = self.get_serializer(data=providers, many=True)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data)
+
+
+class AppContextViewSet(viewsets.GenericViewSet):
+    """
+    Application configuration information.
+    """
+
+    permission_classes = [AllowAny]
+    serializer_class = AppContextSerializer
+
+    def get_queryset(self):
+        return settings
+
+    def _get_brand(self, settings):
+        if settings.APPLICATION_BRAND:
+            return settings.APPLICATION_BRAND
+        else:
+            return "Unknown"
+
+    def list(self, request):
+        settings = self.get_queryset()
+        serializer = self.get_serializer(data={"brand": self._get_brand(settings)})
+        serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
