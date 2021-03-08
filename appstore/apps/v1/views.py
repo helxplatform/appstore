@@ -11,9 +11,17 @@ from rest_framework.response import Response
 
 from tycho.context import ContextFactory, Principal
 
-from .excpetions import AuthorizationTokenUnavailable
+from .exceptions import AuthorizationTokenUnavailable
 from .models import Service, ServiceSpec, App
-from .serializers import ServiceSerializer, AppDetailSerializer, AppSerializer, ResourceSerializer, ServiceSpecSerializer, ServiceIdentifierSerializer, UserSerializer
+from .serializers import (
+    ServiceSerializer,
+    AppDetailSerializer,
+    AppSerializer,
+    ResourceSerializer,
+    ServiceSpecSerializer,
+    ServiceIdentifierSerializer,
+    UserSerializer,
+)
 
 # TODO: Structured Logging
 logger = logging.getLogger(__name__)
@@ -23,8 +31,8 @@ Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
 tycho = ContextFactory.get(
-    context_type=settings.TYCHO_MODE,
-    product=settings.APPLICATION_BRAND)
+    context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
+)
 
 
 def get_host(request):
@@ -42,11 +50,11 @@ def parse_spec_resources(app_id, spec):
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#memory
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#cpus
     """
-    services = spec['services']
+    services = spec["services"]
     app_scope = services[app_id]
-    resource_scope = app_scope['deploy']['resources']
-    limits = resource_scope['limits']
-    reservations = resource_scope['reservations']
+    resource_scope = app_scope["deploy"]["resources"]
+    limits = resource_scope["limits"]
+    reservations = resource_scope["reservations"]
     return limits, reservations
 
 
@@ -60,13 +68,13 @@ def search_for_gpu_reservation(reservations):
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#capabilities
     for more details.
     """
-    for d in reservations.get('devices', {}).items():
-        if d.get('capabilities') == 'gpu':
+    for d in reservations.get("devices", {}).items():
+        if d.get("capabilities") == "gpu":
             # Returning 0 for now if a device id is specified, gpu spec needs to be
             # further defined for app-prototypes and tycho.
             # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
             # #device_ids
-            return d.get('count', 0)
+            return d.get("count", 0)
     # TODO what is the behavior the frontend should exhibit if a spec doesn't define
     # a GPU reservation? Do we want to pass 0, or `null`? What's the impact for the
     # user flow?
@@ -78,8 +86,9 @@ def search_for_gpu_reservation(reservations):
 # TODO fetch by user instead of iterating all?
 # sanitize input to avoid injection.
 def get_social_tokens(username):
-    social_token_model_objects = ContentType.objects.get(
-        model="socialtoken").model_class().objects.all()
+    social_token_model_objects = (
+        ContentType.objects.get(model="socialtoken").model_class().objects.all()
+    )
     access_token = None
     refresh_token = None
     for obj in social_token_model_objects:
@@ -103,17 +112,18 @@ class AppViewSet(viewsets.GenericViewSet):
     """
     Tycho App information.
     """
+
     permission_classes = [IsAuthenticated]
-    lookup_field = 'app_id'
-    lookup_url_kwarg = 'app_id'
+    lookup_field = "app_id"
+    lookup_url_kwarg = "app_id"
 
     def get_queryset(self):
         return tycho.apps
 
     def get_serializer_class(self):
-        if self.action == 'list':
+        if self.action == "list":
             return AppSerializer
-        elif self.action == 'retrieve':
+        elif self.action == "retrieve":
             return AppDetailSerializer
 
     def list(self, request):
@@ -124,7 +134,6 @@ class AppViewSet(viewsets.GenericViewSet):
 
         for app_id, app_data in self.get_queryset().items():
             spec = tycho.get_spec(app_id)
-            logger.debug(f"\n\n Spec data for {app_id}\n{spec}\n\n")
             limits, reservations = parse_spec_resources(app_id, spec)
 
             # TODO GPUs can be defined differently in docker-compose than in the
@@ -135,25 +144,26 @@ class AppViewSet(viewsets.GenericViewSet):
             gpu = search_for_gpu_reservation(reservations)
 
             spec = App(
-                app_data['name'],
+                app_data["name"],
                 app_id,
-                app_data['description'],
-                app_data['details'],
-                app_data['docs'],
-                app_data['spec'],
-                reservations.get('cpu', 0),
+                app_data["description"],
+                app_data["details"],
+                app_data["docs"],
+                app_data["spec"],
+                reservations.get("cpu", 0),
                 gpu,
-                reservations.get('memory', 0)
+                reservations.get("memory", 0),
             )
 
             apps[app_id] = asdict(spec)
-
 
         apps = {key: value for key, value in sorted(apps.items())}
         serializer = self.get_serializer(data=apps)
         serializer.is_valid()
         if serializer.errors:
-            logger.error(f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user.")
+            logger.error(
+                f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user."
+            )
         # TODO change this to serializer.data after discovery on nested object data
         return Response(apps)
 
@@ -168,22 +178,23 @@ class AppViewSet(viewsets.GenericViewSet):
         gpu = search_for_gpu_reservation(reservations)
 
         app = App(
-            app_data['name'],
+            app_data["name"],
             app_id,
-            app_data['description'],
-            app_data['details'],
-            app_data['docs'],
-            app_data['spec'],
-            reservations.get('cpu', 0),
+            app_data["description"],
+            app_data["details"],
+            app_data["docs"],
+            app_data["spec"],
+            reservations.get("cpu", 0),
             gpu,
-            reservations.get('memory', 0)
+            reservations.get("memory", 0),
         )
 
-        logger.debug(f"\n\n App Definition:\n{app}\n\n")
         serializer = self.get_serializer(data=asdict(app))
         serializer.is_valid()
         if serializer.errors:
-            logger.error(f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user.")
+            logger.error(
+                f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user."
+            )
         return Response(serializer.validated_data)
 
 
@@ -191,22 +202,21 @@ class ServiceViewSet(viewsets.GenericViewSet):
     """
     Active user services.
     """
+
     permission_classes = [IsAuthenticated]
-    lookup_field = 'sid'
-    lookup_url_kwarg = 'sid'
+    lookup_field = "sid"
+    lookup_url_kwarg = "sid"
 
     def get_serializer_class(self):
-        if self.action == 'create':
+        if self.action == "create":
             return ResourceSerializer
-        elif self.action == 'destroy':
+        elif self.action == "destroy":
             return ServiceIdentifierSerializer
         else:
             return ServiceSerializer
 
     def get_queryset(self):
-        status = tycho.status({
-            'username': self.request.user.username
-        })
+        status = tycho.status({"username": self.request.user.username})
         return status.services
 
     def list(self, request):
@@ -214,25 +224,32 @@ class ServiceViewSet(viewsets.GenericViewSet):
         Provide all active services.
         """
         active_services = self.get_queryset()
+        logger.debug(f"Active services: {active_services}")
 
         services = []
         for service in active_services:
-            logger.debug(f"\nService:\n{service}\n\n")
             # Note that total_util is formatted differently than service['util']
-            # TODO confirm which to use going forward and format based on standard.
-            logger.debug(f"\nTotal Utilization:\n{service.total_util}\n\n")
-            # TODO could probably pull this list and search it locally instead of a
-            # call per loop.
-            app = tycho.apps.get(service.app_id.rpartition('-')[0], {})
-            inst = Service(app.get('name'),
-                           app.get('docs'),
-                           service.identifier,
-                           service.app_id,
-                           service.creation_time,
-                           service.total_util['cpu'],
-                           service.total_util['gpu'],
-                           service.total_util['memory'])
+            # TODO confirm which to use going forward and format based
+            # on standard.
+            # TODO could probably pull this list and search it locally instead
+            # of a call per loop.
 
+            app = tycho.apps.get(
+                service.app_id.replace(f"-{service.identifier}", ""), {}
+            )
+
+            inst = Service(
+                app.get("name"),
+                app.get("docs"),
+                service.identifier,
+                service.app_id,
+                service.creation_time,
+                service.total_util["cpu"],
+                service.total_util["gpu"],
+                service.total_util["memory"],
+            )
+
+            logger.debug(f"Service definition: {inst}")
             services.append(asdict(inst))
 
         serializer = self.get_serializer(data=services, many=True)
@@ -241,12 +258,11 @@ class ServiceViewSet(viewsets.GenericViewSet):
 
     def create(self, request):
         """
-        Given an app id and resources pass the information to Tycho to start a service
-        instance of an app.
+        Given an app id and resources pass the information to Tycho to start
+        a service instance of an app.
         """
 
         serializer = self.get_serializer(data=request.data)
-        logger.debug(serializer)
         serializer.is_valid(raise_exception=True)
         resource_request = serializer.create(serializer.validated_data)
 
@@ -256,19 +272,21 @@ class ServiceViewSet(viewsets.GenericViewSet):
         principal = Principal(*tokens)
         logger.debug("Principal built.")
 
-        app_id = serializer.data['app_id']
+        app_id = serializer.data["app_id"]
         system = tycho.start(principal, app_id, resource_request.resources)
         logger.debug(f"Spec submitted to Tycho. \n\n {system}\n\n")
 
-        s = ServiceSpec(principal.username,
-                        app_id,
-                        tycho.apps[app_id]['name'],
-                        get_host(request),
-                        resource_request.resources,
-                        system.services[0].ip_address,
-                        system.services[0].port,
-                        system.services[0].identifier,
-                        system.identifier)
+        s = ServiceSpec(
+            principal.username,
+            app_id,
+            tycho.apps[app_id]["name"],
+            get_host(request),
+            resource_request.resources,
+            system.services[0].ip_address,
+            system.services[0].port,
+            system.services[0].identifier,
+            system.identifier,
+        )
 
         logger.debug(f"Final service spec \n\n {s} \n\n")
 
@@ -282,13 +300,17 @@ class ServiceViewSet(viewsets.GenericViewSet):
                 # Delete invalid service configuration that we won't be tracking
                 # for the user.
                 tycho.delete({"name": system.services[0].identifier})
-                return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST
+                )
         else:
             # Failed to construct a tracked service instance, attempt to remove
             # potentially created instance rather than leaving it hanging.
             tycho.delete({"name": system.services[0].identifier})
-            return Response({"message": "failed to submit app start."},
-                            status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"message": "failed to submit app start."},
+                status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     def retrieve(self, request, sid=None):
         """
@@ -298,17 +320,18 @@ class ServiceViewSet(viewsets.GenericViewSet):
 
         for service in active_services:
             if service.identifier == sid:
-                app = tycho.apps.get(service.app_id.rpartition('-')[0], {})
-                inst = Service(app.get('name'),
-                               app.get('docs'),
-                               service.identifier,
-                               service.app_id,
-                               service.creation_time,
-                               service.total_util['cpu'],
-                               service.total_util['gpu'],
-                               service.total_util['memory'])
+                app = tycho.apps.get(service.app_id.rpartition("-")[0], {})
+                inst = Service(
+                    app.get("name"),
+                    app.get("docs"),
+                    service.identifier,
+                    service.app_id,
+                    service.creation_time,
+                    service.total_util["cpu"],
+                    service.total_util["gpu"],
+                    service.total_util["memory"],
+                )
 
-                logger.debug(f"\nInstance:\n{inst}\n\n")
                 serializer = self.get_serializer(data=asdict(inst))
                 serializer.is_valid(raise_exception=True)
                 return Response(serializer.validated_data)
@@ -321,10 +344,10 @@ class ServiceViewSet(viewsets.GenericViewSet):
         Submit service id (sid) to tycho for removal.
         """
 
-        serializer = self.get_serializer(data={'sid': sid})
+        serializer = self.get_serializer(data={"sid": sid})
         serializer.is_valid(raise_exception=True)
         logger.debug(f"\nDeleting: {sid}")
-        response = tycho.delete({"name": serializer.validated_data['sid']})
+        response = tycho.delete({"name": serializer.validated_data["sid"]})
         # TODO How can we avoid this sleep? Do we need an immediate response beyond
         # a successful submission? Can we do a follow up with Web Sockets or SSE
         # to the front end?
@@ -337,15 +360,18 @@ class UsersViewSet(viewsets.GenericViewSet):
     """
     User information.
     """
+
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
 
     def _get_access_token(self, request):
-        if request.session.get('Authorization', None):
-            return request.session['Authorization'].split(" ")[1]
+        if request.session.get("Authorization", None):
+            return request.session["Authorization"].split(" ")[1]
         else:
             logger.error(f"Authorization not set for {request.user.username}")
-            raise AuthorizationTokenUnavailable(detail=f"Authorization token not found for {request.user.username}")
+            raise AuthorizationTokenUnavailable(
+                detail=f"Authorization token not found for {request.user.username}"
+            )
 
     def list(self, request):
         """
@@ -354,9 +380,14 @@ class UsersViewSet(viewsets.GenericViewSet):
         Supports the use case where a reverse proxy like nginx is being used to
         test authentication of a principal before proxying a request upstream.
         """
-        serializer = self.get_serializer(data={'REMOTE_USER': request.user.username,
-                                               'ACCESS_TOKEN': self._get_access_token(request)})
+        serializer = self.get_serializer(
+            data={
+                "REMOTE_USER": request.user.username,
+                "ACCESS_TOKEN": self._get_access_token(request),
+            }
+        )
         serializer.is_valid(raise_exception=True)
-        logger.debug(f"Access Token for {serializer.validated_data['REMOTE_USER']} provided")
+        logger.debug(
+            f"Access Token for {serializer.validated_data['REMOTE_USER']} provided"
+        )
         return Response(serializer.validated_data)
-

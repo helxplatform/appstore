@@ -6,12 +6,15 @@ from .validators import memory_format_validator
 
 logger = logging.getLogger(__name__)
 
+
 class ServiceSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
     docs = serializers.CharField(required=True)
     sid = serializers.CharField(required=True)
     fqsid = serializers.CharField(required=True)
-    creation_time = serializers.CharField(required=True) # serializers.DateTimeField(format='iso-8601') - date error from tycho
+    creation_time = serializers.CharField(
+        required=True
+    )  # serializers.DateTimeField(format='iso-8601') - date error from tycho
     cpu = serializers.IntegerField(required=True)
     gpu = serializers.IntegerField(default=0)
     # TODO switch to Float potentially, or validator
