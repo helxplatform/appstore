@@ -498,10 +498,28 @@ class AppContextViewSet(viewsets.GenericViewSet):
         if settings.APPLICATION_BRAND:
             return settings.APPLICATION_BRAND
         else:
-            return "Unknown"
+            return "CommonsShare"
+
+    def _get_logo(self, settings):
+        if settings.APPLICATION_LOGO:
+            return settings.APPLICATION_LOGO
+        else:
+            return "/static/images/commonsshare/logo-lg.png"
+
+    def _get_title(self, settings):
+        if settings.APPLICATION_TITLE:
+            return settings.APPLICATION_TITLE
+        else:
+            return "CommonsShare"
 
     def list(self, request):
         settings = self.get_queryset()
-        serializer = self.get_serializer(data={"brand": self._get_brand(settings)})
+        serializer = self.get_serializer(
+            data={
+                "brand": self._get_brand(settings),
+                "logo_url": self._get_logo(settings),
+                "title": self._get_title(settings),
+            }
+        )
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)

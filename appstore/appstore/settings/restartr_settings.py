@@ -1,6 +1,8 @@
 from .base import *
 
 APPLICATION_BRAND = "restartr"
+APPLICATION_TITLE = "Restarting Research"
+APPLICATION_LOGO = "/static/images/restartr/restartingresearch.png"
 
 SAML2_AUTH = {
     # Metadata is required, choose either remote url or local file path

@@ -1,6 +1,8 @@
 from .base import *
 
 APPLICATION_BRAND = "braini"
+APPLICATION_TITLE = "Brain-I"
+APPLICATION_LOGO = "/static/images/braini/braini-lg-gray.png"
 
 SAML2_AUTH = {
     # Metadata is required, choose either remote url or local file path
