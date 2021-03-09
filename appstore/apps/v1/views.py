@@ -454,10 +454,12 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         """
 
         if settings.APPLICATION_BRAND in ("braini", "restarts"):
-            return LoginProvider(
-                settings.APPLICATION_BRAND,
-                settings["SAML2_AUTH"]["METADATA_AUTO_CONF_URL"],
-                settings["SAML2_AUTH"]["DEFAULT_NEXT_URL"],
+            return asdict(
+                LoginProvider(
+                    settings.APPLICATION_BRAND,
+                    settings.SAML2_AUTH["METADATA_AUTO_CONF_URL"],
+                    settings.SAML2_AUTH["DEFAULT_NEXT_URL"],
+                )
             )
 
     def _get_login_providers(self, request):
@@ -527,7 +529,7 @@ class AppContextViewSet(viewsets.GenericViewSet):
                 "brand": self._get_brand(settings),
                 "logo_url": self._get_logo(settings),
                 "title": self._get_title(settings),
-                "colors": self._get_colors(settings)
+                "colors": self._get_colors(settings),
             }
         )
         serializer.is_valid(raise_exception=True)
