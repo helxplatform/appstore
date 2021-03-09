@@ -200,6 +200,9 @@ LOGIN_WHITELIST_URL = '/login_whitelist/'
 SAML_URL = '/accounts/saml'
 SAML_ACS_URL = '/saml2_auth/acs/'
 
+APP_CONTEXT_URL = "/api/v1/context"
+APP_LOGIN_PROVIDER_URL = "/api/v1/providers"
+
 min_django_level = 'INFO'
 LOGGING = {
     'version': 1,

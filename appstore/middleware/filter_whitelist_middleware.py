@@ -20,12 +20,18 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         user = request.user
         logger.info(f"testing user: {user}")
         if user.is_authenticated and not user.is_superuser:
-            if not request.path.startswith(settings.LOGIN_URL) \
-                    and not request.path.startswith(settings.LOGIN_WHITELIST_URL) \
-                    and not request.path.startswith(settings.ADMIN_URL) \
-                    and not request.path.startswith(settings.STATIC_URL) \
-                    and not request.path.startswith(settings.SAML_URL) \
-                    and not request.path.startswith(settings.SAML_ACS_URL):
+            if not any(
+                [
+                    request.path.startswith(settings.LOGIN_URL),
+                    request.path.startswith(settings.LOGIN_WHITELIST_URL),
+                    request.path.startswith(settings.ADMIN_URL),
+                    request.path.startswith(settings.STATIC_URL),
+                    request.path.startswith(settings.SAML_URL),
+                    request.path.startswith(settings.SAML_ACS_URL),
+                    request.path.startswith(settings.APP_CONTEXT_URL),
+                    request.path.startswith(settings.APP_LOGIN_PROVIDER_URL),
+                ]
+            ):
 
                 if self.is_authorized(user):
                     logger.info(f"Adding user {user} to whitelist")
