@@ -3,10 +3,10 @@ import logging
 from django.test import TestCase
 from django.contrib.auth.models import User
 
-from rest_framework.test import APIRequestFactory, force_authenticate, RequestsClient
+from rest_framework.test import APIRequestFactory, force_authenticate
 
 
-from .views import AppViewSet, ServiceViewSet, UsersViewSet
+from .views import AppViewSet, ServiceViewSet, UsersViewSet, LoginProviderViewSet, AppContextViewSet
 
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ class TestAppView(TestCase):
         self.factory = APIRequestFactory()
         self.view = AppViewSet
 
-    def test_anonymous_cannot_see_page(self):
+    def test_anonymous_cannot_see_view(self):
         list_view = self.view.as_view({"get": "list"})
         response = list_view(self.factory.get(""))
         self.assertEqual(response.status_code, 403)
@@ -58,7 +58,7 @@ class TestServiceView(TestCase):
         self.factory = APIRequestFactory()
         self.view = ServiceViewSet
 
-    def test_anonymous_cannot_see_page(self):
+    def test_anonymous_cannot_see_view(self):
         list_view = self.view.as_view({"get": "list"})
         response = list_view(self.factory.get(""))
         self.assertEqual(response.status_code, 403)
@@ -77,7 +77,7 @@ class TestServiceView(TestCase):
         User.objects.get(username=self.username, is_superuser=True).delete()
 
 
-class UserServiceView(TestCase):
+class TestUserView(TestCase):
     def setUp(self):
         self.username = "user_api_tester"
         self.password = "suva4p4^5J2R4HVzf*62"
@@ -88,7 +88,7 @@ class UserServiceView(TestCase):
         self.factory = APIRequestFactory()
         self.view = UsersViewSet
 
-    def test_anonymous_cannot_see_page(self):
+    def test_anonymous_cannot_see_view(self):
         list_view = self.view.as_view({"get": "list"})
         response = list_view(self.factory.get(""))
         self.assertEqual(response.status_code, 403)
@@ -116,3 +116,32 @@ class UserServiceView(TestCase):
 
     def tearDown(self):
         User.objects.get(username=self.username, is_superuser=True).delete()
+
+
+class TestLoginProviderView(TestCase):
+    def test_anonymous_can_see_view(self):
+        """
+        This view is required by a front end to know how the user
+        can login. Since this happens prior to auth make sure the
+        view is available without any prior auth of handshake.
+        """
+        view = LoginProviderViewSet
+        factory = APIRequestFactory()
+        list_view = view.as_view({"get": "list"})
+        response = list_view(factory.get(""))
+        self.assertEqual(response.status_code, 200)
+
+
+class TestAppContextView(TestCase):
+    def test_anonymous_can_see_view(self):
+        """
+        This view is required by a front end to know provide
+        application configuration data. Since this happens
+        prior to user interaction the frontend needs to get
+        this data without prior context.
+        """
+        view = AppContextViewSet
+        factory = APIRequestFactory()
+        list_view = view.as_view({"get": "list"})
+        response = list_view(factory.get(""))
+        self.assertEqual(response.status_code, 200)

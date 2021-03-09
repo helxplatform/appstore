@@ -512,13 +512,22 @@ class AppContextViewSet(viewsets.GenericViewSet):
         else:
             return "CommonsShare"
 
+    def _get_colors(self, settings):
+        if settings.APPLICATION_COLOR:
+            return settings.APPLICATION_COLOR
+        else:
+            return {"primary": "#00a8c1", "secondary": "#d2cbcb"}
+
     def list(self, request):
         settings = self.get_queryset()
+        # Note CommonShare is the default provided when
+        # a custom brand is no loaded at startup.
         serializer = self.get_serializer(
             data={
                 "brand": self._get_brand(settings),
                 "logo_url": self._get_logo(settings),
                 "title": self._get_title(settings),
+                "colors": self._get_colors(settings)
             }
         )
         serializer.is_valid(raise_exception=True)

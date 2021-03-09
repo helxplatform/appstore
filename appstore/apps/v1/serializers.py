@@ -75,3 +75,4 @@ class AppContextSerializer(serializers.Serializer):
     brand = serializers.CharField(required=True)
     logo_url = serializers.CharField(required=True)
     title = serializers.CharField(required=True)
+    colors = serializers.DictField(required=True)
