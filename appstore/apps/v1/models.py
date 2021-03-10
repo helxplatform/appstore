@@ -109,4 +109,3 @@ class LoginProvider:
 
     name: str
     url: str
-    redirect: str = None

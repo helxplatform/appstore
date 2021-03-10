@@ -433,20 +433,13 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
         return provider_data
 
-    def _get_base_settings_providers(self, settings):
+    def _get_base_settings_provider(self, settings):
         """
         Check for default settings logins.
         """
 
-        provider_data = []
-
         if settings.ALLOW_DJANGO_LOGIN == "true":
-            provider_data.append(asdict(LoginProvider("django", settings.LOGIN_URL)))
-
-        if settings.ALLOW_SAML_LOGIN == "true":
-            provider_data.append(asdict(LoginProvider("saml", settings.SAML_URL)))
-
-        return provider_data
+            return asdict(LoginProvider("Django", settings.LOGIN_URL))
 
     def _get_product_providers(self, settings):
         """
@@ -454,11 +447,15 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         """
 
         if settings.APPLICATION_BRAND in ("braini", "restarts"):
+            # TODO can we get the provider name from metadata so that if
+            # we support something beyond UNC we dont need another func
+            # or clause? What happens if we have multiple SAML SSO providers
+            # today it's handled with SAML_URL and the saml2_auth package,
+            # but appears to be setup for one provider at a time.
             return asdict(
                 LoginProvider(
-                    settings.APPLICATION_BRAND,
-                    settings.SAML2_AUTH["METADATA_AUTO_CONF_URL"],
-                    settings.SAML2_AUTH["DEFAULT_NEXT_URL"],
+                    "UNC Chapel Hill Single Sign-On",
+                    settings.SAML_URL,
                 )
             )
 
@@ -470,10 +467,11 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         provider_data = []
 
         provider_data.extend(self._get_social_providers(request, settings))
-        provider_data.extend(self._get_base_settings_providers(settings))
 
-        custom_sso = self._get_product_providers(settings)
-        if custom_sso:
+        if custom_sso := self._get_base_settings_provider(settings):
+            provider_data.append(custom_sso)
+
+        if custom_sso := self._get_product_providers(settings):
             provider_data.append(custom_sso)
 
         return provider_data

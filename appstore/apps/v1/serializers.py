@@ -68,7 +68,6 @@ class UserSerializer(serializers.Serializer):
 class LoginProviderSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
     url = serializers.CharField(required=True)
-    redirect = serializers.CharField(allow_null=True)
 
 
 class AppContextSerializer(serializers.Serializer):
