@@ -9,7 +9,7 @@ certifi==2018.11.29
 colorama==0.4.4 
 configparser==5.0.1 
 crayons==0.4.0 
-cryptography==2.8 
+cryptography==3.2 
 defusedxml==0.6.0 
 django-allauth==0.42.0 
 django-bootstrap-form==3.4 
@@ -23,7 +23,7 @@ djangorestframework-simplejwt==4.3.0
 djangosaml2==0.18.1 
 gitpython==3.1.11
 google-api-python-client==1.7.11 
-google-auth==1.7.1 
+google-auth==1.25.0 
 google-auth-httplib2==0.0.3 
 httplib2==0.18.0 
 mock==4.0.2 
@@ -36,11 +36,11 @@ pysaml2==6.3.1
 python-dateutil==2.8.1 
 python-irodsclient==0.8.2 
 python3-openid==3.1.0 
-pytz==2018.9 
+pytz==2021.1 
 requests-oauthlib==1.3.0 
 selenium==3.141.0 
 six==1.12.0 
-tycho-api==1.0.5
+tycho-api==1.0.9
 uritemplate==3.0.0 
 urllib3==1.24.2 
 wcwidth==0.2.5 
