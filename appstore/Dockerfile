@@ -1,3 +1,5 @@
+# FROM helxplatform/helx-ui:appstore-build as builder
+
 ARG BASE_CONTAINER=python:3.9.0-slim
 FROM $BASE_CONTAINER
 

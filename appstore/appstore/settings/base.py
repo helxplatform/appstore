@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
+    'corsheaders',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
@@ -53,13 +54,22 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'bootstrapform',
     'rest_framework',
-    'api'
+    'api',
+    'spa',
 ]
 
 SITE_ID = 4
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+]
+
+if DEBUG=="True" and DEV_PHASE in ("local", "stub", "dev"):
+    MIDDLEWARE += [
+        'corsheaders.middleware.CorsMiddleware',
+    ]
+
+MIDDLEWARE += [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -94,6 +104,14 @@ else:
 MIDDLEWARE += [
     'middleware.session_idle_timeout.SessionIdleTimeout',
 ]
+
+if DEBUG=="True" and DEV_PHASE in ("local", "stub", "dev"):
+    CORS_ALLOWED_ORIGINS = [
+        "https://localhost:3000",
+        "https://127.0.0.1:3000",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ]
 
 # Session Timeout Configuration
 SESSION_IDLE_TIMEOUT = 300

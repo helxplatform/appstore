@@ -16,7 +16,7 @@ export SECRET_KEY=${SECRET_KEY:-djangosecretkey}
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APPSTORE_HOME=$( dirname $DIR )
 dockerhub_repo=helxplatform
-image_ver=0.0.1
+image_ver=dj3-template
 
 ###############################################################################
 ##
@@ -105,7 +105,7 @@ updatedb () {
     DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
-	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
+	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --clear --no-input
 }
 
 ###############################################################################
@@ -133,6 +133,25 @@ tests () {
 	DEV_PHASE=stub python manage.py test --settings=$settings
 }
 
+
+###############################################################################
+##
+## Gather react assets. Assuming this is running from appstore/appstore
+##
+###############################################################################
+react() {
+    rm -rf ./spa/static/*
+    rm ./spa/templates/spa/index.html
+    cd ../../helx-ui;
+    npm run build;
+    mv ./build/static/* ../appstore/appstore/spa/static;
+    rm -r ./build/static;
+    mv ./build/* ../appstore/appstore/spa/static;
+    cd ../appstore/appstore;
+    mv ./spa/static/index.html ./spa/templates/spa
+	python manage.py collectstatic --settings=$settings --clear --no-input
+}
+
 ###############################################################################
 ##
 ## Build docker image.
@@ -156,7 +175,7 @@ image () {
 	DEBUG_LEVEL=DEBUG
 	shift
 	settings=appstore.settings.${brand}_settings && \
-	    docker run --rm --name appstore -p 8000:8000\
+	    docker run --rm --name appstore -p 8000:8000 \
 		   -e DJANGO_SETTINGS=$brand \
 		   -e OAUTH_PROVIDERS=${OAUTH_PROVIDERS} \
            -e GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
