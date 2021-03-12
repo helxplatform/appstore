@@ -1,3 +1,5 @@
+import debug_toolbar
+
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -43,3 +45,8 @@ urlpatterns += [
     path('favicon.ico', RedirectView.as_view(url='/static/images/favicon.ico', permanent=True), name='favicon'),
     re_path('static/(?P<path>.*)', serve, {'document_root': settings.STATIC_ROOT}),
 ]
+
+if settings.DEBUG == 'True':
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]

@@ -46,16 +46,17 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
-    'corsheaders',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
+    'corsheaders',
     'rest_framework',
     'api',
     'spa',
+    'debug_toolbar',
 ]
 
 SITE_ID = 4
@@ -67,6 +68,7 @@ MIDDLEWARE = [
 if DEBUG=="True" and DEV_PHASE in ("local", "stub", "dev"):
     MIDDLEWARE += [
         'corsheaders.middleware.CorsMiddleware',
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
     ]
 
 MIDDLEWARE += [
@@ -112,6 +114,11 @@ if DEBUG=="True" and DEV_PHASE in ("local", "stub", "dev"):
         "http://localhost:3000",
         "http://127.0.0.1:3000"
     ]
+
+# Debug toolbar setting
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
 
 # Session Timeout Configuration
 SESSION_IDLE_TIMEOUT = 300
