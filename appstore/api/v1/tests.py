@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 
-from .views import AppViewSet, ServiceViewSet, UsersViewSet, LoginProviderViewSet, AppContextViewSet
+from .views import AppViewSet, InstanceViewSet, UsersViewSet, LoginProviderViewSet, AppContextViewSet
 
 
 logger = logging.getLogger(__name__)
@@ -47,23 +47,23 @@ class TestAppView(TestCase):
         User.objects.get(username=self.username, is_superuser=True).delete()
 
 
-class TestServiceView(TestCase):
+class TestInstanceView(TestCase):
     def setUp(self):
-        self.username = "service_api_tester"
+        self.username = "instance_api_tester"
         self.password = "h82VBBBRM&c2aH59a*a!"
         self.user = User.objects.create_superuser(
-            self.username, "service-test@renci-example.com", self.password
+            self.username, "instance-test@renci-example.com", self.password
         )
 
         self.factory = APIRequestFactory()
-        self.view = ServiceViewSet
+        self.view = InstanceViewSet
 
     def test_anonymous_cannot_see_view(self):
         list_view = self.view.as_view({"get": "list"})
         response = list_view(self.factory.get(""))
         self.assertEqual(response.status_code, 403)
 
-    def test_logged_in_can_get_service_list(self):
+    def test_logged_in_can_get_instance_list(self):
         user = User.objects.get(username=self.username)
         list_view = self.view.as_view({"get": "list"})
         api_request = self.factory.get("")

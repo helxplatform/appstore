@@ -14,14 +14,14 @@ from allauth import socialaccount
 from tycho.context import ContextFactory, Principal
 
 from .exceptions import AuthorizationTokenUnavailable
-from .models import Service, ServiceSpec, App, LoginProvider, Resources
+from .models import Instance, InstanceSpec, App, LoginProvider, Resources
 from .serializers import (
-    ServiceSerializer,
+    InstanceSerializer,
     AppDetailSerializer,
     AppSerializer,
     ResourceSerializer,
-    ServiceSpecSerializer,
-    ServiceIdentifierSerializer,
+    InstanceSpecSerializer,
+    InstanceIdentifierSerializer,
     UserSerializer,
     LoginProviderSerializer,
     AppContextSerializer,
@@ -54,8 +54,8 @@ def parse_spec_resources(app_id, spec):
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#memory
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#cpus
     """
-    services = spec["services"]
-    app_scope = services[app_id]
+    instances = spec["services"]
+    app_scope = instances[app_id]
     resource_scope = app_scope["deploy"]["resources"]
     limits = resource_scope["limits"]
     reservations = resource_scope["reservations"]
@@ -208,9 +208,9 @@ class AppViewSet(viewsets.GenericViewSet):
         return Response(serializer.validated_data)
 
 
-class ServiceViewSet(viewsets.GenericViewSet):
+class InstanceViewSet(viewsets.GenericViewSet):
     """
-    Active user services.
+    Active user instances.
     """
 
     permission_classes = [IsAuthenticated]
@@ -221,9 +221,9 @@ class ServiceViewSet(viewsets.GenericViewSet):
         if self.action == "create":
             return ResourceSerializer
         elif self.action == "destroy":
-            return ServiceIdentifierSerializer
+            return InstanceIdentifierSerializer
         else:
-            return ServiceSerializer
+            return InstanceSerializer
 
     def get_queryset(self):
         status = tycho.status({"username": self.request.user.username})
@@ -231,44 +231,44 @@ class ServiceViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
         """
-        Provide all active services.
+        Provide all active instances.
         """
-        active_services = self.get_queryset()
+        active = self.get_queryset()
 
-        services = []
-        for service in active_services:
-            # Note that total_util is formatted differently than service['util']
+        instances = []
+        for instance in active:
+            # Note that total_util is formatted differently than instance['util']
             # TODO confirm which to use going forward and format based
             # on standard.
             # TODO could probably pull this list and search it locally instead
             # of a call per loop.
 
             app = tycho.apps.get(
-                service.app_id.replace(f"-{service.identifier}", ""), {}
+                instance.app_id.replace(f"-{instance.identifier}", ""), {}
             )
 
-            inst = Service(
+            inst = Instance(
                 app.get("name"),
                 app.get("docs"),
-                service.identifier,
-                service.app_id,
-                service.creation_time,
-                service.total_util["cpu"],
-                service.total_util["gpu"],
-                service.total_util["memory"],
+                instance.identifier,
+                instance.app_id,
+                instance.creation_time,
+                instance.total_util["cpu"],
+                instance.total_util["gpu"],
+                instance.total_util["memory"],
             )
 
-            logger.debug(f"Service definition: {inst}")
-            services.append(asdict(inst))
+            logger.debug(f"Instance definition: {inst}")
+            instances.append(asdict(inst))
 
-        serializer = self.get_serializer(data=services, many=True)
+        serializer = self.get_serializer(data=instances, many=True)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
 
     def create(self, request):
         """
         Given an app id and resources pass the information to Tycho to start
-        a service instance of an app.
+        a instance of an app.
         """
 
         serializer = self.get_serializer(data=request.data)
@@ -285,7 +285,7 @@ class ServiceViewSet(viewsets.GenericViewSet):
         system = tycho.start(principal, app_id, resource_request.resources)
         logger.debug(f"Spec submitted to Tycho. \n\n {system}\n\n")
 
-        s = ServiceSpec(
+        s = InstanceSpec(
             principal.username,
             app_id,
             tycho.apps[app_id]["name"],
@@ -297,23 +297,23 @@ class ServiceViewSet(viewsets.GenericViewSet):
             system.identifier,
         )
 
-        logger.debug(f"Final service spec \n\n {s} \n\n")
+        logger.debug(f"Final instance spec \n\n {s} \n\n")
 
         # TODO: better status capture from Tycho on submission
         if s:
-            serializer = ServiceSpecSerializer(data=asdict(s))
+            serializer = InstanceSpecSerializer(data=asdict(s))
             try:
                 serializer.is_valid(raise_exception=True)
                 return Response(serializer.validated_data)
             except serializers.ValidationError:
-                # Delete invalid service configuration that we won't be tracking
+                # Delete invalid instance configuration that we won't be tracking
                 # for the user.
                 tycho.delete({"name": system.services[0].identifier})
                 return Response(
                     serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST
                 )
         else:
-            # Failed to construct a tracked service instance, attempt to remove
+            # Failed to construct a tracked instance, attempt to remove
             # potentially created instance rather than leaving it hanging.
             tycho.delete({"name": system.services[0].identifier})
             return Response(
@@ -323,22 +323,22 @@ class ServiceViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, sid=None):
         """
-        Provide active service details.
+        Provide active instance details.
         """
-        active_services = self.get_queryset()
+        active = self.get_queryset()
 
-        for service in active_services:
-            if service.identifier == sid:
-                app = tycho.apps.get(service.app_id.rpartition("-")[0], {})
-                inst = Service(
+        for instance in active:
+            if instance.identifier == sid:
+                app = tycho.apps.get(instance.app_id.rpartition("-")[0], {})
+                inst = Instance(
                     app.get("name"),
                     app.get("docs"),
-                    service.identifier,
-                    service.app_id,
-                    service.creation_time,
-                    service.total_util["cpu"],
-                    service.total_util["gpu"],
-                    service.total_util["memory"],
+                    instance.identifier,
+                    instance.app_id,
+                    instance.creation_time,
+                    instance.total_util["cpu"],
+                    instance.total_util["gpu"],
+                    instance.total_util["memory"],
                 )
 
                 serializer = self.get_serializer(data=asdict(inst))
@@ -350,7 +350,7 @@ class ServiceViewSet(viewsets.GenericViewSet):
 
     def destroy(self, request, sid=None):
         """
-        Submit service id (sid) to tycho for removal.
+        Submit instance id (sid) to tycho for removal.
         """
 
         serializer = self.get_serializer(data={"sid": sid})

@@ -44,14 +44,14 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.messages',
     'django.contrib.sites',
-    'rest_framework',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
-    'apps'
+    'rest_framework',
+    'api'
 ]
 
 SITE_ID = 4

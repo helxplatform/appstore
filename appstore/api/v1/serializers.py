@@ -1,13 +1,13 @@
 import logging
 
 from rest_framework import serializers
-from .models import Service, App, ResourceRequest, ServiceSpec
+from .models import Instance, App, ResourceRequest, InstanceSpec
 from .validators import memory_format_validator
 
 logger = logging.getLogger(__name__)
 
 
-class ServiceSerializer(serializers.Serializer):
+class InstanceSerializer(serializers.Serializer):
     name = serializers.CharField(required=True)
     docs = serializers.CharField(required=True)
     sid = serializers.CharField(required=True)
@@ -46,7 +46,7 @@ class ResourceSerializer(serializers.Serializer):
         return ResourceRequest(**validated_data)
 
 
-class ServiceSpecSerializer(serializers.Serializer):
+class InstanceSpecSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     app_id = serializers.CharField(required=True)
     name = serializers.CharField(required=True)
@@ -56,7 +56,7 @@ class ServiceSpecSerializer(serializers.Serializer):
     protocol = serializers.CharField(required=True)
 
 
-class ServiceIdentifierSerializer(serializers.Serializer):
+class InstanceIdentifierSerializer(serializers.Serializer):
     sid = serializers.CharField(required=True)
 
 

@@ -27,8 +27,8 @@ class App:
 
 
 @dataclass
-class Service:
-    """Tycho service attributes."""
+class Instance:
+    """Tycho instance attributes."""
 
     name: str
     docs: str
@@ -70,8 +70,8 @@ class ResourceRequest:
 
 
 @dataclass
-class ServiceSpec:
-    """Service spec submitted to tycho."""
+class InstanceSpec:
+    """App instance spec submitted to tycho."""
 
     username: str
     app_id: str
