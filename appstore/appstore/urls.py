@@ -11,15 +11,15 @@ from django_saml2_auth import views as saml2_auth_views
 
 admin.autodiscover()
 urlpatterns = [
-    path('', TemplateView.as_view(template_name='index.html'), name='index'),
     path('admin/', admin.site.urls),
+    path('',  RedirectView.as_view(url='/accounts/login/'), name='index'),
 
     path('saml2_auth/', include('django_saml2_auth.urls')),
-    path('auth/', app_core_views.auth, name='auth'),
-    path('accounts/', include('allauth.urls')),
     path('accounts/saml/', saml2_auth_views.signin),
     path('accounts/login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
     path('sign-out', RedirectView.as_view(url='/accounts/logout/'), name='sign-out'),
+    path('accounts/', include('allauth.urls')),
+    path('auth/', app_core_views.auth, name='auth'),
 
     path('apps/', app_core_views.ApplicationManager.as_view(), name='apps'),
     path('list_pods/', app_core_views.list_services, name="list_pods_services"),
