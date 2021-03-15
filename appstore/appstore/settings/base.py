@@ -115,6 +115,11 @@ if DEBUG=="True" and DEV_PHASE in ("local", "stub", "dev"):
         "http://127.0.0.1:3000"
     ]
 
+    CSRF_TRUSTED_ORIGINS = [
+        'localhost',
+        '127.0.0.1',
+    ]
+
 # Debug toolbar setting
 INTERNAL_IPS = [
     '127.0.0.1',
