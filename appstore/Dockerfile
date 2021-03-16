@@ -1,7 +1,7 @@
-# FROM helxplatform/helx-ui:appstore-build as builder
+# we use the ui container to pull in the webpack build artifacts
+FROM helxplatform/helx-ui:latest as builder
 
-ARG BASE_CONTAINER=python:3.9.0-slim
-FROM $BASE_CONTAINER
+FROM python:3.9.0-slim
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
@@ -16,15 +16,17 @@ ENV DJANGO_SETTINGS braini
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME
    
-#Switch the working directory.
+# Switch the working directory.
 WORKDIR $APP_HOME
+
+# Copy frontend artifacts for serving
+COPY --from=builder /usr/share/nginx/html/ ./frontend/static/frontend
 
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
 	apt-get install -y postgresql-server-dev-all \
 	postgresql-client git build-essential \
 	xmlsec1
-
 
 # Install Virtual Environment
 RUN pip install --upgrade pip

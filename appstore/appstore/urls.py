@@ -37,8 +37,9 @@ urlpatterns = [
 
     path('irods/login', app_core_views.IrodsLogin.as_view(), name='irods_login'),
 
+
     path('', include('api.urls')),
-    path('', include('spa.urls')),
+    path('', include('frontend.urls')),
 ]
 
 urlpatterns += [

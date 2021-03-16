@@ -16,7 +16,7 @@ export SECRET_KEY=${SECRET_KEY:-djangosecretkey}
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 APPSTORE_HOME=$( dirname $DIR )
 dockerhub_repo=helxplatform
-image_ver=dj3-template
+image_ver=0.0.1
 
 ###############################################################################
 ##
@@ -133,25 +133,6 @@ tests () {
 	DEV_PHASE=stub python manage.py test --settings=$settings
 }
 
-
-###############################################################################
-##
-## Gather react assets. Assuming this is running from appstore/appstore
-##
-###############################################################################
-react() {
-    rm -rf ./spa/static/*
-    rm ./spa/templates/spa/index.html
-    cd ../../helx-ui;
-    npm run build;
-    mv ./build/static/* ../appstore/appstore/spa/static;
-    rm -r ./build/static;
-    mv ./build/* ../appstore/appstore/spa/static;
-    cd ../appstore/appstore;
-    mv ./spa/static/index.html ./spa/templates/spa
-	python manage.py collectstatic --settings=$settings --clear --no-input
-}
-
 ###############################################################################
 ##
 ## Build docker image.
@@ -167,6 +148,14 @@ image () {
 	docker push . \
 	       -t $dockerhub_repo/appstore:latest \
 	       -t $dockerhub_repo/appstore:$image_ver $*
+    }
+    frontend () {
+        # Pull and start the ui container to fetch frontend assets
+        docker run -d --name frontend helxplatform/helx-ui:latest;
+        # Copy the assets to the local django frontend app for local dev and serving
+        docker cp frontend:/usr/share/nginx/html ./frontend/static/frontend;
+        # Stop and remove container to prevent future run collisions
+        docker container rm "$(docker container stop "$(docker container ls -q --filter name="frontend")")" $*
     }
 
     run () {

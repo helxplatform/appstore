@@ -54,9 +54,9 @@ INSTALLED_APPS = [
     'bootstrapform',
     'corsheaders',
     'rest_framework',
-    'api',
-    'spa',
     'debug_toolbar',
+    'api',
+    'frontend',
 ]
 
 SITE_ID = 4
@@ -176,7 +176,8 @@ ROOT_URLCONF = 'appstore.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        "DIRS": [str(BASE_DIR / "templates")],
+        "DIRS": [str(BASE_DIR / "templates"), 
+                 str(BASE_DIR / "static")],
         'OPTIONS': {
             "loaders": [
                 "django.template.loaders.filesystem.Loader",
