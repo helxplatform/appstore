@@ -22,10 +22,9 @@ DEBUG = os.environ.get('DEBUG', 'True')
 DEV_PHASE = os.environ.get('DEV_PHASE', 'local')  # stub, local, dev, val, prod.
 TYCHO_MODE = os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'live')
 
-# "TRUE" | "FALSE"
+# DJANGO and SAML login toggle flags, lower cased for ease of comparison
 ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
                                     "True" if DEV_PHASE == "local" or DEV_PHASE == 'stub' else "False").lower()
-
 ALLOW_SAML_LOGIN = os.environ.get('ALLOW_SAML_LOGIN', "True").lower()
 
 # SECURITY WARNING: keep the secret key used in production secret!
