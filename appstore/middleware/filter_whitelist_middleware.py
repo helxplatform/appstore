@@ -7,6 +7,8 @@ from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 from django.core.mail import send_mail
 
+from smtplib import SMTPSenderRefused, SMTPResponseException
+
 from core.models import AuthorizedUser
 
 logger = logging.getLogger(__name__)
@@ -25,7 +27,6 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                     request.path.startswith(settings.LOGIN_URL),
                     request.path.startswith(settings.LOGIN_WHITELIST_URL),
                     request.path.startswith(settings.ADMIN_URL),
-                    request.path.startswith(settings.STATIC_URL),
                     request.path.startswith(settings.SAML_URL),
                     request.path.startswith(settings.SAML_ACS_URL),
                     request.path.startswith(settings.APP_CONTEXT_URL),
@@ -40,8 +41,15 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                 else:
                     logger.info(f"Filtering user {user} is not authorized")
                     self.clear_session(request)
-                    self.send_whitelist_email(request, user)
-                    return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
+                    try:
+                        # This will fail if email isn't setup correctly and won't
+                        # route the user correctly.
+                        self.send_whitelist_email(request, user)
+                    except (SMTPSenderRefused, SMTPResponseException) as err:
+                        logger.error("SMTP misconfigured, please check settings.\n{err}\n")
+                    finally:
+                        # Make sure to always run the redirect.
+                        return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
         logger.info(f"accepting user {user}")
         return None
 
