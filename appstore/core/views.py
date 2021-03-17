@@ -287,6 +287,23 @@ def login_whitelist(request):
     })
 
 
+def handler404(request, exception, template_name='404.html'):
+    if "private" in request.path:
+        template_name = "private404.html"
+    context = { 'req_path' : request.path }
+    response = render(request, template_name, context)
+    response.status_code = 404
+    return response
+
+
+def handler500(request, exception=None):
+    context = {}
+    template_name = "500.html"
+    response = render(request, template_name, context)
+    response.status_code = 500
+    return response
+
+
 def get_brand_details(brand):
     """
     Any special reason they can't all just be called logo.png?
