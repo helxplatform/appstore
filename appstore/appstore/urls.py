@@ -9,7 +9,12 @@ from django.views.static import serve
 from core import views as app_core_views
 from django_saml2_auth import views as saml2_auth_views
 
+
+
 admin.autodiscover()
+handler404 = app_core_views.handler404
+handler500 = app_core_views.handler500
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',  RedirectView.as_view(url='/accounts/login/'), name='index'),

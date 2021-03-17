@@ -18,7 +18,7 @@ BASE_DIR = os.path.dirname(APPSTORE_DIR)
 TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True')
+DEBUG = bool(os.environ.get('DEBUG', "")) # Empty quotes equates to false in kubernetes env.
 DEV_PHASE = os.environ.get('DEV_PHASE', 'local')  # stub, local, dev, val, prod.
 TYCHO_MODE = os.environ.get('TYCHO_MODE', 'null' if DEV_PHASE == 'stub' else 'live')
 
@@ -29,7 +29,7 @@ ALLOW_SAML_LOGIN = os.environ.get('ALLOW_SAML_LOGIN', "True").lower()
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*", "127.0.0.1", "0.0.0.0"] # localhost/0.0.0.0 required when DEBUG=false]
 
 APPEND_SLASH = True
 
