@@ -132,6 +132,9 @@ class AllowAuthorizedUserOnlyTests(TestCase):
                 response = client.get("/apps/")
                 self.assertEqual(response.status_code, 200)
 
+                response = client.get("/api/v1/apps/")
+                self.assertEqual(response.status_code, 200)
+
     def test_login_authorized_user(self):
         username = "authorized_user_test"
         email = "authorized_user_test@a_domain.com"
@@ -154,6 +157,9 @@ class AllowAuthorizedUserOnlyTests(TestCase):
                     response = client.get("/apps/")
                     self.assertEqual(response.status_code, 200)
 
+                    response = client.get("/api/v1/apps/")
+                    self.assertEqual(response.status_code, 200)
+
     def test_raise_403_for_unauthorized_user(self):
         username = "unauthorized_user_test"
         email = "unauthorized_user_test@a_domain.com"
@@ -172,5 +178,9 @@ class AllowAuthorizedUserOnlyTests(TestCase):
             ) as user:
                 client = Client()
                 client.login(username=username, password=password)
+
                 response = client.get("/apps/")
+                self.assertEqual(response.status_code, 403)
+
+                response = client.get("/api/v1/apps/")
                 self.assertEqual(response.status_code, 403)
