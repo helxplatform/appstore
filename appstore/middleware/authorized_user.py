@@ -10,8 +10,9 @@ from django.contrib.sessions.models import Session
 from core.models import AuthorizedUser
 
 logger = logging.getLogger(__name__)
-FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+FORMAT = "%(asctime)-15s %(clientip)s %(user)-8s %(message)s"
 logging.basicConfig(format=FORMAT)
+
 
 class AuthorizedUserCheck:
     """
@@ -24,21 +25,18 @@ class AuthorizedUserCheck:
     core_authorizeduser - checks if user email is authorized by an admin
     auth_user_groups - maps the user to the whitelist group, but unused
     """
+
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         user = request.user
-        logger.info(f"testing user: {user}")
+        logger.info(f"Checking if {user} is authorized.")
 
-
-        if user.is_authenticated and not (user.is_superuser or self.is_public_path(request.path)):
-            if self.is_authorized(user):
-                logger.info(f"Adding user {user} to whitelist group")
-                whitelist_group = Group.objects.get(name='whitelisted')
-                user.groups.add(whitelist_group)
-                logger.info(f"Accepting user {user}")
-            else:
+        if user.is_authenticated and not (
+            user.is_superuser or self.is_public_path(request.path)
+        ):
+            if not self.is_authorized(user):
                 logger.info(f"User {user} is not authorized")
                 try:
                     # This will fail if email isn't setup correctly and won't
@@ -47,12 +45,11 @@ class AuthorizedUserCheck:
                 except (SMTPSenderRefused, SMTPResponseException) as err:
                     logger.error(f"SMTP misconfigured, please check settings.\n{err}\n")
                 finally:
-                    # Make sure to always run the redirect.
+                    # Make sure to always return Forbidden in this condition path.
                     self.clear_session(request)
                     return HttpResponseForbidden()
 
         response = self.get_response(request)
-        logger.info(response)
         return response
 
     def is_public_path(self, url):
@@ -72,7 +69,7 @@ class AuthorizedUserCheck:
                 url.startswith(settings.APP_LOGIN_PROVIDER_URL),
             ]
         )
-        logger.info(f"Public? {url}\n{public}")
+        logger.info(f"Checking if access path {url} is public: {public}")
         return public
 
     def is_authorized(self, user):
@@ -94,16 +91,19 @@ class AuthorizedUserCheck:
 
         This will fail if SMTP is not configured correctly.
         """
-        msg = 'A user ' + user.email + ' is requesting access to AppStore on ' + settings.APPLICATION_BRAND \
-              + ' and needs to be reviewed for whitelisting. Upon successful review, kindly add the user to' \
-              + ' Authorized Users using django admin panel at ' \
-              + request.scheme + '://' + request.META['HTTP_HOST'] + settings.ADMIN_URL + '.'
+        msg = (
+            f"A user {user.email} is requesting access to AppStore on {settings.APPLICATION_BRAND} "
+            f"and needs to be reviewed for whitelisting. Upon successful review, kindly "
+            f"add the user to Authorized Users using django admin panel at "
+            f"{request.scheme}://{request.META.get('SERVER_NAME')}{settings.ADMIN_URL}"
+        )
+
         logger.info(f"Sending email:\n{msg}")
 
         send_mail(
-            'Whitelisting Required',
+            "Whitelisting Required",
             msg,
             settings.EMAIL_HOST_USER,
-            [settings.APPLICATION_BRAND + '-admin@lists.renci.org'],
+            [settings.APPLICATION_BRAND + "-admin@lists.renci.org"],
             fail_silently=False,
         )
