@@ -27,6 +27,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                     request.path.startswith(settings.LOGIN_URL),
                     request.path.startswith(settings.LOGIN_WHITELIST_URL),
                     request.path.startswith(settings.ADMIN_URL),
+                    request.path.startswith(settings.STATIC_URL),
                     request.path.startswith(settings.SAML_URL),
                     request.path.startswith(settings.SAML_ACS_URL),
                     request.path.startswith(settings.APP_CONTEXT_URL),
@@ -46,7 +47,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                         # route the user correctly.
                         self.send_whitelist_email(request, user)
                     except (SMTPSenderRefused, SMTPResponseException) as err:
-                        logger.error("SMTP misconfigured, please check settings.\n{err}\n")
+                        logger.error(f"SMTP misconfigured, please check settings.\n{err}\n")
                     finally:
                         # Make sure to always run the redirect.
                         return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
