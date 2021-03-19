@@ -11,7 +11,7 @@
     {% elif APPLICATION_BRAND == "restartr" %}
     <title>Restarting Research</title>
     {% else %}
-    <title>CommonsShare</title>
+    <title>HeLx AppStore</title>
     {% endif %}
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -52,7 +52,7 @@
             <a href="/"><img class="navbar-brand navbar-brand-restartr" id="img-brand-restartr-logo" src="/static/images/restartr/restartingresearch.png"
                              alt="Restarting Research Logo"></a>
             {% else %}
-            <a href="/"><img class="navbar-brand" id="img-brand-logo" src="/static/images/commonsshare/logo-lg.png"
+            <a href="/"><img class="navbar-brand" id="img-brand-logo" src="/static/images/catalyst/bdc-logo.svg"
                              alt="CommonsShare Logo"></a>
             {% endif %}
             <a class="navbar-brand" href="/"><img class="divider" id="img-brand-logo"
@@ -73,6 +73,9 @@
             {%else%}
             <ul class="nav navbar-nav navbar-right">
                 <li class="nav-item" id="cs_apps"><a href="{%  url 'login'  %}">Sign in</a></li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="nav-item" id="img-download"><a href="https://braini-metalnx.renci.org/">Image Download</a></li>
             </ul>
             {% endif %}
         </div>
