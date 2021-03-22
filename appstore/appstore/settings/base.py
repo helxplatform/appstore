@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
+    'rest_framework',
+    'api'
 ]
 
 SITE_ID = 4
@@ -96,6 +98,13 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json'
+}
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get('ACCOUNT_DEFAULT_HTTP_PROTOCOL', "http")
 
@@ -190,6 +199,9 @@ LOGIN_WHITELIST_URL = '/login_whitelist/'
 
 SAML_URL = '/accounts/saml'
 SAML_ACS_URL = '/saml2_auth/acs/'
+
+APP_CONTEXT_URL = "/api/v1/context"
+APP_LOGIN_PROVIDER_URL = "/api/v1/providers"
 
 min_django_level = 'INFO'
 LOGGING = {
