@@ -200,10 +200,7 @@ h1.hl small, h2.hl small, h3.hl small, h4.hl small, h5.hl small, h6.hl small {
 /* ===== Showcase ===== */
 
 #wrap {
-    background: url(../img/bg3.jpg);
     background-size: cover;
-    filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../img/bg3.jpg', sizingMethod='scale');
-    -ms-filter: "progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../img/bg3.jpg', sizingMethod='scale')";
     background-position: center;
     border-bottom: 1px solid #eee;
     color: #fff;
@@ -612,8 +609,6 @@ img.media-object{
 
 .not-found {
 	background: #eee;
-    background-image: url(../img/falling-leafs.png), -webkit-linear-gradient(top, #eee, #fff);
-    background-image: url(../img/falling-leafs.png), -moz-linear-gradient(top, #eee, #fff);
 }
 .not-found .digits {
 	color: #999;
@@ -732,7 +727,6 @@ li.account .avatar {
 	height: 100px;
 	float: left;
 	margin: 0 20px 0 0;
-	background: url(../img/face1.jpg);
 	background-size: cover;
 	background-position: center;
 }
@@ -3215,7 +3209,6 @@ span.you-flag {
 }
 
 .screen-sizes {
-    background: url(../img/graypattern.jpg);
 	background-color: #BBB;
 	padding: 15px 0;
 	text-align: center;
