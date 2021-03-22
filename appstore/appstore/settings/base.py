@@ -31,7 +31,7 @@ IMAGE_DOWNLOAD_URL = os.environ.get('IMAGE_DOWNLOAD_URL', 'https://braini-metaln
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']
-ALLOWED_HOSTS = ["*", "127.0.0.1", "0.0.0.0"] # localhost/0.0.0.0 required when DEBUG=false]
+ALLOWED_HOSTS = ["*", "127.0.0.1", "0.0.0.0"] # localhost/0.0.0.0 required when DEBUG is false]
 
 APPEND_SLASH = True
 
@@ -65,7 +65,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
 ]
 
-if DEBUG=="True" and DEV_PHASE in ("local", "stub", "dev"):
+if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     MIDDLEWARE += [
         'corsheaders.middleware.CorsMiddleware',
         'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -107,7 +107,7 @@ MIDDLEWARE += [
     'middleware.session_idle_timeout.SessionIdleTimeout',
 ]
 
-if DEBUG=="True" and DEV_PHASE in ("local", "stub", "dev"):
+if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     CORS_ALLOWED_ORIGINS = [
         "https://localhost:3000",
         "https://127.0.0.1:3000",

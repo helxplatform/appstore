@@ -47,7 +47,7 @@ urlpatterns += [
     re_path('static/(?P<path>.*)', serve, {'document_root': settings.STATIC_ROOT}),
 ]
 
-if settings.DEBUG == 'True':
+if settings.DEBUG:
     urlpatterns += [
         path('__debug__/', include(debug_toolbar.urls)),
     ]
