@@ -11,11 +11,11 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+from pathlib import Path
 
-NESTED_SETTINGS_DIR = os.path.dirname(os.path.abspath(__file__))
-APPSTORE_DIR = os.path.dirname(NESTED_SETTINGS_DIR)
-BASE_DIR = os.path.dirname(APPSTORE_DIR)
-TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+NESTED_SETTINGS_DIR = Path(__file__).parent.resolve(strict=True)
+APPSTORE_DIR = NESTED_SETTINGS_DIR.parent
+BASE_DIR = APPSTORE_DIR.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.environ.get('DEBUG', "")) # Empty quotes equates to false in kubernetes env.
@@ -120,15 +120,21 @@ ROOT_URLCONF = 'appstore.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        "DIRS": [str(BASE_DIR / "templates")],
         'OPTIONS': {
+            "loaders": [
+                "django.template.loaders.filesystem.Loader",
+                "django.template.loaders.app_directories.Loader",
+            ],
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
+                "django.template.context_processors.i18n",
+                "django.template.context_processors.media",
+                "django.template.context_processors.static",
+                "django.template.context_processors.tz",
                 'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.request',
                 'appstore.context_processors.global_settings',
             ],
         },
@@ -137,14 +143,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'appstore.wsgi.application'
 
-TEMPLATE_CONTEXT_PROCESSORS = 'allauth.socialaccount.context_processors.socialaccount'
 
-DB_DIR = os.environ.get('OAUTH_DB_DIR', BASE_DIR)
-DB_FILE = os.environ.get('OAUTH_DB_FILE', 'DATABASE.sqlite3')
+DB_DIR = Path(os.environ.get('OAUTH_DB_DIR', BASE_DIR))
+DB_FILE = Path(os.environ.get('OAUTH_DB_FILE', 'DATABASE.sqlite3'))
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(DB_DIR, DB_FILE),
+        'NAME': DB_DIR / DB_FILE,
     }
 }
 
@@ -180,7 +185,8 @@ STATICFILES_FINDERS = (
 )
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, STATIC_URL.strip("/"))
+STATIC_ROOT = BASE_DIR / 'static'
+
 
 # PIVOT HAIL APP specific settings
 INITIAL_COST_CPU = 6

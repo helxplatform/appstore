@@ -219,7 +219,7 @@ class IrodsLogin(generic.TemplateView):
                     access = iRODSAccess('read', i.path, email, zone)
                     session.permissions.set(access, admin=True)
 
-        return super(generic.TemplateView, self).render_to_response(context)
+        return super(generic.TemplateView, self).render(request, context)
 
 
 class ProbeServices(generic.View):
