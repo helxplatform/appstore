@@ -219,7 +219,7 @@ class IrodsLogin(generic.TemplateView):
                     access = iRODSAccess('read', i.path, email, zone)
                     session.permissions.set(access, admin=True)
 
-        return super(generic.TemplateView, self).render_to_response(context)
+        return super(generic.TemplateView, self).render(request, context)
 
 
 class ProbeServices(generic.View):
@@ -285,6 +285,23 @@ def login_whitelist(request):
         "brand": settings.APPLICATION_BRAND,
         "full_brand": full_brand
     })
+
+
+def handler404(request, exception, template_name='404.html'):
+    if "private" in request.path:
+        template_name = "private404.html"
+    context = { 'req_path' : request.path }
+    response = render(request, template_name, context)
+    response.status_code = 404
+    return response
+
+
+def handler500(request, exception=None):
+    context = {}
+    template_name = "500.html"
+    response = render(request, template_name, context)
+    response.status_code = 500
+    return response
 
 
 def get_brand_details(brand):

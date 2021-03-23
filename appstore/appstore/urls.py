@@ -9,14 +9,19 @@ from django.views.static import serve
 from core import views as app_core_views
 from django_saml2_auth import views as saml2_auth_views
 
+
+
 admin.autodiscover()
+handler404 = app_core_views.handler404
+handler500 = app_core_views.handler500
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',  RedirectView.as_view(url='/accounts/login/'), name='index'),
 
     path('saml2_auth/', include('django_saml2_auth.urls')),
     path('accounts/saml/', saml2_auth_views.signin),
-    path('accounts/login/', auth_views.LoginView.as_view(template_name='accounts/login.html'), name='login'),
+    path('accounts/login/', auth_views.LoginView.as_view(template_name='account/login.html'), name='login'),
     path('sign-out', RedirectView.as_view(url='/accounts/logout/'), name='sign-out'),
     path('accounts/', include('allauth.urls')),
     path('auth/', app_core_views.auth, name='auth'),
@@ -29,6 +34,8 @@ urlpatterns = [
     path('probe/', app_core_views.ProbeServices.as_view(), name='probe_service'),
 
     path('irods/login', app_core_views.IrodsLogin.as_view(), name='irods_login'),
+
+    path('', include('api.urls')),
 ]
 
 urlpatterns += [
