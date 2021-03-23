@@ -27,6 +27,8 @@ ALLOW_DJANGO_LOGIN = os.environ.get('ALLOW_DJANGO_LOGIN',
                                     "True" if DEV_PHASE == "local" or DEV_PHASE == 'stub' else "False").lower()
 ALLOW_SAML_LOGIN = os.environ.get('ALLOW_SAML_LOGIN', "True").lower()
 
+IMAGE_DOWNLOAD_URL = os.environ.get('IMAGE_DOWNLOAD_URL', 'https://braini-metalnx.renci.org/metalnx')
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']
 ALLOWED_HOSTS = ["*", "127.0.0.1", "0.0.0.0"] # localhost/0.0.0.0 required when DEBUG=false]

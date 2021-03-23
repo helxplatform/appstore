@@ -8,8 +8,6 @@ APPLICATION_COLOR = {
   "secondary": "#e6e6e6"
 }
 
-IMAGE_DOWNLOAD_URL = os.environ.get('IMAGE_DOWNLOAD_URL')
-
 SAML2_AUTH = {
     # Metadata is required, choose either remote url or local file path
     'METADATA_AUTO_CONF_URL': 'https://sso.unc.edu/metadata/unc',
