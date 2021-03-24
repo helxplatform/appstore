@@ -35,7 +35,7 @@ Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
 tycho = ContextFactory.get(
-    context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
+    context_type=settings.TYCHO_MODE, product=settings.APPLICATION_SETTINGS.brand
 )
 
 
@@ -433,7 +433,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
         return provider_data
 
-    def _get_base_settings_provider(self, settings):
+    def _get_django_provider(self, settings):
         """
         Check for default settings logins.
         """
@@ -446,7 +446,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         Check for SSO defined in appstore settings.
         """
 
-        if settings.APPLICATION_BRAND in ("braini", "restarts"):
+        if settings.APPLICATION_SETTINGS.brand in ("braini", "restarts"):
             # TODO can we get the provider name from metadata so that if
             # we support something beyond UNC we dont need another func
             # or clause? What happens if we have multiple SAML SSO providers
@@ -468,11 +468,13 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
         provider_data.extend(self._get_social_providers(request, settings))
 
-        if custom_sso := self._get_base_settings_provider(settings):
-            provider_data.append(custom_sso)
+        django = self._get_django_provider(settings)
+        if django:
+            provider_data.append(django)
 
-        if custom_sso := self._get_product_providers(settings):
-            provider_data.append(custom_sso)
+        product = self._get_product_providers(settings)
+        if product:
+            provider_data.append(product)
 
         return provider_data
 
@@ -494,41 +496,8 @@ class AppContextViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         return settings
 
-    def _get_brand(self, settings):
-        if settings.APPLICATION_BRAND:
-            return settings.APPLICATION_BRAND
-        else:
-            return "CommonsShare"
-
-    def _get_logo(self, settings):
-        if settings.APPLICATION_LOGO:
-            return settings.APPLICATION_LOGO
-        else:
-            return "/static/images/commonsshare/logo-lg.png"
-
-    def _get_title(self, settings):
-        if settings.APPLICATION_TITLE:
-            return settings.APPLICATION_TITLE
-        else:
-            return "CommonsShare"
-
-    def _get_colors(self, settings):
-        if settings.APPLICATION_COLOR:
-            return settings.APPLICATION_COLOR
-        else:
-            return {"primary": "#00a8c1", "secondary": "#d2cbcb"}
-
     def list(self, request):
         settings = self.get_queryset()
-        # Note CommonShare is the default provided when
-        # a custom brand is no loaded at startup.
-        serializer = self.get_serializer(
-            data={
-                "brand": self._get_brand(settings),
-                "logo_url": self._get_logo(settings),
-                "title": self._get_title(settings),
-                "colors": self._get_colors(settings),
-            }
-        )
+        serializer = self.get_serializer(data=asdict(settings.APPLICATION_SETTINGS))
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)

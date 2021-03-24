@@ -1,9 +1,12 @@
 from .base import *
+from .product import ProductSettings, ProductColorScheme
 
 APPLICATION_BRAND = "scidas"
-APPLICATION_TITLE = "SciDAS"
-APPLICATION_LOGO = "/static/images/scidas/scidas-logo-sm.png"
-APPLICATION_COLOR = {
-  "primary": "#191348",
-  "secondary": "#0079bc"
-}
+
+APPLICATION_SETTINGS = ProductSettings(
+    brand="scidas",
+    title="SciDAS",
+    logo_url="/static/images/scidas/scidas-logo-sm.png",
+    color_scheme=ProductColorScheme("#191348", "#0079bc"),
+    links=None,
+)
