@@ -186,7 +186,7 @@ image () {
 ##
 ###############################################################################
 cicd () {
-    for product in braini scidas catalyst; do
+    for product in braini scidas catalyst restartr heal; do
 	createsuperuser
 	tests $product
     done
@@ -202,13 +202,13 @@ help () {
     printf """bin/appstore management interface.
 
 Usage:
-   manageauthorizedusers [ braini | scidas | cat ] \t Add and Remove authorized users based on environment variables.
-   createsuperuser                           \t Create a superuser based on environment variables.
-   run         [ braini | scidas | catalyst | restartr ]\t Run the application.
-   tests       [ braini | scidas | catalyst | restartr ]\t Run all unit tests.
-   image build                               \t Build the docker image.
-   image push  [ braini | scidas | catalyst | restartr ]\t Push the image to the repository.
-   image run   [ braini | scidas | catalyst | restartr ]\t Run the docker image.
+   manageauthorizedusers [ braini | scidas | catalyst | restartr | heal ] \t Add and Remove authorized users based on environment variables.
+   createsuperuser                                                        \t Create a superuser based on environment variables.
+   run         [ braini | scidas | catalyst | restartr | heal ]           \t Run the application.
+   tests       [ braini | scidas | catalyst | restartr | heal ]           \t Run all unit tests.
+   image build                                                            \t Build the docker image.
+   image push  [ braini | scidas | catalyst | restartr | heal ]           \t Push the image to the repository.
+   image run   [ braini | scidas | catalyst | restartr | heal ]           \t Run the docker image.
 """
     exit 1
 }
