@@ -3,7 +3,7 @@ from .product import ProductSettings, ProductColorScheme
 
 APPLICATION_BRAND = "restartr"
 
-APPLICATION_SETTINGS = ProductSettings(
+PRODUCT_SETTINGS = ProductSettings(
     brand="restartr",
     title="Restarting Research",
     logo_url="/static/images/restartr/restartingresearch.png",

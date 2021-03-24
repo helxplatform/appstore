@@ -35,7 +35,7 @@ Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
 tycho = ContextFactory.get(
-    context_type=settings.TYCHO_MODE, product=settings.APPLICATION_SETTINGS.brand
+    context_type=settings.TYCHO_MODE, product=settings.PRODUCT_SETTINGS.brand
 )
 
 
@@ -446,7 +446,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         Check for SSO defined in appstore settings.
         """
 
-        if settings.APPLICATION_SETTINGS.brand in ("braini", "restarts"):
+        if settings.PRODUCT_SETTINGS.brand in ("braini", "restarts"):
             # TODO can we get the provider name from metadata so that if
             # we support something beyond UNC we dont need another func
             # or clause? What happens if we have multiple SAML SSO providers
@@ -487,7 +487,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
 class AppContextViewSet(viewsets.GenericViewSet):
     """
-    Application configuration information.
+    Brand/Product configuration information.
     """
 
     permission_classes = [AllowAny]
@@ -498,6 +498,6 @@ class AppContextViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
         settings = self.get_queryset()
-        serializer = self.get_serializer(data=asdict(settings.APPLICATION_SETTINGS))
+        serializer = self.get_serializer(data=asdict(settings.PRODUCT_SETTINGS))
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)

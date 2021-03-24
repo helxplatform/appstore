@@ -5,7 +5,7 @@ from .product import ProductSettings, ProductColorScheme, ProductLink
 # the django templates in core are removed.
 APPLICATION_BRAND = "braini"
 
-APPLICATION_SETTINGS = ProductSettings(
+PRODUCT_SETTINGS = ProductSettings(
     brand="braini",
     title="Brain-I",
     logo_url="/static/images/braini/braini-lg-gray.png",

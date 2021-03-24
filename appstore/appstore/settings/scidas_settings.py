@@ -3,7 +3,7 @@ from .product import ProductSettings, ProductColorScheme
 
 APPLICATION_BRAND = "scidas"
 
-APPLICATION_SETTINGS = ProductSettings(
+PRODUCT_SETTINGS = ProductSettings(
     brand="scidas",
     title="SciDAS",
     logo_url="/static/images/scidas/scidas-logo-sm.png",

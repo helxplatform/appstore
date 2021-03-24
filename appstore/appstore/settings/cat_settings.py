@@ -3,7 +3,7 @@ from .product import ProductSettings, ProductColorScheme
 
 APPLICATION_BRAND = "catalyst"
 
-APPLICATION_SETTINGS = ProductSettings(
+PRODUCT_SETTINGS = ProductSettings(
     brand="catalyst",
     title="Biodata Catalyst",
     logo_url="/static/images/catalyst/bdc-logo.svg",
