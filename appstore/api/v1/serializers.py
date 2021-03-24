@@ -8,26 +8,26 @@ logger = logging.getLogger(__name__)
 
 
 class InstanceSerializer(serializers.Serializer):
-    name = serializers.CharField(required=True)
-    docs = serializers.CharField(required=True)
-    sid = serializers.CharField(required=True)
-    fqsid = serializers.CharField(required=True)
-    creation_time = serializers.CharField(
-        required=True
+    name = serializers.CharField()
+    docs = serializers.CharField()
+    sid = serializers.CharField()
+    fqsid = serializers.CharField()
+    creation_time = (
+        serializers.CharField()
     )  # serializers.DateTimeField(format='iso-8601') - date error from tycho
-    cpus = serializers.FloatField(required=True)
+    cpus = serializers.FloatField()
     gpus = serializers.IntegerField(default=0)
     # TODO switch to Float potentially, or validator
-    memory = serializers.CharField(required=True)
+    memory = serializers.CharField()
 
 
 class AppDetailSerializer(serializers.Serializer):
-    name = serializers.CharField(required=True)
-    app_id = serializers.CharField(required=True)
-    description = serializers.CharField(required=True)
-    detail = serializers.CharField(required=True)
-    docs = serializers.CharField(required=True)
-    spec = serializers.CharField(required=True)
+    name = serializers.CharField()
+    app_id = serializers.CharField()
+    description = serializers.CharField()
+    detail = serializers.CharField()
+    docs = serializers.CharField()
+    spec = serializers.CharField()
     minimum_resources = serializers.DictField()
     maximum_resources = serializers.DictField()
 
@@ -37,41 +37,42 @@ class AppSerializer(serializers.Serializer):
 
 
 class ResourceSerializer(serializers.Serializer):
-    app_id = serializers.CharField(required=True)
-    cpus = serializers.FloatField(required=True)
+    app_id = serializers.CharField()
+    cpus = serializers.FloatField()
     gpus = serializers.IntegerField(default=0)
-    memory = serializers.CharField(required=True, validators=[memory_format_validator])
+    memory = serializers.CharField(validators=[memory_format_validator])
 
     def create(self, validated_data):
         return ResourceRequest(**validated_data)
 
 
 class InstanceSpecSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True)
-    app_id = serializers.CharField(required=True)
-    name = serializers.CharField(required=True)
-    host = serializers.CharField(required=True)
-    resources = serializers.DictField(required=True)
-    url = serializers.CharField(required=True)
-    protocol = serializers.CharField(required=True)
+    username = serializers.CharField()
+    app_id = serializers.CharField()
+    name = serializers.CharField()
+    host = serializers.CharField()
+    resources = serializers.DictField()
+    url = serializers.CharField()
+    protocol = serializers.CharField()
 
 
 class InstanceIdentifierSerializer(serializers.Serializer):
-    sid = serializers.CharField(required=True)
+    sid = serializers.CharField()
 
 
 class UserSerializer(serializers.Serializer):
-    REMOTE_USER = serializers.CharField(required=True)
-    ACCESS_TOKEN = serializers.CharField(required=True)
+    REMOTE_USER = serializers.CharField()
+    ACCESS_TOKEN = serializers.CharField()
 
 
 class LoginProviderSerializer(serializers.Serializer):
-    name = serializers.CharField(required=True)
-    url = serializers.CharField(required=True)
+    name = serializers.CharField()
+    url = serializers.CharField()
 
 
 class AppContextSerializer(serializers.Serializer):
-    brand = serializers.CharField(required=True)
-    logo_url = serializers.CharField(required=True)
-    title = serializers.CharField(required=True)
-    colors = serializers.DictField(required=True)
+    brand = serializers.CharField()
+    title = serializers.CharField()
+    logo_url = serializers.CharField()
+    color_scheme = serializers.DictField()
+    links = serializers.ListField(required=False)
