@@ -39,5 +39,6 @@ urlpatterns = [
 ]
 
 urlpatterns += [
+    path('favicon.ico', RedirectView.as_view(url='/static/images/favicon.ico', permanent=True), name='favicon'),
     re_path('static/(?P<path>.*)', serve, {'document_root': settings.STATIC_ROOT}),
 ]
