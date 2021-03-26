@@ -54,12 +54,16 @@ def parse_spec_resources(app_id, spec):
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#memory
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#cpus
     """
-    instances = spec["services"]
-    app_scope = instances[app_id]
-    resource_scope = app_scope["deploy"]["resources"]
-    limits = resource_scope["limits"]
-    reservations = resource_scope["reservations"]
-    return limits, reservations
+    try:
+        instances = spec["services"]
+        app_scope = instances[app_id]
+        resource_scope = app_scope["deploy"]["resources"]
+        limits = resource_scope["limits"]
+        reservations = resource_scope["reservations"]
+        return limits, reservations
+    except KeyError:
+        logger.error(f"Could not parse {app_id}.\nInvalid spec {spec}")
+        pass
 
 
 def search_for_gpu_reservation(reservations):
@@ -137,32 +141,37 @@ class AppViewSet(viewsets.GenericViewSet):
         apps = {}
 
         for app_id, app_data in self.get_queryset().items():
-            spec = tycho.get_spec(app_id)
-            limits, reservations = parse_spec_resources(app_id, spec)
+            try:
+                spec = tycho.get_spec(app_id)
+                limits, reservations = parse_spec_resources(app_id, spec)
 
-            # TODO GPUs can be defined differently in docker-compose than in the
-            # submission from Tycho to k8s, how do we want to handle this?
-            # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
-            # #capabilities
-            # https://github.com/helxplatform/tycho/search?q=gpu
-            gpu = search_for_gpu_reservation(reservations)
+                # TODO GPUs can be defined differently in docker-compose than in the
+                # submission from Tycho to k8s, how do we want to handle this?
+                # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
+                # #capabilities
+                # https://github.com/helxplatform/tycho/search?q=gpu
+                gpu = search_for_gpu_reservation(reservations)
 
-            spec = App(
-                app_data["name"],
-                app_id,
-                app_data["description"],
-                app_data["details"],
-                app_data["docs"],
-                app_data["spec"],
-                asdict(
-                    Resources(
-                        reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
-                    )
-                ),
-                asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
-            )
+                spec = App(
+                    app_data["name"],
+                    app_id,
+                    app_data["description"],
+                    app_data["details"],
+                    app_data["docs"],
+                    app_data["spec"],
+                    asdict(
+                        Resources(
+                            reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                        )
+                    ),
+                    asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
+                )
 
-            apps[app_id] = asdict(spec)
+                apps[app_id] = asdict(spec)
+            except Exception as e:
+                logger.error(f"Could not parse {app_id}...continuing.")
+                continue
+
 
         apps = {key: value for key, value in sorted(apps.items())}
         serializer = self.get_serializer(data=apps)
