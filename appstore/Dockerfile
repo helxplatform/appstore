@@ -11,7 +11,6 @@ ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
 ENV HOME /home/$USER
 ENV UID 1000
-ENV DJANGO_SETTINGS braini
 
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME
