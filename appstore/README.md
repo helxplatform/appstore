@@ -345,3 +345,33 @@ Services should the be available at
 ```bash
 http://localhost/unique-URI
 ```
+
+### Frontend Development
+
+The appstore has a new frontend being developed inside the [helx-ui](https://github.com/helxplatform/helx-ui)
+that is served by Django. This frontend is focused on user interactions with
+search and apps providing a rich experience while Django remains responsible
+for authentication, authorization, routing and exposing data from Tycho.
+
+This means that before a user is able to access the frontend `helx-ui` project
+Django will provide a login page to authenticate the user, after which the
+Django middleware will also make sure the user is allowed to access resources
+as part of the authorization middleware. Once this is complete the user will be
+able to navigate and interact with the new frontend which is served via the
+`/frontend` Django app embedded in a Django view.
+
+The new frontend is built in to the appstore docker image build. Inside of our
+`Dockerfile` we use a multistage build to pull the frontend artifact out of the
+`helx-ui` container into the `static` directory in the frontend Django app. That
+artifact is then collected with `collectstatic` and served on the `/frontend`
+route.
+
+For local filesystem development `bin/appstore image frontend` will pull the
+`helx-ui` image, start the container, copy the artifacts to your local filesystem
+in the frontend Django app, stop and remove the container. You can then run
+`bin/appstore start $product` which will run database migrations, execute
+`collectstatic` and start the appstore Django project for development and testing.
+
+If changes need to happen to the frontend artifacts (react components, etc) those
+changes will need to be done in the `helx-ui` repo which has instructions for
+developing the frontend and testing appstore integration.
