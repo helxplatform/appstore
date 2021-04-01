@@ -35,7 +35,7 @@ Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
 tycho = ContextFactory.get(
-    context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
+    context_type=settings.TYCHO_MODE, product=settings.PRODUCT_SETTINGS.brand
 )
 
 
@@ -54,12 +54,16 @@ def parse_spec_resources(app_id, spec):
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#memory
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#cpus
     """
-    instances = spec["services"]
-    app_scope = instances[app_id]
-    resource_scope = app_scope["deploy"]["resources"]
-    limits = resource_scope["limits"]
-    reservations = resource_scope["reservations"]
-    return limits, reservations
+    try:
+        instances = spec["services"]
+        app_scope = instances[app_id]
+        resource_scope = app_scope["deploy"]["resources"]
+        limits = resource_scope["limits"]
+        reservations = resource_scope["reservations"]
+        return limits, reservations
+    except KeyError:
+        logger.error(f"Could not parse {app_id}.\nInvalid spec {spec}")
+        pass
 
 
 def search_for_gpu_reservation(reservations):
@@ -137,32 +141,37 @@ class AppViewSet(viewsets.GenericViewSet):
         apps = {}
 
         for app_id, app_data in self.get_queryset().items():
-            spec = tycho.get_spec(app_id)
-            limits, reservations = parse_spec_resources(app_id, spec)
+            try:
+                spec = tycho.get_spec(app_id)
+                limits, reservations = parse_spec_resources(app_id, spec)
 
-            # TODO GPUs can be defined differently in docker-compose than in the
-            # submission from Tycho to k8s, how do we want to handle this?
-            # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
-            # #capabilities
-            # https://github.com/helxplatform/tycho/search?q=gpu
-            gpu = search_for_gpu_reservation(reservations)
+                # TODO GPUs can be defined differently in docker-compose than in the
+                # submission from Tycho to k8s, how do we want to handle this?
+                # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
+                # #capabilities
+                # https://github.com/helxplatform/tycho/search?q=gpu
+                gpu = search_for_gpu_reservation(reservations)
 
-            spec = App(
-                app_data["name"],
-                app_id,
-                app_data["description"],
-                app_data["details"],
-                app_data["docs"],
-                app_data["spec"],
-                asdict(
-                    Resources(
-                        reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
-                    )
-                ),
-                asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
-            )
+                spec = App(
+                    app_data["name"],
+                    app_id,
+                    app_data["description"],
+                    app_data["details"],
+                    app_data["docs"],
+                    app_data["spec"],
+                    asdict(
+                        Resources(
+                            reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                        )
+                    ),
+                    asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
+                )
 
-            apps[app_id] = asdict(spec)
+                apps[app_id] = asdict(spec)
+            except Exception as e:
+                logger.error(f"Could not parse {app_id}...continuing.")
+                continue
+
 
         apps = {key: value for key, value in sorted(apps.items())}
         serializer = self.get_serializer(data=apps)
@@ -433,7 +442,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
         return provider_data
 
-    def _get_base_settings_provider(self, settings):
+    def _get_django_provider(self, settings):
         """
         Check for default settings logins.
         """
@@ -446,7 +455,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         Check for SSO defined in appstore settings.
         """
 
-        if settings.APPLICATION_BRAND in ("braini", "restarts"):
+        if settings.PRODUCT_SETTINGS.brand in ("braini", "restarts"):
             # TODO can we get the provider name from metadata so that if
             # we support something beyond UNC we dont need another func
             # or clause? What happens if we have multiple SAML SSO providers
@@ -468,11 +477,13 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
         provider_data.extend(self._get_social_providers(request, settings))
 
-        if custom_sso := self._get_base_settings_provider(settings):
-            provider_data.append(custom_sso)
+        django = self._get_django_provider(settings)
+        if django:
+            provider_data.append(django)
 
-        if custom_sso := self._get_product_providers(settings):
-            provider_data.append(custom_sso)
+        product = self._get_product_providers(settings)
+        if product:
+            provider_data.append(product)
 
         return provider_data
 
@@ -485,7 +496,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
 class AppContextViewSet(viewsets.GenericViewSet):
     """
-    Application configuration information.
+    Brand/Product configuration information.
     """
 
     permission_classes = [AllowAny]
@@ -494,41 +505,8 @@ class AppContextViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         return settings
 
-    def _get_brand(self, settings):
-        if settings.APPLICATION_BRAND:
-            return settings.APPLICATION_BRAND
-        else:
-            return "CommonsShare"
-
-    def _get_logo(self, settings):
-        if settings.APPLICATION_LOGO:
-            return settings.APPLICATION_LOGO
-        else:
-            return "/static/images/commonsshare/logo-lg.png"
-
-    def _get_title(self, settings):
-        if settings.APPLICATION_TITLE:
-            return settings.APPLICATION_TITLE
-        else:
-            return "CommonsShare"
-
-    def _get_colors(self, settings):
-        if settings.APPLICATION_COLOR:
-            return settings.APPLICATION_COLOR
-        else:
-            return {"primary": "#00a8c1", "secondary": "#d2cbcb"}
-
     def list(self, request):
         settings = self.get_queryset()
-        # Note CommonShare is the default provided when
-        # a custom brand is no loaded at startup.
-        serializer = self.get_serializer(
-            data={
-                "brand": self._get_brand(settings),
-                "logo_url": self._get_logo(settings),
-                "title": self._get_title(settings),
-                "colors": self._get_colors(settings),
-            }
-        )
+        serializer = self.get_serializer(data=asdict(settings.PRODUCT_SETTINGS))
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)

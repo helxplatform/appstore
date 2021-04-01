@@ -118,7 +118,7 @@ bin/appstore run $product
     ```
      export SECRET_KEY=""
    
-   # Project specific settings. (scidas | braini | cat | reccap)
+   # Project specific settings. ( scidas | braini | cat | restartr | heal )
      export DJANGO_SETTINGS_MODULE="appstore.settings.<project>_settings"
      
    # Optional: Google or GitHub OAuth web app credentials.
