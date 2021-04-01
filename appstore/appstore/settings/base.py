@@ -31,7 +31,7 @@ IMAGE_DOWNLOAD_URL = os.environ.get('IMAGE_DOWNLOAD_URL', 'https://braini-metaln
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ['SECRET_KEY']
-ALLOWED_HOSTS = ["*", "127.0.0.1", "0.0.0.0"] # localhost/0.0.0.0 required when DEBUG=false]
+ALLOWED_HOSTS = ["*", "127.0.0.1", "0.0.0.0"] # localhost/0.0.0.0 required when DEBUG is false]
 
 APPEND_SLASH = True
 
@@ -52,14 +52,26 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.github',
     'allauth.socialaccount.providers.google',
     'bootstrapform',
+    'corsheaders',
     'rest_framework',
-    'api'
+    'debug_toolbar',
+    'api',
+    'frontend',
 ]
 
 SITE_ID = 4
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+]
+
+if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
+    MIDDLEWARE += [
+        'corsheaders.middleware.CorsMiddleware',
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+    ]
+
+MIDDLEWARE += [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -93,6 +105,24 @@ else:
 # Add any additional middleware that's not conditional
 MIDDLEWARE += [
     'middleware.session_idle_timeout.SessionIdleTimeout',
+]
+
+if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
+    CORS_ALLOWED_ORIGINS = [
+        "https://localhost:3000",
+        "https://127.0.0.1:3000",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
+    ]
+
+    CSRF_TRUSTED_ORIGINS = [
+        'localhost',
+        '127.0.0.1',
+    ]
+
+# Debug toolbar setting
+INTERNAL_IPS = [
+    '127.0.0.1',
 ]
 
 # Session Timeout Configuration
@@ -146,7 +176,8 @@ ROOT_URLCONF = 'appstore.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        "DIRS": [str(BASE_DIR / "templates")],
+        "DIRS": [str(BASE_DIR / "templates"), 
+                 str(BASE_DIR / "static")],
         'OPTIONS': {
             "loaders": [
                 "django.template.loaders.filesystem.Loader",

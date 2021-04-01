@@ -105,7 +105,7 @@ updatedb () {
     DEV_PHASE=stub python manage.py makemigrations --settings=$settings && \
 	DEV_PHASE=stub python manage.py migrate       --settings=$settings && \
 	DEV_PHASE=stub python manage.py addingwhitelistedsocialapp --settings=$settings  &&\
-	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --no-input
+	DEV_PHASE=stub python manage.py collectstatic --settings=$settings --clear --no-input
 }
 
 ###############################################################################
@@ -149,15 +149,30 @@ image () {
 	       -t $dockerhub_repo/appstore:latest \
 	       -t $dockerhub_repo/appstore:$image_ver $*
     }
+    frontend () {
+        # Pull and start the ui container to fetch frontend assets
+        docker run -d --name frontend helxplatform/helx-ui:latest;
+        # Copy the assets to the local django frontend app for local dev and serving
+        docker cp frontend:/usr/share/nginx/html ./frontend/static/frontend;
+        # Stop and remove container to prevent future run collisions
+        docker container rm "$(docker container stop "$(docker container ls -q --filter name="frontend")")" $*
+    }
 
     run () {
 	brand=$1
+    kube_path=$2
 	test -z ${brand} && help
-	DEBUG_LEVEL=DEBUG
+	test -z ${kube_path} && echo "\nPlease provide path to .kube\n" && help
 	shift
+	shift
+	DEBUG_LEVEL=DEBUG
 	settings=appstore.settings.${brand}_settings && \
-	    docker run --rm --name appstore -p 8000:8000\
+	    docker run --rm --name appstore -p 8000:8000 \
+           -v ${kube_path}/.kube/config:/home/appstore/.kube/config \
+           -v ${kube_path}/.minikube/:${kube_path}/.minikube/ \
 		   -e DJANGO_SETTINGS=$brand \
+		   -e DEBUG=${DEBUG} \
+           -e DEV_PHASE=${DEV_PHASE} \
 		   -e OAUTH_PROVIDERS=${OAUTH_PROVIDERS} \
            -e GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} \
            -e GOOGLE_SECRET=${GOOGLE_SECRET} \
@@ -202,13 +217,14 @@ help () {
     printf """bin/appstore management interface.
 
 Usage:
-   manageauthorizedusers [ braini | scidas | catalyst | restartr | heal ] \t Add and Remove authorized users based on environment variables.
-   createsuperuser                                                        \t Create a superuser based on environment variables.
-   run         [ braini | scidas | catalyst | restartr | heal ]           \t Run the application.
-   tests       [ braini | scidas | catalyst | restartr | heal ]           \t Run all unit tests.
-   image build                                                            \t Build the docker image.
-   image push  [ braini | scidas | catalyst | restartr | heal ]           \t Push the image to the repository.
-   image run   [ braini | scidas | catalyst | restartr | heal ]           \t Run the docker image.
+   manageauthorizedusers [ braini | scidas | catalyst | restartr | heal ]                      \t Add and Remove authorized users based on environment variables.
+   createsuperuser                                                                             \t Create a superuser based on environment variables.
+   run         [ braini | scidas | catalyst | restartr | heal ]                                \t Run the application.
+   tests       [ braini | scidas | catalyst | restartr | heal ]                                \t Run all unit tests.
+   image build                                                                                 \t Build the docker image.
+   image push  [ braini | scidas | catalyst | restartr | heal ]                                \t Push the image to the repository.
+   image run   [ braini | scidas | catalyst | restartr | heal ] [local .kube path ex: \$HOME ] \t Run the docker image.
+   image frontend                                                                              \t setup frontend resources for local development.
 """
     exit 1
 }
