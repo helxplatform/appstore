@@ -1,0 +1,13 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% load account socialaccount %}
+{% block head_title %}{% trans "React" %}{% endblock %}
+
+{% block content %}
+  
+    <p>Hello from react.</p>
+    {% if user.is_authenticated %}
+        <div id="app"></div>
+    {% endif %}
+
+{% endblock content %}

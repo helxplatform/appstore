@@ -1,5 +1,5 @@
 from .base import *
-from .product import ProductSettings, ProductColorScheme
+from product.configuration import ProductSettings, ProductColorScheme
 
 APPLICATION_BRAND = "scidas"
 

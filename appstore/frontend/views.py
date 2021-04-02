@@ -1,5 +1,9 @@
-from django.shortcuts import render
+from allauth.account.views import LoginView
+
+from django.urls import reverse_lazy
 from django.views.generic.base import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 
 """
 #######
@@ -55,8 +59,29 @@ For deployments the frontend artifacts are managed with a multistage build. In
 start.
 """
 
-class FrontendView(TemplateView):
+
+class FrontendView(LoginView):
     """
-    Serves the frontend as a static asset.
+    Homepage view.
+
+    Provides the login form based on allauth package.
+
+    Upon successful auth serves up the react app.
     """
+
     template_name = "frontend/index.html"
+    success_url = reverse_lazy("frontend-react")
+    redirect_field_name = "next"
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            return redirect(success_url)
+        return super(LoginView, self).get(request, *args, **kwargs)
+
+
+class ReactView(LoginRequiredMixin, TemplateView):
+    """
+    Serves up the react app.
+    """
+
+    template_name = "frontend/react.html"
