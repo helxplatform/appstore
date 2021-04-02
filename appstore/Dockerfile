@@ -1,4 +1,4 @@
-# we use the ui container to pull in the webpack build artifacts
+# use the ui container to pull in webpack artifacts
 FROM helxplatform/helx-ui:latest as builder
 
 FROM python:3.9.0-slim
@@ -12,33 +12,25 @@ ENV APP_HOME /usr/src/inst-mgmt
 ENV HOME /home/$USER
 ENV UID 1000
 
+RUN mkdir $APP_HOME
+
 RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && \
    chown -R $UID:$UID $HOME
-   
-# Switch the working directory.
-WORKDIR $APP_HOME
-
-# Copy frontend artifacts for serving
-COPY --from=builder /usr/share/nginx/html/ ./frontend/static/frontend
 
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
-	apt-get install -y postgresql-server-dev-all \
-	postgresql-client git build-essential \
-	xmlsec1
-
-# Install Virtual Environment
-RUN pip install --upgrade pip
+	apt-get install -y build-essential git xmlsec1
+   
+WORKDIR $APP_HOME
 COPY . .
+COPY --from=builder /usr/share/nginx/html/ ./frontend/static/frontend
+RUN mv ./frontend/static/frontend/index.html ./frontend/templates
 
 RUN set -x && \
-# Upgrade Pip and install app dependencies
 	pip install --upgrade pip && \
 	pip install -r ./requirements.txt
 
-EXPOSE 8000
-
 RUN chown -R 1000:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
-
+EXPOSE 8000
 CMD ["/bin/bash","-c" ,"bin/appstore start ${DJANGO_SETTINGS}"]

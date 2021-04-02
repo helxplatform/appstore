@@ -69,7 +69,7 @@ class FrontendView(LoginView):
     Upon successful auth serves up the react app.
     """
 
-    template_name = "frontend/index.html"
+    template_name = "frontend/landing.html"
     success_url = reverse_lazy("frontend-react")
     redirect_field_name = "next"
 
@@ -84,4 +84,4 @@ class ReactView(LoginRequiredMixin, TemplateView):
     Serves up the react app.
     """
 
-    template_name = "frontend/react.html"
+    template_name = "frontend/index.html"
