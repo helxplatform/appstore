@@ -24,7 +24,7 @@ RUN set -x && apt-get update && \
 WORKDIR $APP_HOME
 COPY . .
 COPY --from=builder /usr/share/nginx/html/ ./frontend/static/frontend
-RUN mv ./frontend/static/frontend/index.html ./frontend/templates
+RUN mv ./frontend/static/frontend/index.html ./frontend/templates/frontend
 
 RUN set -x && \
 	pip install --upgrade pip && \

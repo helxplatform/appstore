@@ -153,4 +153,4 @@ tycho
 *.sqlite*
 
 # React frontend template
-./frontend/templates/frontend/index.html
+appstore/frontend/templates/frontend/index.html

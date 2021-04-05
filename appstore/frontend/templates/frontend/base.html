@@ -27,11 +27,21 @@
 <body>
     <div id="root">
         <header class="nav-header">
+            <a href="/">
+                <img class="navbar-brand" id="img-brand-logo" src="{{ brand_logo }}" alt="{{ brand }} Logo">
+            </a>
             <div class="nav-bar-blank"></div>
             <nav class="nav-element-collection">
                 <a aria-current="page" class="nav-element" href="#">
                     Home
                 </a>
+                {% if brand_links %}
+                    {% for link in brand_links %}
+                        <a class="nav-element" href="{{ link.link }}">
+                            {{ link.title }}
+                        </a>
+                    {% endfor %}
+                {% endif %}
                 {% if request.user.is_authenticated %}
                     <a class="nav-element" href="{% url 'index' %}">
                         Apps

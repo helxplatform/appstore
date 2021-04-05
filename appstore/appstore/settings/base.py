@@ -165,6 +165,10 @@ TEMPLATES = [
                 "django.template.context_processors.static",
                 "django.template.context_processors.tz",
                 "django.contrib.messages.context_processors.messages",
+                # TODO remove when django local app "core" is deprecated and
+                # removed. Expose settings in context or other drf endpoints
+                # and set context data in views.py for the template/view being
+                # rendered.
                 "appstore.context_processors.global_settings",
             ],
         },
