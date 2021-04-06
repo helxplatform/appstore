@@ -6,7 +6,11 @@ from django.views.static import serve
 
 from django_saml2_auth import views as saml2_auth_views
 
+from core.views import custom404
+
 admin.autodiscover()
+
+handler404 = custom404
 
 urlpatterns = [
     path("admin/", admin.site.urls),
