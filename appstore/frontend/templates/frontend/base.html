@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+{% load i18n %}
+{% load static %}
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" href="/static/frontend/favicon.ico"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+          integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+          crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/bootstrap.min.css"
+          integrity="sha512-P5MgMn1jBN01asBgU0z60Qk4QxiXo86+wlFahKrsQf37c9cro517WzVSPPV1tDKzhku2iJ2FVgL67wG03SGnNA=="
+          crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/5.1.1/bootstrap-social.min.css"
+          integrity="sha512-f8mUMCRNrJxPBDzPJx3n+Y5TC5xp6SmStstEfgsDXZJTcxBakoB5hvPLhAfJKa9rCvH+n3xpJ2vQByxLk4WP2g=="
+          crossorigin="anonymous" />
+
+    <link rel="stylesheet" href="{% static "css/frontend.css" %}"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="theme-color" content="#000000"/>
+    <meta name="description" content="HeLx Appstore"/>
+
+    {% block extra_js %}
+    {% endblock %}
+</head>
+
+<body>
+    <div id="root">
+        <header class="nav-header">
+            <a href="/">
+                <img class="navbar-brand" id="img-brand-logo" src="{{ brand_logo }}" alt="{{ brand }} Logo">
+            </a>
+            <div class="nav-bar-blank"></div>
+            <nav class="nav-element-collection">
+                <a aria-current="page" class="nav-element" href="#">
+                    Home
+                </a>
+                {% if brand_links %}
+                    {% for link in brand_links %}
+                        <a class="nav-element" href="{{ link.link }}">
+                            {{ link.title }}
+                        </a>
+                    {% endfor %}
+                {% endif %}
+                {% if request.user.is_authenticated %}
+                    <a class="nav-element" href="{% url 'index' %}">
+                        Apps
+                    </a>
+                    <a class="nav-element" href="{% url 'account_logout' %}">
+                        Logout
+                    </a>
+                {% endif %}
+            </nav>
+        </header>
+
+        <main class="main-container">
+            {% if messages %}
+                {% for message in messages %}
+                    {% if "timeout" in message.tags %}
+                        <div class="alert alert-success" id="msg" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+            <div class="helx-container">
+                <h1 class="helx-header">
+                   HeLx
+                </h1>
+                <p class="helx-info">
+                    The HeLx AppStore is the primary user experience component of the
+                    HeLx data science platform. Through the AppStore, users discover
+                    and interact with analytic tools and data to explore scientific
+                    problems. Its ability to empower researchers to leverage advanced
+                    analytical tools without installation or other infrastructure
+                    concerns has broad reaching benefits and can be applied in many
+                    domains.
+                </p>
+            </div>
+
+            {% block content %}
+
+            {% csrf_token %}
+
+            {% endblock %}
+        </main>
+        
+        <footer class="footer">
+            &copy; 2021 HeLx
+        </footer>
+    </div>
+</body>
+</html>
+

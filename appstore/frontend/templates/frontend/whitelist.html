@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+ 
+{% load i18n %}
+{% load bootstrap %}
+
+{% block head_title %}{% trans "Whitelisting Required" %}{% endblock %}
+
+
+{% block content %}
+
+<h1>{% trans "Whitelisting Required" %}</h1>
+
+<p>{% blocktrans with site.name as site_name %} Your request to gain access to the {{ full_brand }} AppStore has been forwarded to website administrator for review and whitelisting.
+<p> Once your request is approved, you will be notified via an email. </p>
+<p>
+This security feature is only required one time, for your initial access.
+<p>
+Thank you.
+{% endblocktrans %}</p>
+<p><p>
+Return to <a href="/accounts/login/">Login</a> page.
+
+{% endblock %}

@@ -35,9 +35,9 @@
     <div class="container">
         <div class="navbar-header">
             <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                <sspan>
+                <span>
                     <span class="icon-bar"></span>
-                </sspan>
+                </span>
             </button>
             {% if APPLICATION_BRAND == "scidas" %}
             <a href="/"><img class="navbar-brand navbar-brand-scidas" id="img-brand-scidas-logo"
@@ -64,14 +64,14 @@
         <div class="collapse navbar-collapse">
             {% if request.user.is_authenticated %}
                 <ul class="nav navbar-nav navbar-right hidden-xs">
-                    <li id="signin-menu"><a href="{% url 'sign-out' %}"><span class="glyphicon glyphicon-log-out"></span>Sign Out</a></li>
+                    <li id="signin-menu"><a href="{% url 'account_logout' %}"><span class="glyphicon glyphicon-log-out"></span>Sign Out</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li class="nav-item" id="cs_apps"><a href="/apps/">Apps</a></li>
                 </ul>
             {% else %}
                 <ul class="nav navbar-nav navbar-right">
-                    <li class="nav-item" id="cs_apps"><a href="{%  url 'login'  %}">Sign in</a></li>
+                    <li class="nav-item" id="cs_apps"><a href="{%  url 'account_login'  %}">Sign in</a></li>
                 </ul>
                 {% if APPLICATION_BRAND == "braini" %}
                     <ul class="nav navbar-nav navbar-right">

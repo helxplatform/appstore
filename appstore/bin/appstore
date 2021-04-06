@@ -156,6 +156,7 @@ image () {
         docker cp frontend:/usr/share/nginx/html ./frontend/static/frontend;
         # Stop and remove container to prevent future run collisions
         docker container rm "$(docker container stop "$(docker container ls -q --filter name="frontend")")" $*
+        mv ./frontend/static/frontend/index.html ./frontend/templates/frontend
     }
 
     run () {

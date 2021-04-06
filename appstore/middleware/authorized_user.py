@@ -65,8 +65,8 @@ class AuthorizedUserCheck:
                 url.startswith(settings.STATIC_URL),
                 url.startswith(settings.SAML_URL),
                 url.startswith(settings.SAML_ACS_URL),
-                url.startswith(settings.APP_CONTEXT_URL),
-                url.startswith(settings.APP_LOGIN_PROVIDER_URL),
+                url.startswith("/api/v1/context"),
+                url.startswith("/api/v1/providers"),
             ]
         )
         logger.info(f"Checking if access path {url} is public: {public}")
