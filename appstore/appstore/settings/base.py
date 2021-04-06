@@ -1,5 +1,5 @@
 """
-Genreal django settings for appstore project.
+General django settings for appstore project.
 
 For product specific settings see <product>_settings.py
 """
