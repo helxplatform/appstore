@@ -326,6 +326,14 @@ class IndexView(LoginView):
         return super(LoginView, self).get(request, *args, **kwargs)
 
 def custom404(request, exception):
+    """
+    For most routes serve the standard 404 page.
+
+    Private routes indicate a route to a user instantiated app. If a 404 is
+    raised on one of these routes it means the app has stopped/is no longer
+    available. We want to notify the user and let them return to the app page.
+    """
+
     if "private" in request.path:
         template_name = "private404.html"
     else:
