@@ -373,6 +373,21 @@ class InstanceViewSet(viewsets.GenericViewSet):
         logger.debug(f"\nDelete response: {response}")
         return Response(response)
 
+    def partial_update(self, request, sid=None):
+        """
+        Pass labels, cpu and memory to tycho for patching a running deployment.
+        """
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        data.update({"tycho-guid": sid})
+        response = tycho.update(data)
+
+        logger.debug(f"Update Response: {response}")
+        return Response(response)
+
 
 class UsersViewSet(viewsets.GenericViewSet):
     """
