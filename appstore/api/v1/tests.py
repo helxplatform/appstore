@@ -100,7 +100,7 @@ class TestUserView(TestCase):
         api_request.session = {"REMOTE_USER": self.username}
         force_authenticate(api_request, user=user)
         response = list_view(api_request)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["ACCESS_TOKEN"], None)
 
     def test_logged_in_with_token_can_get_data(self):
         user = User.objects.get(username=self.username)
@@ -112,7 +112,7 @@ class TestUserView(TestCase):
         }
         force_authenticate(api_request, user=user)
         response = list_view(api_request)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["ACCESS_TOKEN"], "t6GEUD-DkGzfY-ZGseAu-wPvpFD-989QGj")
 
     def tearDown(self):
         User.objects.get(username=self.username, is_superuser=True).delete()
