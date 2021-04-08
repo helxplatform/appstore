@@ -121,7 +121,7 @@ class AppViewSet(viewsets.GenericViewSet):
     Tycho App information.
     """
 
-    permission_classes = [IsAuthenticated]
+
     lookup_field = "app_id"
     lookup_url_kwarg = "app_id"
 
@@ -222,7 +222,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
     Active user instances.
     """
 
-    permission_classes = [IsAuthenticated]
+
     lookup_field = "sid"
     lookup_url_kwarg = "sid"
 
@@ -273,7 +273,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=instances, many=True)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
-
+    
     def create(self, request):
         """
         Given an app id and resources pass the information to Tycho to start
@@ -379,7 +379,7 @@ class UsersViewSet(viewsets.GenericViewSet):
     User information.
     """
 
-    permission_classes = [IsAuthenticated]
+
     serializer_class = UserSerializer
 
     def _get_access_token(self, request):
@@ -387,9 +387,7 @@ class UsersViewSet(viewsets.GenericViewSet):
             return request.session["Authorization"].split(" ")[1]
         else:
             logger.error(f"Authorization not set for {request.user.username}")
-            raise AuthorizationTokenUnavailable(
-                detail=f"Authorization token not found for {request.user.username}"
-            )
+            return None
 
     def list(self, request):
         """

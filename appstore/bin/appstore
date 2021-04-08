@@ -141,6 +141,7 @@ tests () {
 image () {
     build () {
 	docker build . \
+           --no-cache --pull \
 	       -t $dockerhub_repo/appstore:latest \
 	       -t $dockerhub_repo/appstore:$image_ver $*
     }
@@ -150,13 +151,14 @@ image () {
 	       -t $dockerhub_repo/appstore:$image_ver $*
     }
     frontend () {
-        # Pull and start the ui container to fetch frontend assets
+        # Pull latest and start the ui container to fetch frontend assets
+        docker pull helxplatform/helx-ui:latest
         docker run -d --name frontend helxplatform/helx-ui:latest;
         # Copy the assets to the local django frontend app for local dev and serving
-        docker cp frontend:/usr/share/nginx/html ./frontend/static/frontend;
+        docker cp frontend:/usr/share/nginx/html/index.html ./frontend/templates/frontend;
+        docker cp frontend:/usr/share/nginx/static/ ./frontend/;
         # Stop and remove container to prevent future run collisions
         docker container rm "$(docker container stop "$(docker container ls -q --filter name="frontend")")" $*
-        mv ./frontend/static/frontend/index.html ./frontend/templates/frontend
     }
 
     run () {
@@ -171,6 +173,7 @@ image () {
 	    docker run --rm --name appstore -p 8000:8000 \
            -v ${kube_path}/.kube/config:/home/appstore/.kube/config \
            -v ${kube_path}/.minikube/:${kube_path}/.minikube/ \
+		   -e ALLOW_DJANGO_LOGIN=${ALLOW_DJANGO_LOGIN} \
 		   -e DJANGO_SETTINGS=$brand \
 		   -e DEBUG=${DEBUG} \
            -e DEV_PHASE=${DEV_PHASE} \
