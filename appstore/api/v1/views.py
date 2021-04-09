@@ -25,6 +25,7 @@ from .serializers import (
     UserSerializer,
     LoginProviderSerializer,
     AppContextSerializer,
+    InstanceModifySerializer
 )
 
 # TODO: Structured Logging
@@ -231,6 +232,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
             return ResourceSerializer
         elif self.action == "destroy":
             return InstanceIdentifierSerializer
+        elif self.action == "partial_update":
+            return InstanceModifySerializer
         else:
             return InstanceSerializer
 
