@@ -1,4 +1,4 @@
-Django==3.1.7
+Django==3.2
 Jinja2==2.11.2 
 PrettyTable==2.0.0 
 PyYAML==5.1.2 
