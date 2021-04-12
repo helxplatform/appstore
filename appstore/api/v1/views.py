@@ -25,7 +25,7 @@ from .serializers import (
     UserSerializer,
     LoginProviderSerializer,
     AppContextSerializer,
-    InstanceModifySerializer
+    InstanceModifySerializer,
 )
 
 # TODO: Structured Logging
@@ -122,7 +122,6 @@ class AppViewSet(viewsets.GenericViewSet):
     Tycho App information.
     """
 
-
     lookup_field = "app_id"
     lookup_url_kwarg = "app_id"
 
@@ -162,17 +161,20 @@ class AppViewSet(viewsets.GenericViewSet):
                     app_data["spec"],
                     asdict(
                         Resources(
-                            reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                            reservations.get("cpus", 0),
+                            gpu,
+                            reservations.get("memory", 0),
                         )
                     ),
-                    asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
+                    asdict(
+                        Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))
+                    ),
                 )
 
                 apps[app_id] = asdict(spec)
             except Exception as e:
                 logger.error(f"Could not parse {app_id}...continuing.")
                 continue
-
 
         apps = {key: value for key, value in sorted(apps.items())}
         serializer = self.get_serializer(data=apps)
@@ -222,7 +224,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
     """
     Active user instances.
     """
-
 
     lookup_field = "sid"
     lookup_url_kwarg = "sid"
@@ -276,7 +277,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=instances, many=True)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
-    
+
     def create(self, request):
         """
         Given an app id and resources pass the information to Tycho to start
@@ -396,7 +397,6 @@ class UsersViewSet(viewsets.GenericViewSet):
     """
     User information.
     """
-
 
     serializer_class = UserSerializer
 

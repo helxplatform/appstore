@@ -5,6 +5,8 @@ from django.views.generic import RedirectView
 from django.views.static import serve
 
 from django_saml2_auth import views as saml2_auth_views
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
 
 from core.views import custom404
 
@@ -26,6 +28,12 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+    path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
+    path(
+        "api/schema/swagger-ui/",
+        SpectacularSwaggerView.as_view(url_name="api-schema"),
+        name="swagger-ui",
+    ),
     path(
         "favicon.ico",
         RedirectView.as_view(url="/static/images/favicon.ico", permanent=True),
