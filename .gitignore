@@ -154,3 +154,6 @@ tycho
 
 # React frontend template
 appstore/frontend/templates/frontend/index.html
+
+# Open API, generated at run time
+appstore/schema.yml

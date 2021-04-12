@@ -130,7 +130,7 @@ tests () {
     brand=$1
     test -z ${brand} && help
     settings=appstore.settings.${brand}_settings && \
-	DEV_PHASE=stub python manage.py test --settings=$settings
+	DEV_PHASE=stub python -Wd manage.py test --settings=$settings
 }
 
 ###############################################################################
@@ -214,6 +214,15 @@ cicd () {
 
 ###############################################################################
 ##
+## Generate Open API doc.
+##
+###############################################################################
+openapi() {
+	DEV_PHASE=stub python manage.py spectacular --file schema.yml --settings=$settings
+}
+
+###############################################################################
+##
 ## Show help.
 ##
 ###############################################################################
@@ -238,6 +247,7 @@ start(){
      updatedb $product
      createsuperuser
      manageauthorizedusers $product
+     openapi $product
      run $product
 }
 $*

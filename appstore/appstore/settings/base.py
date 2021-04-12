@@ -67,6 +67,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "crispy_forms",
     "rest_framework",
+    "drf_spectacular",
 ]
 
 LOCAL_APPS = [
@@ -181,6 +182,13 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ],
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_DEFAULTS = {
+    "TITLE": "HeLx Platform Appstore API Definition",
+    "DESCRIPTION": "https://github.com/helxplatform/appstore",
+    "VERSION": "0.0.0",
 }
 
 DB_DIR = Path(os.environ.get("OAUTH_DB_DIR", BASE_DIR))
