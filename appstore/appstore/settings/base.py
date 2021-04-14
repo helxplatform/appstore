@@ -7,9 +7,10 @@ For product specific settings see <product>_settings.py
 import os
 from pathlib import Path
 
-NESTED_SETTINGS_DIR = Path(__file__).parent.resolve(strict=True)
-APPSTORE_DIR = NESTED_SETTINGS_DIR.parent
-BASE_DIR = APPSTORE_DIR.parent
+APPSTORE_NESTED_SETTINGS_DIR = Path(__file__).parent.resolve(strict=True)
+APPSTORE_CONFIG_DIR = APPSTORE_NESTED_SETTINGS_DIR.parent
+DJANGO_PROJECT_ROOT_DIR = APPSTORE_CONFIG_DIR.parent
+LOG_DIR = DJANGO_PROJECT_ROOT_DIR.parent / "log"
 
 # localhost/0.0.0.0 required when DEBUG is false
 ALLOWED_HOSTS = [
@@ -119,7 +120,7 @@ MIDDLEWARE += [
     "middleware.session_idle_timeout.SessionIdleTimeout",
 ]
 
-SESSION_IDLE_TIMEOUT = 300
+SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.RemoteUserBackend",
@@ -151,7 +152,7 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            str(BASE_DIR / "templates"),
+            str(DJANGO_PROJECT_ROOT_DIR / "templates"),
         ],
         "OPTIONS": {
             "loaders": [
@@ -192,7 +193,7 @@ SPECTACULAR_DEFAULTS = {
     "VERSION": "0.0.0",
 }
 
-DB_DIR = Path(os.environ.get("OAUTH_DB_DIR", BASE_DIR))
+DB_DIR = Path(os.environ.get("OAUTH_DB_DIR", DJANGO_PROJECT_ROOT_DIR))
 DB_FILE = Path(os.environ.get("OAUTH_DB_FILE", "DATABASE.sqlite3"))
 DATABASES = {
     "default": {
@@ -202,7 +203,7 @@ DATABASES = {
 }
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = DJANGO_PROJECT_ROOT_DIR / "static"
 STATICFILES_FINDERS = (
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
@@ -241,7 +242,7 @@ LOGGING = {
         "syslog": {
             "level": "WARNING",
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": "log/system_warnings.log",
+            "filename": LOG_DIR / "system_warnings.log",
             "formatter": "timestampthread",
             "maxBytes": 1024 * 1024 * 15,  # 15MB
             "backupCount": 10,
@@ -252,7 +253,7 @@ LOGGING = {
         "djangoLog": {
             "level": "DEBUG",
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": "log/django_debug.log",
+            "filename": LOG_DIR / "django_debug.log",
             "formatter": "timestampthread",
             "maxBytes": 1024 * 1024 * 15,  # 15MB
             "backupCount": 10,
@@ -260,7 +261,7 @@ LOGGING = {
         "app_store_log": {
             "level": "DEBUG",
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": "log/app_store.log",
+            "filename": LOG_DIR / "app_store.log",
             "formatter": "timestampthread",
             "maxBytes": 1024 * 1024 * 15,  # 15MB
             "backupCount": 10,
@@ -271,14 +272,12 @@ LOGGING = {
             "handlers": ["app_store_log", "console"],
             "propagate": False,
             "level": "DEBUG"
-            # 'level': 'INFO',
         },
         "django": {
             "handlers": ["syslog", "djangoLog", "console"],
             "level": MIN_DJANGO_LEVEL,
             "propagate": False,
         },
-        # https://docs.djangoproject.com/en/1.11/topics/logging/#django-template
         "django.template": {
             "handlers": ["syslog", "djangoLog"],
             "level": "INFO",

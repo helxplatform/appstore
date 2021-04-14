@@ -1,0 +1,16 @@
+version: "3"
+
+services:
+  appstore:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - $HOME/.kube/config:/home/appstore/.kube/config
+      - $HOME/.minikube/:$HOME/.minikube/
+    env_file: 
+      .env
+    command:
+      make appstore.collectstatic test brand=braini
+    ports:
+      - 8000:8000

@@ -23,14 +23,12 @@ RUN set -x && apt-get update && \
    
 WORKDIR $APP_HOME
 COPY . .
-COPY --from=builder /usr/share/nginx/html/index.html ./frontend/templates/frontend
-COPY --from=builder /usr/share/nginx/static/ ./frontend/static
+COPY --from=builder /usr/share/nginx/html/index.html ./appstore/frontend/templates/frontend
+COPY --from=builder /usr/share/nginx/static/ ./appstore/frontend/static
 
-RUN set -x && \
-	pip install --upgrade pip && \
-	pip install -r ./requirements.txt
+RUN make install
 
 RUN chown -R 1000:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
 EXPOSE 8000
-CMD ["/bin/bash","-c" ,"bin/appstore start ${DJANGO_SETTINGS}"]
+CMD ["make","appstore.start","brand=${DJANGO_SETTINGS}"]
