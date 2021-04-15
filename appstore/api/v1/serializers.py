@@ -25,6 +25,7 @@ class InstanceSerializer(serializers.Serializer):
     gpus = serializers.IntegerField(default=0)
     # TODO switch to Float potentially, or validator
     memory = serializers.CharField()
+    url = serializers.CharField()
 
 
 class AppDetailSerializer(serializers.Serializer):

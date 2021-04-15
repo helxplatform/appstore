@@ -1,3 +1,4 @@
+import functools
 import logging
 from dataclasses import asdict
 import time
@@ -238,6 +239,18 @@ class InstanceViewSet(viewsets.GenericViewSet):
         else:
             return InstanceSerializer
 
+    @functools.lru_cache(maxsize=16, typed=False)
+    def get_principal(self, user):
+        """
+        Retrieve principal information from Tycho based on the request
+        user.
+        """
+        tokens = get_social_tokens(user)
+        logger.debug("Tokens fetched for user.")
+        principal = Principal(*tokens)
+        logger.debug("Principal built.")
+        return principal
+
     def get_queryset(self):
         status = tycho.status({"username": self.request.user.username})
         return status.services
@@ -247,6 +260,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
         Provide all active instances.
         """
         active = self.get_queryset()
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
 
         instances = []
         for instance in active:
@@ -260,6 +276,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 instance.app_id.replace(f"-{instance.identifier}", ""), {}
             )
 
+
             inst = Instance(
                 app.get("name"),
                 app.get("docs"),
@@ -269,6 +286,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 instance.total_util["cpu"],
                 instance.total_util["gpu"],
                 instance.total_util["memory"],
+                app.get("app_id"),
+                host,
+                username,
             )
 
             logger.debug(f"Instance definition: {inst}")
@@ -339,6 +359,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
         Provide active instance details.
         """
         active = self.get_queryset()
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
 
         for instance in active:
             if instance.identifier == sid:
@@ -352,6 +375,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
                     instance.total_util["cpu"],
                     instance.total_util["gpu"],
                     instance.total_util["memory"],
+                    app.get("app_id"),
+                    host,
+                    username,
                 )
 
                 serializer = self.get_serializer(data=asdict(inst))
