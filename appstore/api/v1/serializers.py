@@ -8,14 +8,19 @@ logger = logging.getLogger(__name__)
 
 
 class InstanceModifySerializer(serializers.Serializer):
-    labels = serializers.DictField(child=serializers.CharField(), required=False, allow_empty=False)
+    labels = serializers.DictField(
+        child=serializers.CharField(), required=False, allow_empty=False
+    )
     cpu = serializers.CharField(required=False, allow_blank=False)
-    memory = serializers.CharField(validators=[memory_format_validator], required=False, allow_blank=False)
+    memory = serializers.CharField(
+        validators=[memory_format_validator], required=False, allow_blank=False
+    )
 
 
 class InstanceSerializer(serializers.Serializer):
     name = serializers.CharField()
     docs = serializers.CharField()
+    aid = serializers.CharField(allow_null=True)
     sid = serializers.CharField()
     fqsid = serializers.CharField()
     creation_time = (
@@ -26,6 +31,7 @@ class InstanceSerializer(serializers.Serializer):
     # TODO switch to Float potentially, or validator
     memory = serializers.CharField()
     url = serializers.CharField()
+    status = serializers.CharField()
 
 
 class AppDetailSerializer(serializers.Serializer):

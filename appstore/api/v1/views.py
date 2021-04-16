@@ -259,40 +259,47 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Provide all active instances.
         """
+
         active = self.get_queryset()
         principal = self.get_principal(request.user)
         username = principal.username
         host = get_host(request)
-
         instances = []
-        for instance in active:
-            # Note that total_util is formatted differently than instance['util']
-            # TODO confirm which to use going forward and format based
-            # on standard.
-            # TODO could probably pull this list and search it locally instead
-            # of a call per loop.
 
-            app = tycho.apps.get(
-                instance.app_id.replace(f"-{instance.identifier}", ""), {}
-            )
+        # host should be in the form of the deployment domain, if ambassador is
+        # marked as host then app url construction will be invalid.
+        if not host.lower() == "ambassador":
+            for instance in active:
+                # Note that total_util is formatted differently than instance['util']
+                # TODO confirm which to use going forward and format based
+                # on standard.
+                # TODO could probably pull this list and search it locally instead
+                # of a call per loop.
 
+                app = tycho.apps.get(
+                    instance.app_id.replace(f"-{instance.identifier}", ""), {}
+                )
 
-            inst = Instance(
-                app.get("name"),
-                app.get("docs"),
-                instance.identifier,
-                instance.app_id,
-                instance.creation_time,
-                instance.total_util["cpu"],
-                instance.total_util["gpu"],
-                instance.total_util["memory"],
-                app.get("app_id"),
-                host,
-                username,
-            )
+                logger.debug(f"\n\nApp data fetched from Tycho:\n{app}\n\n")
 
-            logger.debug(f"Instance definition: {inst}")
-            instances.append(asdict(inst))
+                inst = Instance(
+                    app.get("name"),
+                    app.get("docs"),
+                    app.get("app_id"),
+                    instance.identifier,
+                    instance.app_id,
+                    instance.creation_time,
+                    instance.total_util["cpu"],
+                    instance.total_util["gpu"],
+                    instance.total_util["memory"],
+                    host,
+                    username,
+                )
+
+                logger.debug(f"Instance definition: {inst}")
+                instances.append(asdict(inst))
+        else:
+            logger.error(f"\nAmbassador seen as host?\nHost: {host}\n")
 
         serializer = self.get_serializer(data=instances, many=True)
         serializer.is_valid(raise_exception=True)

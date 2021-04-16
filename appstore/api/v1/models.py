@@ -32,28 +32,35 @@ class Instance:
 
     name: str
     docs: str
+    aid: str
     sid: str
     fqsid: str
     creation_time: str
     cpus: float
     gpus: int
     memory: float
-    app_id: InitVar[str]
     host: InitVar[str]
     username: InitVar[str]
     url: str = field(init=False)
+    status: str = field(init=False)
     protocol: InitVar[str] = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
 
-    def __post_init__(self, app_id, host, username, protocol):
-        logger.debug(f"Finishing instance metadata construction.")
-
+    def __post_init__(self, host, username, protocol):
         # TODO use urllib to confirm construction of a valid resource path
         # http://0.0.0.0:8000/private/jupyter-ds/admin/018b22862f8b44858cca6ad84430b364
         self.url = (
-            f"{self.protocol}://{host}/private/{app_id}/"
-            f"{username}/{self.sid}/"
+            f"{self.protocol}://{host}/private/{self.aid}/" f"{username}/{self.sid}/"
         )
-        logger.debug(f"-- app-networking constructed url: {self.url}")
+
+        # Would be better to get this from tycho per app based on the pod status
+        # in kubernetes. That could then be provided via the rest endpoint to a
+        # client, or using sockets a notification on pod status change.
+        if self.aid is None or "None" in self.url:
+            self.status = "starting"
+        else:
+            self.status = "ready"
+
+        logger.debug(f"{self.name} app-networking constructed url: {self.url}")
 
 
 @dataclass
