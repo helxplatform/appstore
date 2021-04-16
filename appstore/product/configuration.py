@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 
@@ -35,3 +35,5 @@ class ProductSettings:
     title: str = "CommonsShare"
     logo_url: str = "/static/images/commonsshare/logo-lg.png"
     color_scheme: ProductColorScheme = ProductColorScheme()
+    capabilities: List[str] = field(default_factory=lambda: ['app', 'search'])
+
