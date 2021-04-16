@@ -83,3 +83,4 @@ class AppContextSerializer(serializers.Serializer):
     logo_url = serializers.CharField()
     color_scheme = serializers.DictField()
     links = serializers.ListField(required=False, allow_null=True)
+    capabilities = serializers.ListField()
