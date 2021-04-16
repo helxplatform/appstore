@@ -65,7 +65,7 @@ class AppTests(TestCase):
         response = self.client.get("/auth/")
         self.assertEqual(response.status_code, 302)
         self.assertTrue(isinstance(response, HttpResponseRedirect))
-        self.assertEqual(response.url, "/account/login?next=/auth/")
+        self.assertEqual(response.url, "/accounts/login?next=/auth/")
 
     def test_form_service_url(self):
         """Testing the form service url by passing mock data."""
