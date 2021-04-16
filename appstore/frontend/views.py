@@ -72,6 +72,7 @@ def get_brand_details():
     response = list_view(factory.get(""))
     return response.data
 
+
 class FrontendView(LoginView):
     """
     Provides the login landing page data based on allauth, customized for HeLx.
@@ -81,23 +82,24 @@ class FrontendView(LoginView):
     success_url = reverse_lazy("frontend-react")
     redirect_field_name = "next"
     brand_context = get_brand_details()
-    brand = brand_context['brand']
-    brand_logo = brand_context['logo_url']
-    brand_title = brand_context['title']
-    brand_color_scheme = brand_context['color_scheme']
-    brand_links = brand_context['links']
+    brand = brand_context["brand"]
+    brand_logo = brand_context["logo_url"]
+    brand_title = brand_context["title"]
+    brand_color_scheme = brand_context["color_scheme"]
+    brand_links = brand_context["links"]
 
     def get_context_data(self, **kwargs):
         context = super(FrontendView, self).get_context_data(**kwargs)
-        context['brand'] = self.brand
-        context['brand_logo'] = self.brand_logo
-        context['brand_title'] = self.brand_title 
-        context['brand_links'] = self.brand_links
+        context["brand"] = self.brand
+        context["brand_logo"] = self.brand_logo
+        context["brand_title"] = self.brand_title
+        context["brand_links"] = self.brand_links
         context["redirect_field_name"] = self.redirect_field_name
         context["redirect_field_value"] = self.success_url
         return context
 
     def get(self, request, *args, **kwargs):
+        request.session["helx_frontend"] = "react"
         if request.user.is_authenticated:
             return redirect(success_url)
         return super(LoginView, self).get(request, *args, **kwargs)

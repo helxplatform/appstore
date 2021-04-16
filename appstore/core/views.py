@@ -321,9 +321,11 @@ class IndexView(LoginView):
     redirect_field_name = "next"
 
     def get(self, request, *args, **kwargs):
+        request.session["helx_frontend"] = "django"
         if request.user.is_authenticated:
             return redirect(success_url)
         return super(LoginView, self).get(request, *args, **kwargs)
+
 
 def custom404(request, exception):
     """
@@ -337,6 +339,6 @@ def custom404(request, exception):
     if "private" in request.path:
         template_name = "private404.html"
     else:
-        template_name='404.html'
-    context = { 'req_path' : request.path }
+        template_name = "404.html"
+    context = {"req_path": request.path}
     return render(request, template_name, context=context, status=404)

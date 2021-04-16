@@ -127,6 +127,7 @@ AUTHENTICATION_BACKENDS = (
     "allauth.account.auth_backends.AuthenticationBackend",
 )
 
+ACCOUNT_ADAPTER = "appstore.adapter.LoginRedirectAdapter"
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
