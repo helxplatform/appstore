@@ -270,36 +270,30 @@ class InstanceViewSet(viewsets.GenericViewSet):
         # marked as host then app url construction will be invalid.
         if not host.lower() == "ambassador":
             for instance in active:
-                # Note that total_util is formatted differently than instance['util']
-                # TODO confirm which to use going forward and format based
-                # on standard.
-                # TODO could probably pull this list and search it locally instead
-                # of a call per loop.
+                app_name = instance.app_id.replace(f"-{instance.identifier}", "")
+                logger.debug(f"\nActive instance type:\n{app_name}\n")
 
-                app = tycho.apps.get(
-                    instance.app_id.replace(f"-{instance.identifier}", ""), {}
-                )
+                app = tycho.apps.get(app_name)
+                if app:
+                    logger.debug(f"\nApp data fetched from Tycho:\n{app}\n")
 
-                logger.debug(f"\n\nApp data fetched from Tycho:\n{app}\n\n")
-
-                inst = Instance(
-                    app.get("name"),
-                    app.get("docs"),
-                    app.get("app_id"),
-                    instance.identifier,
-                    instance.app_id,
-                    instance.creation_time,
-                    instance.total_util["cpu"],
-                    instance.total_util["gpu"],
-                    instance.total_util["memory"],
-                    host,
-                    username,
-                )
-
-                logger.debug(f"Instance definition: {inst}")
-                instances.append(asdict(inst))
+                    inst = Instance(
+                        app.get("name"),
+                        app.get("docs"),
+                        app_name,
+                        instance.identifier,
+                        instance.app_id,
+                        instance.creation_time,
+                        instance.total_util["cpu"],
+                        instance.total_util["gpu"],
+                        instance.total_util["memory"],
+                        host,
+                        username,
+                    )
+                    logger.debug(f"Instance definition:\n{inst}")
+                    instances.append(asdict(inst))
         else:
-            logger.error(f"\nAmbassador seen as host?\nHost: {host}\n")
+            logger.error(f"\nAmbassador seen as host:\n{host}\n")
 
         serializer = self.get_serializer(data=instances, many=True)
         serializer.is_valid(raise_exception=True)
