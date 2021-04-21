@@ -90,3 +90,7 @@ class AppContextSerializer(serializers.Serializer):
     color_scheme = serializers.DictField()
     links = serializers.ListField(required=False, allow_null=True)
     capabilities = serializers.ListField()
+
+
+class EmptySerializer(serializers.Serializer):
+    pass
