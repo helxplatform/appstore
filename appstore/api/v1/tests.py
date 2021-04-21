@@ -6,7 +6,13 @@ from django.contrib.auth.models import User
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 
-from .views import AppViewSet, InstanceViewSet, UsersViewSet, LoginProviderViewSet, AppContextViewSet
+from .views import (
+    AppViewSet,
+    InstanceViewSet,
+    UsersViewSet,
+    LoginProviderViewSet,
+    AppContextViewSet,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -112,7 +118,9 @@ class TestUserView(TestCase):
         }
         force_authenticate(api_request, user=user)
         response = list_view(api_request)
-        self.assertEqual(response.data["ACCESS_TOKEN"], "t6GEUD-DkGzfY-ZGseAu-wPvpFD-989QGj")
+        self.assertEqual(
+            response.data["ACCESS_TOKEN"], "t6GEUD-DkGzfY-ZGseAu-wPvpFD-989QGj"
+        )
 
     def tearDown(self):
         User.objects.get(username=self.username, is_superuser=True).delete()

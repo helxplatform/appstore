@@ -5,10 +5,13 @@ import time
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import get_user_model, logout
 
 from rest_framework import status as drf_status, viewsets, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework import status
 
 from allauth import socialaccount
 
@@ -27,6 +30,7 @@ from .serializers import (
     LoginProviderSerializer,
     AppContextSerializer,
     InstanceModifySerializer,
+    EmptySerializer,
 )
 
 # TODO: Structured Logging
@@ -182,7 +186,8 @@ class AppViewSet(viewsets.GenericViewSet):
         serializer.is_valid()
         if serializer.errors:
             logger.error(
-                f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user."
+                f"Serialization errors detected:\n{serializer.errors}\nWill attempt "
+                f"to provide data to user."
             )
         # TODO change this to serializer.data after discovery on nested object data
         return Response(apps)
@@ -216,7 +221,8 @@ class AppViewSet(viewsets.GenericViewSet):
         serializer.is_valid()
         if serializer.errors:
             logger.error(
-                f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user."
+                f"Serialization errors detected:\n{serializer.errors}\nWill attempt "
+                f"to provide data to user."
             )
         return Response(serializer.validated_data)
 
@@ -425,7 +431,11 @@ class UsersViewSet(viewsets.GenericViewSet):
     User information.
     """
 
-    serializer_class = UserSerializer
+    def get_serializer_class(self):
+        if self.action == "list":
+            return UserSerializer
+        elif self.action == "logout":
+            return EmptySerializer
 
     def _get_access_token(self, request):
         if request.session.get("Authorization", None):
@@ -452,6 +462,13 @@ class UsersViewSet(viewsets.GenericViewSet):
             f"Access Token for {serializer.validated_data['REMOTE_USER']} provided"
         )
         return Response(serializer.validated_data)
+
+    @action(methods=["POST"], detail=False)
+    def logout(self, request):
+        logger.debug(f"Logging out {request.user}")
+        logout(request)
+        data = {"success": "Sucessfully logged out"}
+        return Response(data=data, status=status.HTTP_200_OK)
 
 
 class LoginProviderViewSet(viewsets.GenericViewSet):
