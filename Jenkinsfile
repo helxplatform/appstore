@@ -4,7 +4,7 @@ pipeline {
         stage('Install') {
             steps {
                 sh '''
-                make install.ci
+                make install
                 '''
             }
         }
