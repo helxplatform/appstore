@@ -12,3 +12,6 @@ appstore/static/
 build/
 coverage/
 docs/
+
+**/__pycache__
+**/*.pyc
