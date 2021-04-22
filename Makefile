@@ -124,7 +124,7 @@ clean:
 install:
 	${PYTHON} -m pip install --upgrade pip
 	${PYTHON} -m pip install -r requirements.txt
-	${PYTHON} -m pip install -e .
+	${PYTHON} -m pip install .
 
 # TODO if there is a way to turn this into a fully self contained package it 
 # could be helpful for deployment and isolation, but that ends up impacting
