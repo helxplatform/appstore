@@ -1,13 +1,6 @@
 pipeline {
-    agent any
+    agent { docker { image 'python:3.9.0-slim' } }
     stages {
-        stage('Install') {
-            steps {
-                sh '''
-                make install
-                '''
-            }
-        }
         stage('Test') {
             steps {
                 sh '''
