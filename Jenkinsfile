@@ -3,9 +3,7 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh '''
-                make test
-                '''
+                sh 'SECRET_KEY=dummy-key make test'
             }
         }
         stage('Publish') {
