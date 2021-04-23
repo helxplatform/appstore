@@ -92,30 +92,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.auth.middleware.RemoteUserMiddleware",
-]
-
-#
-# After a user logs in we also check to see if they are part of an
-# authorized user/whitelist. We need to perform this check regardless of if
-# data is being routed through the existing Django template frontend found in
-# `core`, or through the Django Rest Framework endpoints that can be used by
-# the new react frontend, or other api consuming tools.
-#
-# Rather than toggling the rest_framework endpoints and frontend app on/off
-# we can make sure that there is always a middleware present that checks if the
-# user is an authorized user (table: core_authorizeduser) with the main difference
-# being if the middleware raises a redirect for an unauthorized user, or if
-# the middleware raises a 403 for the consuming application to handle. See
-# `middleware/filter_whitelist_middleware.py` and `middleware/authorized_user.py`
-# for additional details.
-#
-if WHITELIST_REDIRECT == "true":
-    MIDDLEWARE.append("middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly")
-else:
-    MIDDLEWARE.append("middleware.authorized_user.AuthorizedUserCheck")
-
-# Add any additional middleware that's not conditional
-MIDDLEWARE += [
+    "middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly",
     "middleware.session_idle_timeout.SessionIdleTimeout",
 ]
 
