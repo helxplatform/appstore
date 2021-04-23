@@ -252,9 +252,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         user.
         """
         tokens = get_social_tokens(user)
-        logger.debug("Tokens fetched for user.")
         principal = Principal(*tokens)
-        logger.debug("Principal built.")
         return principal
 
     def get_queryset(self):
@@ -281,7 +279,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
                 app = tycho.apps.get(app_name)
                 if app:
-                    logger.debug(f"\nApp data fetched from Tycho:\n{app}\n")
 
                     inst = Instance(
                         app.get("name"),
@@ -296,7 +293,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         host,
                         username,
                     )
-                    logger.debug(f"Instance definition:\n{inst}")
                     instances.append(asdict(inst))
         else:
             logger.error(f"\nAmbassador seen as host:\n{host}\n")
@@ -317,13 +313,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
-        logger.debug("Tokens fetched for user.")
         principal = Principal(*tokens)
-        logger.debug("Principal built.")
 
         app_id = serializer.data["app_id"]
         system = tycho.start(principal, app_id, resource_request.resources)
-        logger.debug(f"Spec submitted to Tycho. \n\n {system}\n\n")
 
         s = InstanceSpec(
             principal.username,
@@ -336,8 +329,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
             system.services[0].identifier,
             system.identifier,
         )
-
-        logger.debug(f"Final instance spec \n\n {s} \n\n")
 
         # TODO: better status capture from Tycho on submission
         if s:
@@ -391,7 +382,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 serializer.is_valid(raise_exception=True)
                 return Response(serializer.validated_data)
 
-        logger.debug(f"\n{sid} not found\n")
+        logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
 
     def destroy(self, request, sid=None):
@@ -407,7 +398,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
         # a successful submission? Can we do a follow up with Web Sockets or SSE
         # to the front end?
         time.sleep(2)
-        logger.debug(f"\nDelete response: {response}")
         return Response(response)
 
     def partial_update(self, request, sid=None):
@@ -458,14 +448,10 @@ class UsersViewSet(viewsets.GenericViewSet):
             }
         )
         serializer.is_valid(raise_exception=True)
-        logger.debug(
-            f"Access Token for {serializer.validated_data['REMOTE_USER']} provided"
-        )
         return Response(serializer.validated_data)
 
     @action(methods=["POST"], detail=False)
     def logout(self, request):
-        logger.debug(f"Logging out {request.user}")
         logout(request)
         data = {"success": "Sucessfully logged out"}
         return Response(data=data, status=status.HTTP_200_OK)
