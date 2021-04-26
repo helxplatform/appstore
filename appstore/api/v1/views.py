@@ -286,6 +286,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         app_name,
                         instance.identifier,
                         instance.app_id,
+                        instance.workspace_name,
                         instance.creation_time,
                         instance.total_util["cpu"],
                         instance.total_util["gpu"],
