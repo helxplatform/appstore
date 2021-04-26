@@ -25,18 +25,18 @@ class LoginRedirectAdapter(DefaultAccountAdapter, DefaultSocialAccountAdapter):
     """
 
     def _login_url(self, request):
-        if request.session["helx_frontend"] == "django":
+        if request.session.get("helx_frontend") == "django":
             url = "/apps/"
-        elif request.session["helx_frontend"] == "react":
+        elif request.session.get("helx_frontend") == "react":
             url = "/frontend/react/"
         else:
             url = settings.LOGIN_REDIRECT_URL
         return url
 
     def _logout_url(self, request):
-        if request.session["helx_frontend"] == "django":
+        if request.session.get("helx_frontend") == "django":
             url = "/"
-        elif request.session["helx_frontend"] == "react":
+        elif request.session.get("helx_frontend") == "react":
             url = "/frontend/"
         else:
             url = settings.ACCOUNT_LOGOUT_REDIRECT_URL
