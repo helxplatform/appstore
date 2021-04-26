@@ -2,38 +2,33 @@
 
 ## Introduction
 
-The HeLx appstore is the primary user experience component of the HeLx data science platform. Through
-the appstore, users discover and interact with analytic tools and data to explore scientific problems.
+The HeLx appstore is the primary user experience component of the HeLx data science
+platform. Through the appstore, users discover and interact with analytic tools
+and data to explore scientific problems.
 
-## Management CLI
+## CLI
 
-The appstore management CLI provides uniform commands for using the environment. It provides default values for secrets
-during local development and ways to provide secrets in production.
-| Command                          | Description                                                  |
-| :------------------------------- | :----------------------------------------------------------- |
-| bin/appstore tests {product}     | Run automated unit tests with {product} settings.            |
-| bin/appstore run {product}       | Run the appstore using {product} settings.                   |
-| bin/appstore createsuperuser     | Create admin user with environment variable provided values. |
-| bin/appstore image build         | Build the docker image.                                      |
-| bin/appstore image frontend      | Pull frontend assets from helx-ui image for local dev.       |
-| bin/appstore image push          | Push the docker image to the repository.                     |
-| bin/appstore image run {product} | Run automated unit tests with {product} settings.            |
-| bin/appstore help                | Run automated unit tests with {product} settings.            |
+Using the provided `make` file you can `install` the appstore at which point it
+will be setup for use via the `appstore` command, and the helper commands within
+the root `Makefile`.
 
 ## Testing
 
 Automated testing uses the Python standard `unittest` and Django testing frameworks.
-Tests should be fast enough to run conveniently, and maximize coverage. For example, the Django testing framework
-allows for testing URL routes, middleware and other use interface elements in addition to the logic of components.
+Tests should be fast enough to run conveniently, and maximize coverage. For example,
+the Django testing framework allows for testing URL routes, middleware and other
+use interface elements in addition to the logic of components.
 
 ## Packaging
 
-Appstore is packaged as a Docker image. It is a non-root container, meaning the user is not a superuser. It packages
-a frontend copied from [helx-ui](https://hub.docker.com/repository/docker/helxplatform/helx-ui).
+Appstore is packaged as a Docker image. It is a non-root container, meaning the
+user is not a superuser. It packages a frontend copied from [helx-ui](https://hub.docker.com/repository/docker/helxplatform/helx-ui).
 
 ## Deployment
 
-Appstore is deployed to Kubernetes in production using Helm. The main deployment concerns are:
+Appstore is deployed to Kubernetes in production using Helm. The main deployment
+concerns are:
+
 **Security**: Secrets are added to the container via environment variables.
 **Persistence**: Storage must be mounted for a database.
 **Services**: The chief dependency is on Tycho which must be at the correct version.
@@ -41,97 +36,101 @@ Appstore is deployed to Kubernetes in production using Helm. The main deployment
 ## Configuration Variables
 
 During development, environment variables can be set to control execution:
-| Variable                               | Description                                                       |
-| :------------------------------------- | :---------------------------------------------------------------- |
-| DEV_PHASE=[stub, local, dev, val, prod | In stub, does not require a Tycho service.                        |
-| ALLOW_DJANGO_LOGIN=[TRUE, FALSE]       | When true, presents username and password authentication options. |
-| SECRET_KEY                             | Key for securing the application.                                 |
-| OAUTH_PROVIDERS                        | Contains all the providers(google, github).                       |
-| GOOGLE_CLIENT_ID                       | Contains the client_id of the provider.                           |
-| GOOGLE_SECRET                          | Contains the secret key for provider.                             |
-| GOOGLE_NAME                            | Sets the name for the provider.                                   |
-| GOOGLE_KEY                             | Holds the key value for provider.                                 |
-| GOOGLE_SITES                           | Contains the sites for the provider.                              |
-| GITHUB_CLIENT_ID                       | Contains the client_id of the provider.                           |
-| GITHUB_SECRET                          | Contains the secret key of the provider.                          |
-| GITHUB_NAME                            | Sets the name for the provider.                                   |
-| GITHUB_KEY                             | Holds the key value for provider.                                 |
-| GITHUB_SITES                           | Contains the sites for the provider.                              |
-| APPSTORE_DJANGO_USERNAME               | Holds superuser username credentials.                             |
-| APPSTORE_DJANGO_PASSWORD               | Holds superuser password credentials.                             |
-| TYCHO_URL                              | Contains the url of the running tycho host.                       |
-| OAUTH_DB_DIR                           | Contains the path for the database directory.                     |
-| OAUTH_DB_FILE                          | Contains the path for the database file.                          |
-| POSTGRES_DB                            | Contains the connection of the database.                          |
-| POSTGRES_HOST                          | Contains the database host.                                       |
-| DATABASE_USER                          | Contains the database username credentials.                       |
-| DATABASE_PASSWORD                      | Contains the database password credentials.                       |
-| APPSTORE_DEFAULT_FROM_EMAIL            | Default email address for appstore.                               |
-| APPSTORE_DEFAULT_SUPPORT_EMAIL         | Default support email for appstore.                               |
-| ACCOUNT_DEFAULT_HTTP_PROTOCOL          | Allows to switch between http and https protocol.                 |
-| WHITELIST_REDIRECT                     | Toggle authorized user middleware to redirect or raise a 403.     |
+
+| Variable                                    | Description                                                       |
+| :-------------------------------------      | :---------------------------------------------------------------- |
+| BRAND=[braini, cat, heal, restartr, scidas] | Product context configuration for the appstore.                   |
+| DEV_PHASE=[stub, local, dev, val, prod]     | In stub, does not require a Tycho service.                        |
+| ALLOW_DJANGO_LOGIN=[TRUE, FALSE]            | When true, presents username and password authentication options. |
+| SECRET_KEY                                  | Key for securing the application.                                 |
+| OAUTH_PROVIDERS                             | Contains all the providers(google, github).                       |
+| GOOGLE_CLIENT_ID                            | Contains the client_id of the provider.                           |
+| GOOGLE_SECRET                               | Contains the secret key for provider.                             |
+| GOOGLE_NAME                                 | Sets the name for the provider.                                   |
+| GITHUB_CLIENT_ID                            | Contains the client_id of the provider.                           |
+| GITHUB_SECRET                               | Contains the secret key of the provider.                          |
+| GITHUB_NAME                                 | Sets the name for the provider.                                   |
+| APPSTORE_DJANGO_USERNAME                    | Holds superuser username credentials.                             |
+| APPSTORE_DJANGO_PASSWORD                    | Holds superuser password credentials.                             |
+| TYCHO_URL                                   | Contains the url of the running tycho host.                       |
+| OAUTH_DB_DIR                                | Contains the path for the database directory.                     |
+| OAUTH_DB_FILE                               | Contains the path for the database file.                          |
+| APPSTORE_DEFAULT_FROM_EMAIL                 | Default email address for appstore.                               |
+| APPSTORE_DEFAULT_SUPPORT_EMAIL              | Default support email for appstore.                               |
+| ACCOUNT_DEFAULT_HTTP_PROTOCOL               | Allows to switch between http and https protocol.                 |
+| WHITELIST_REDIRECT                          | Toggle authorized user middleware to redirect or raise a 403.     |
+
+The provided .env.sample contains a starter that you can update and source for
+development.
 
 ### App Metadata
 
-Making application development easy is key to bringing the widest range of useful tools to the platform so we prefer
-metadata to code wherever possible for creating HeLx Apps. Apps are systems of cooperating processes. These are expressed
-using [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/). Appstore uses
-the [Tycho](https://helxplatform.github.io/tycho-docs/gen/html/index.html) engine to discover and manage Apps. The [Tycho app metadata](https://github.com/helxplatform/tycho/blob/metadata/tycho/conf/app-registry.yaml) format specifies the details of each application, contexts to which applications belong, and inheritance relationships between contexts.
+Making application development easy is key to bringing the widest range of useful
+tools to the platform so we prefer metadata to code wherever possible for creating
+HeLx Apps. Apps are systems of cooperating processes. These are expressed using
+[Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/).
+Appstore uses the [Tycho](https://helxplatform.github.io/tycho-docs/gen/html/index.html)
+engine to discover and manage Apps. The [Tycho app metadata](https://github.com/helxplatform/tycho/blob/metadata/tycho/conf/app-registry.yaml)
+format specifies the details of each application, contexts to which applications
+belong, and inheritance relationships between contexts.
 
-Docker compose syntax is used to express cooperating containers comprising an application. The specifications are stored in [GitHub](https://github.com/helxplatform/app-support-prototype/tree/develop/dockstore-yaml-proposals), each in an application specific subfolder. Along with the docker compose, a `.env` file specifies environment variables for the application. If a file called icon.png is provided, that is used as the application's icon.
+Docker compose syntax is used to express cooperating containers comprising an application.
+The specifications are stored in [GitHub](https://github.com/helxplatform/app-support-prototype/tree/develop/dockstore-yaml-proposals),
+each in an application specific subfolder. Along with the docker compose, a `.env`
+file specifies environment variables for the application. If a file called icon.png
+is provided, that is used as the application's icon.
 
 ## Development Environment
 
 ### Local Development
 
-For local development you should have Python 3, and some form of local kubernetes
-environment (minikube, kind, k3 etc). You can configure your python environment with the
-following steps.
+For local development you should have Python 3, a python virtual environment dedicated
+to the project, and some form of local kubernetes environment (minikube, kind, k3
+etc). You can configure your python environment with the following steps.
 
 ```bash
 #!/bin/bash
-
 set -ex
 
 # start fresh
 rm -rf appstore
-# get a virtualenv
-if [ ! -d venv ]; then
-    python3 -m venv venv
-fi
-source venv/bin/activate
+
 # clone appstore
 if [ ! -d appstore ]; then
     git clone git@github.com:helxplatform/appstore.git
 fi
 cd appstore
+
+# make a virtualenv
+if [ ! -d venv ]; then
+    python3 -m venv venv
+fi
+source venv/bin/activate
+
 # use develop branch and install requirements
 git checkout develop
-cd appstore
-pip install -r requirements.txt
+make install
 ```
 
-You can use the commands packaged in `bin/appstore` to configure and run the
-appstore.
+You can use the commands packaged in `make` to configure and run the appstore.
 
 ```bash
-# configure helx product => braini
-product=braini
-# configure dev mode to stub (run w/o tycho api)
+# configure environment variables, see above or .env.sample
 export DEV_PHASE=stub
+export SECRET_KEY=f00barBaz
 # setup local frontend assets
-bin/appstore image frontend 
+make frontend 
 # Runs database migrations, creates super user, runs test then runs the appstore
-# at localhost:8000
-bin/appstore start $product
+# at 0.0.0.0:8000
+make appstore.start brand=braini
 ```
 
-> NOTE: After running bin/appstore start {product} for the first time, use
-> bin/appstore run {product} every other time so that migrations to the database
+> NOTE: After running `make appstore.start` for the first time, use
+> `make appstore` every other time so that migrations to the database
 > will only run once.
 
 For additional configuration options (`DEV_PHASE`, `product`, `OAUTH_PROVIDERS`)
-inspect `bin/appstore` and `appstore/settings/*`.
+inspect `Makefile` and `appstore/appstore/settings/*`.
 
 ### Development environment with Kubernetes
 
@@ -213,6 +212,12 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+OR
+
+```bash
+make install
+```
+
 - Create a .env file containing environment variables used by both Tycho and appstore.
 
 ```text
@@ -249,14 +254,14 @@ export stdnfsPvc="stdnfs"
 source .env
 ```
 
-- Run appstore by using the `bin/appstore` management CLI.
+- Run appstore by using the commands defined in `Makefile`.
 
 ```bash
-bin/appstore image frontend 
-bin/appstore updatedb $product
-bin/appstore createsuperuser
-bin/appstore tests $product
-bin/appstore run $product
+make
+make install
+make appstore.frontend brand=cat
+make appstore.all brand=cat
+make appstore.start brand=cat
 ```
 
 Appstore is now up and running. You should be able to see output from `gunicorn`
@@ -366,10 +371,10 @@ The new frontend is built in to the appstore docker image build. Inside of our
 artifact is then collected with `collectstatic` and served on the `/frontend`
 route.
 
-For local filesystem development `bin/appstore image frontend` will pull the
+For local filesystem development `make appstore.frontend brand=cat` will pull the
 `helx-ui` image, start the container, copy the artifacts to your local filesystem
 in the frontend Django app, stop and remove the container. You can then run
-`bin/appstore start $product` which will run database migrations, execute
+`make appstore.start brand=cat` which will run database migrations, execute
 `collectstatic` and start the appstore Django project for development and testing.
 
 If changes need to happen to the frontend artifacts (react components, etc) those
