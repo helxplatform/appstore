@@ -6,8 +6,9 @@ DOCKER_OWNER = helxplatform
 DOCKER_APP	 = appstore
 DOCKER_TAG   = ${VERSION}
 DOCKER_IMAGE = ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
-APP_LIST ?= api appstore core frontend middleware product
-BRANDS = braini cat heal restartr scidas
+SECRET_KEY   = $(shell openssl rand -base64 12)
+APP_LIST     ?= api appstore core frontend middleware product
+BRANDS       = braini cat heal restartr scidas
 
 
 .DEFAULT_GOAL = help
@@ -138,7 +139,7 @@ lint:
 
 #test: Run all tests
 test:
-	$(foreach brand,$(BRANDS),appstore test $(APP_LIST) --settings=appstore.settings.$(brand)_settings;)
+	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub appstore test $(APP_LIST) --settings=appstore.settings.$(brand)_settings;)
 
 # TODO look into using tox for testing multiple configurations and coverage integration
 
