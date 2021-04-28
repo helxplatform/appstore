@@ -51,5 +51,8 @@ class LoginRedirectAdapter(DefaultAccountAdapter, DefaultSocialAccountAdapter):
     def get_logout_redirect_url(self, request):
         url = self._logout_url(request)
         # Unset and let the frontend set it again on landing
-        del request.session["helx_frontend"]
+        # Using get incase the session is cleared between login and logout to prevent
+        # an error and returning of the route
+        if request.session.get("helx_frontend"):
+            del request.session["helx_frontend"]
         return url
