@@ -35,6 +35,7 @@ class Instance:
     aid: str
     sid: str
     fqsid: str
+    workspace_name: str
     creation_time: str
     cpus: float
     gpus: int

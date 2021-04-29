@@ -23,6 +23,7 @@ class InstanceSerializer(serializers.Serializer):
     aid = serializers.CharField(allow_null=True)
     sid = serializers.CharField()
     fqsid = serializers.CharField()
+    workspace_name = serializers.CharField(allow_blank=True)
     creation_time = (
         serializers.CharField()
     )  # serializers.DateTimeField(format='iso-8601') - date error from tycho

@@ -56,9 +56,9 @@ def form_service_url(host, app_id, service, username, system=None):
         url = f"http://{service.ip_address}:{service.port}"
     else:
         url = (
-            f"{protocol}://{host}/private/{app_id}/{username}/{system.identifier}/"
+            f"{protocol}://{host}/private/{app_id}/{username}/{system.identifier}/{system.conn_string}"
             if system
-            else f"{protocol}://{host}/private/{app_id}/{username}/{service.identifier}/"
+            else f"{protocol}://{host}/private/{app_id}/{username}/{service.identifier}/{service.conn_string}"
         )
     logger.debug(f"-- app-networking constructed url: {url}")
     return url
