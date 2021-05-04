@@ -1,10 +1,10 @@
 from django.urls import path, re_path
 
-from .views import FrontendView, ReactView
+from .views import HelxLoginView, HelxSpaLoaderView
 
 urlpatterns = [
-    path("frontend/", FrontendView.as_view(), name="frontend"),
-    path("frontend/react/", ReactView.as_view(), name="frontend-react"),
+    path("helx/login/", HelxLoginView.as_view(), name="helx_login"),
+    path("helx/", HelxSpaLoaderView.as_view(), name="helx"),
     # Add wildcard so that a user can hit refresh in the browser and not get a 404
-    re_path(r"frontend/react/*", ReactView.as_view()),
+    re_path(r"helx/*", HelxSpaLoaderView.as_view()),
 ]
