@@ -133,3 +133,9 @@ class LoginProvider:
 
     name: str
     url: str
+
+@dataclass
+class User:
+    REMOTE_USER: str
+    ACCESS_TOKEN: str
+    SESSION_TIMEOUT: int

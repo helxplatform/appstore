@@ -77,6 +77,7 @@ class InstanceIdentifierSerializer(serializers.Serializer):
 class UserSerializer(serializers.Serializer):
     REMOTE_USER = serializers.CharField()
     ACCESS_TOKEN = serializers.CharField(required=False, allow_null=True)
+    SESSION_TIMEOUT = serializers.IntegerField()
 
 
 class LoginProviderSerializer(serializers.Serializer):
