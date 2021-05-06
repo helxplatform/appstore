@@ -18,7 +18,7 @@ from allauth import socialaccount
 from tycho.context import ContextFactory, Principal
 
 from .exceptions import AuthorizationTokenUnavailable
-from .models import Instance, InstanceSpec, App, LoginProvider, Resources
+from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
     InstanceSerializer,
     AppDetailSerializer,
@@ -442,19 +442,15 @@ class UsersViewSet(viewsets.GenericViewSet):
         Supports the use case where a reverse proxy like nginx is being used to
         test authentication of a principal before proxying a request upstream.
         """
-        serializer = self.get_serializer(
-            data={
-                "REMOTE_USER": request.user.username,
-                "ACCESS_TOKEN": self._get_access_token(request),
-            }
-        )
+        user = User(request.user.username, self._get_access_token(request), settings.SESSION_IDLE_TIMEOUT)
+        serializer = self.get_serializer(data=asdict(user))
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
 
     @action(methods=["POST"], detail=False)
     def logout(self, request):
         logout(request)
-        data = {"success": "Sucessfully logged out"}
+        data = {"success": "Successfully logged out"}
         return Response(data=data, status=status.HTTP_200_OK)
 
 
