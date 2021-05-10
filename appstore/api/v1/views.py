@@ -147,7 +147,7 @@ class AppViewSet(viewsets.GenericViewSet):
 
         for app_id, app_data in self.get_queryset().items():
             try:
-                spec = tycho.get_spec(app_id)
+                spec = tycho.get_definition(app_id)
                 limits, reservations = parse_spec_resources(app_id, spec)
 
                 # TODO GPUs can be defined differently in docker-compose than in the
@@ -197,7 +197,7 @@ class AppViewSet(viewsets.GenericViewSet):
         Provide app details.
         """
         app_data = self.get_queryset()[app_id]
-        spec = tycho.get_spec(app_id)
+        spec = tycho.get_definition(app_id)
         limits, reservations = parse_spec_resources(app_id, spec)
 
         gpu = search_for_gpu_reservation(reservations)
