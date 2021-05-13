@@ -28,7 +28,7 @@ class LoginRedirectAdapter(DefaultAccountAdapter, DefaultSocialAccountAdapter):
         if request.session.get("helx_frontend") == "django":
             url = "/apps/"
         elif request.session.get("helx_frontend") == "react":
-            url = "/frontend/react/"
+            url = "/helx/"
         else:
             url = settings.LOGIN_REDIRECT_URL
         return url
@@ -37,7 +37,7 @@ class LoginRedirectAdapter(DefaultAccountAdapter, DefaultSocialAccountAdapter):
         if request.session.get("helx_frontend") == "django":
             url = "/"
         elif request.session.get("helx_frontend") == "react":
-            url = "/frontend/"
+            url = "/helx/login/"
         else:
             url = settings.ACCOUNT_LOGOUT_REDIRECT_URL
         return url
