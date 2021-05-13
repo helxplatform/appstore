@@ -11,7 +11,7 @@ set -ex
 ##
 #########################################################################################################
 manageauthorizedusers () {
-    local brand=$1
+    local BRAND_MODULE=$1
     local AUTH_USERS=$AUTHORIZED_USERS;
     local REMOVE_AUTH_USERS=$REMOVE_AUTHORIZED_USERS;
 
@@ -19,7 +19,7 @@ manageauthorizedusers () {
         if [ ! -z "$AUTH_USERS" -a "$AUTH_USERS" != " " ]; then
             USERS=(${AUTH_USERS//,/ })
             for user in "${USERS[@]}"; do
-                cat <<EOF | appstore shell --settings=appstore.settings.${brand}_settings
+                cat <<EOF | appstore shell --settings=${BRAND_MODULE}
 from core.models import AuthorizedUser
 if AuthorizedUser.objects.filter(email="$user"):
     print(f"User already in Authorized Users list ----> add skipping")

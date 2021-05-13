@@ -15,11 +15,11 @@ createsuperuser () {
     # In kubernetes, set the environment variables via secrets.
     create_superuser() {
 
-    local brand=$1
+    local BRAND_MODULE=$1
     local SUPERUSERNAME=${APPSTORE_DJANGO_USERNAME:-admin}
     local SUPERUSEREMAIL=""
     local SUPERUSERPASSWORD=${APPSTORE_DJANGO_PASSWORD:-admin}
-    cat <<EOF | appstore shell --settings=appstore.settings.${brand}_settings
+    cat <<EOF | appstore shell --settings=${BRAND_MODULE}
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
