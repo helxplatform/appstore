@@ -9,6 +9,7 @@ DOCKER_IMAGE = ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY   = $(shell openssl rand -base64 12)
 APP_LIST     ?= api appstore core frontend middleware product
 BRANDS       = braini cat heal restartr scidas
+SETTINGS_MODULE = ${DJANGO_SETTINGS_MODULE}
 
 
 .DEFAULT_GOAL = help
@@ -47,11 +48,11 @@ build: build.image
 
 #appstore: Run the appstore application
 appstore: appstore.brandcheck
-	appstore runserver 0.0.0.0:8000 --settings=appstore.settings.$(brand)_settings
+	appstore runserver 0.0.0.0:8000 --settings=${SETTINGS_MODULE}
 
 #appstore.collectstatic: Collect static assets from all installed Django apps
 appstore.collectstatic:
-	appstore collectstatic --settings=appstore.settings.$(brand)_settings --clear --no-input
+	appstore collectstatic --settings=${SETTINGS_MODULE} --clear --no-input
 
 #appstore.compose: Run the appstore via docker-compose
 appstore.compose:
@@ -70,43 +71,41 @@ frontend.cleanup:
 
 #appstore.makemigrations: Setup database migrations for all installed Django apps
 appstore.makemigrations:
-	appstore makemigrations --settings=appstore.settings.$(brand)_settings
+	appstore makemigrations --settings=${SETTINGS_MODULE}
 
 #appstore.migrate: Run database migrations for all installed Django apps
 appstore.migrate:
-	appstore migrate --settings=appstore.settings.$(brand)_settings
+	appstore migrate --settings=${SETTINGS_MODULE}
 
 #appstore.openapi: Generate Open API schema
 appstore.openapi:
-	appstore spectacular --file ./appstore/schema.yml --settings=appstore.settings.$(brand)_settings
+	appstore spectacular --file ./appstore/schema.yml --settings=${SETTINGS_MODULE}
 
 #appstore.setupsocialapps: Configure social login applications based on environment variables
 appstore.setupsocialapps:
-	appstore addingwhitelistedsocialapp --settings=appstore.settings.$(brand)_settings
+	appstore addingwhitelistedsocialapp --settings=${SETTINGS_MODULE}
 
 #appstore.setupsuperuser: Configure Django super users
 appstore.setupsuperuser:
-	./bin/superuser.sh $(brand)
+	./bin/superuser.sh ${SETTINGS_MODULE}
 
 #appstore.setupauthorizeduser: Configure users that are allowed to use the appstore
 appstore.setupauthorizeduser:
-	./bin/authorizeuser.sh $(brand)
+	./bin/authorizeuser.sh ${SETTINGS_MODULE}
 
 #appstore.run: Run the appstore application with gunicorn
 appstore.run:
-	export DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings
-	echo $DJANGO_SETTINGS_MODULE
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug appstore.wsgi:application --workers=5
 
-#appstore.brandcheck: Validation helper to confirm a brand has been provided
+#appstore.brandcheck: Validation helper to confirm a brand setting has been provided
 appstore.brandcheck:
-	if [ -z $(brand) ]; then make help; exit 1; fi
+	if [ -z ${SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 
 #appstore.start: Helper to start the appstore application running all migrations and configuration before starting with gunicorn
 appstore.start: appstore.brandcheck appstore.makemigrations appstore.migrate appstore.setupsocialapps appstore.setupsuperuser appstore.setupauthorizeduser appstore.collectstatic appstore.openapi appstore.run
 
 #appstore.all: runs cleanup, install, test and starts the appstore
-appstore.all: clean install test appstore.start
+appstore.all: appstore.brandcheck clean install test appstore.start
 
 #clean: Remove old build artifacts and installed packages
 clean:
@@ -139,12 +138,12 @@ lint:
 
 #test: Run all tests
 test:
-	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub appstore test $(APP_LIST) --settings=appstore.settings.$(brand)_settings;)
+	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub appstore test $(APP_LIST) --settings=${SETTINGS_MODULE};)
 
 # TODO look into using tox for testing multiple configurations and coverage integration
 
 #all: Alias to clean, install, test, build, and image
-all: clean install test build
+all: appstore.brandcheck clean install test build
 
 #publish.image: Push the Docker image
 publish.image:

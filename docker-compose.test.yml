@@ -11,6 +11,6 @@ services:
     env_file: 
       .env
     command:
-      make appstore.collectstatic test brand=braini
+      make collectstatic test
     ports:
       - 8000:8000
