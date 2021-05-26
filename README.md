@@ -120,7 +120,7 @@ You can use the commands packaged in `make` to configure and run the appstore.
 export DEV_PHASE=stub
 export SECRET_KEY=f00barBaz
 # setup local frontend assets
-make frontend 
+make appstore frontend 
 # Runs database migrations, creates super user, runs test then runs the appstore
 # at 0.0.0.0:8000
 make appstore.start brand=braini
