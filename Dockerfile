@@ -31,4 +31,4 @@ RUN make install
 RUN chown -R 1000:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
 EXPOSE 8000
-CMD ["make","appstore.start"]
+CMD ["make","start"]
