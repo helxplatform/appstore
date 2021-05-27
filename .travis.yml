@@ -4,7 +4,7 @@ python:
 install:
   - make install
 script:
-  - mkdir $HOME/.kube
-  - touch $HOME/.kube/config
+  - mkdir ${HOME}/.kube
+  - echo "$KUBE_CONFIG" | base64 --decode > ${HOME}/.kube/config
   - make setup
   - make test
