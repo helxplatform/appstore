@@ -38,8 +38,9 @@ install:
 test:
 	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings ${MANAGE} test $(APP_LIST);)
 
-#setup: Sets up Django
-setup:
+#start: Run the gunicorn server
+start:
+	if [ -z ${SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	${MANAGE} makemigrations
 	${MANAGE} migrate
 	${MANAGE} addingwhitelistedsocialapp
@@ -47,17 +48,13 @@ setup:
 	${MANAGE} shell < bin/authorizeuser.py
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
-
-#start: Run the gunicorn server
-start: setup
-	if [ -z ${SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=5
 
-#build.image: Build the Docker image
+#build: Build the Docker image
 build:
 	docker build --no-cache --pull -t ${DOCKER_IMAGE} -f Dockerfile .
 
-#test.image: Test the Docker image (requires docker compose)
+#build.test: Test the Docker image (requires docker compose)
 build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
