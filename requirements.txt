@@ -6,8 +6,6 @@ django-debug-toolbar==3.2
 django-extensions==3.1.1 
 django-saml2-auth==2.2.1 
 djangorestframework==3.12.2
-docker-pycreds==0.4.0
-dockerpty==0.4.1
 drf-spectacular==0.15.1
 flake8==3.9.0
 mock==4.0.2 
