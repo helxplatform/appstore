@@ -28,7 +28,6 @@ clean:
 	${MANAGE} flush
 	${PYTHON} -m pip uninstall -y -r requirements.txt
 
-
 #install: Install application along with required development packages
 install:
 	${PYTHON} -m pip install --upgrade pip
@@ -59,6 +58,6 @@ build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
 #publish.image: Push the Docker image
-publish:
+publish: build build.test
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 	docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
