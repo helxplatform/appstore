@@ -264,7 +264,7 @@ def get_brand_details(brand):
             "logo": "restartingresearch.png",
         },
         "heal": {"name": "NIH Heal Initiative", "logo": "heal-social-logo.png"},
-        "cmas": {"name": "CMAS", "logo": "cmas_logo.png"},
+        "cmas": {"name": "CMAS", "logo": "cmas-logo.png"},
     }[brand]
 
 

@@ -8,7 +8,7 @@ APPLICATION_BRAND = "cmas"
 PRODUCT_SETTINGS = ProductSettings(
     brand="cmas",
     title="CMAS",
-    logo_url="/static/images/cmas_logo.png",
+    logo_url="/static/images/cmas-logo.png",
     color_scheme=ProductColorScheme("#666666", "#e6e6e6"),
     links=[],
 )
