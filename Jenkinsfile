@@ -31,10 +31,7 @@ pipeline {
             steps {
                 sh '''
                 echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin
-                mkdir ${HOME}/.kube
-                echo "$KUBE_CONFIG" | base64 --decode > ${HOME}/.kube/config
                 make build
-                make build.test
                 '''
             }
         }
