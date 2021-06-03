@@ -22,16 +22,17 @@ pipeline {
             }
         }
         stage('Publish') {
-            when {
-                buildingTag()
-            }
+//             when {
+//                 buildingTag()
+//             }
             environment {
                 DOCKERHUB_CREDS = credentials('rencibuild_dockerhub_machine_user')
             }
             steps {
                 sh '''
                 echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin
-                make publish
+                make build
+                make build.test
                 '''
             }
         }
