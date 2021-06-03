@@ -1,5 +1,5 @@
 PYTHON          := /usr/bin/env python3
-VERSION_FILE    := ./appstore/appstore/__init__.py
+VERSION_FILE    := ./appstore/appstore/_version.py
 VERSION         := $(shell grep __version__ ${VERSION_FILE} | cut -d " " -f 3 ${VERSION_FILE} | tr -d '"')
 DOCKER_REGISTRY := docker.io
 DOCKER_OWNER    := helxplatform
