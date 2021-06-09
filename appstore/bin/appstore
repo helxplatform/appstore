@@ -201,7 +201,7 @@ image () {
 ##
 ###############################################################################
 cicd () {
-    for product in braini scidas catalyst restartr heal; do
+    for product in braini scidas catalyst restartr heal eduhelx; do
 	createsuperuser
 	tests $product
     done
@@ -217,13 +217,13 @@ help () {
     printf """bin/appstore management interface.
 
 Usage:
-   manageauthorizedusers [ braini | scidas | catalyst | restartr | heal ]                      \t Add and Remove authorized users based on environment variables.
+   manageauthorizedusers [ braini | scidas | catalyst | restartr | heal | eduhelx]                      \t Add and Remove authorized users based on environment variables.
    createsuperuser                                                                             \t Create a superuser based on environment variables.
-   run         [ braini | scidas | catalyst | restartr | heal ]                                \t Run the application.
-   tests       [ braini | scidas | catalyst | restartr | heal ]                                \t Run all unit tests.
+   run         [ braini | scidas | catalyst | restartr | heal | eduhelx ]                                \t Run the application.
+   tests       [ braini | scidas | catalyst | restartr | heal | eduhelx ]                                \t Run all unit tests.
    image build                                                                                 \t Build the docker image.
-   image push  [ braini | scidas | catalyst | restartr | heal ]                                \t Push the image to the repository.
-   image run   [ braini | scidas | catalyst | restartr | heal ] [local .kube path ex: \$HOME ] \t Run the docker image.
+   image push  [ braini | scidas | catalyst | restartr | heal | eduhelx ]                                \t Push the image to the repository.
+   image run   [ braini | scidas | catalyst | restartr | heal | eduhelx ] [local .kube path ex: \$HOME ] \t Run the docker image.
    image frontend                                                                              \t setup frontend resources for local development.
 """
     exit 1

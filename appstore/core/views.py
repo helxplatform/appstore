@@ -334,6 +334,10 @@ def get_brand_details(brand):
         "commonsshare": {
             "name": "CommonsShare",
             "logo": "logo-lg.png"
+        },
+        "eduhelx": {
+            "name": "EduHeLx",
+            "logo": "heal-social-logo.png" #TBD
         }
     }[brand]
 
