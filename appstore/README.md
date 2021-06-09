@@ -218,7 +218,7 @@ pip install -r requirements.txt
 ```text
 export SECRET_KEY=<insert value>
 
-# Project specific settings. (scidas | braini | cat | reccap)
+# Project specific settings. (scidas | braini | cat | reccap | eduhelx)
 export DJANGO_SETTINGS_MODULE="appstore.settings.<project>_settings"
 
 # Optional: Google or GitHub OAuth web app credentials.
