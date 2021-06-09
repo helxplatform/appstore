@@ -1,20 +1,24 @@
+import functools
 import logging
 from dataclasses import asdict
 import time
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import get_user_model, logout
 
 from rest_framework import status as drf_status, viewsets, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.decorators import action
+from rest_framework import status
 
 from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
 
 from .exceptions import AuthorizationTokenUnavailable
-from .models import Instance, InstanceSpec, App, LoginProvider, Resources
+from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
     InstanceSerializer,
     AppDetailSerializer,
@@ -25,6 +29,8 @@ from .serializers import (
     UserSerializer,
     LoginProviderSerializer,
     AppContextSerializer,
+    InstanceModifySerializer,
+    EmptySerializer,
 )
 
 # TODO: Structured Logging
@@ -121,7 +127,6 @@ class AppViewSet(viewsets.GenericViewSet):
     Tycho App information.
     """
 
-    permission_classes = [IsAuthenticated]
     lookup_field = "app_id"
     lookup_url_kwarg = "app_id"
 
@@ -142,7 +147,7 @@ class AppViewSet(viewsets.GenericViewSet):
 
         for app_id, app_data in self.get_queryset().items():
             try:
-                spec = tycho.get_spec(app_id)
+                spec = tycho.get_definition(app_id)
                 limits, reservations = parse_spec_resources(app_id, spec)
 
                 # TODO GPUs can be defined differently in docker-compose than in the
@@ -161,10 +166,14 @@ class AppViewSet(viewsets.GenericViewSet):
                     app_data["spec"],
                     asdict(
                         Resources(
-                            reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                            reservations.get("cpus", 0),
+                            gpu,
+                            reservations.get("memory", 0),
                         )
                     ),
-                    asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
+                    asdict(
+                        Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))
+                    ),
                 )
 
                 apps[app_id] = asdict(spec)
@@ -172,13 +181,13 @@ class AppViewSet(viewsets.GenericViewSet):
                 logger.error(f"Could not parse {app_id}...continuing.")
                 continue
 
-
         apps = {key: value for key, value in sorted(apps.items())}
         serializer = self.get_serializer(data=apps)
         serializer.is_valid()
         if serializer.errors:
             logger.error(
-                f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user."
+                f"Serialization errors detected:\n{serializer.errors}\nWill attempt "
+                f"to provide data to user."
             )
         # TODO change this to serializer.data after discovery on nested object data
         return Response(apps)
@@ -188,7 +197,7 @@ class AppViewSet(viewsets.GenericViewSet):
         Provide app details.
         """
         app_data = self.get_queryset()[app_id]
-        spec = tycho.get_spec(app_id)
+        spec = tycho.get_definition(app_id)
         limits, reservations = parse_spec_resources(app_id, spec)
 
         gpu = search_for_gpu_reservation(reservations)
@@ -212,7 +221,8 @@ class AppViewSet(viewsets.GenericViewSet):
         serializer.is_valid()
         if serializer.errors:
             logger.error(
-                f"Serialization errors detected:\n{serializer.errors}\nWill attempt to provide data to user."
+                f"Serialization errors detected:\n{serializer.errors}\nWill attempt "
+                f"to provide data to user."
             )
         return Response(serializer.validated_data)
 
@@ -222,7 +232,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
     Active user instances.
     """
 
-    permission_classes = [IsAuthenticated]
     lookup_field = "sid"
     lookup_url_kwarg = "sid"
 
@@ -231,8 +240,20 @@ class InstanceViewSet(viewsets.GenericViewSet):
             return ResourceSerializer
         elif self.action == "destroy":
             return InstanceIdentifierSerializer
+        elif self.action == "partial_update":
+            return InstanceModifySerializer
         else:
             return InstanceSerializer
+
+    @functools.lru_cache(maxsize=16, typed=False)
+    def get_principal(self, user):
+        """
+        Retrieve principal information from Tycho based on the request
+        user.
+        """
+        tokens = get_social_tokens(user)
+        principal = Principal(*tokens)
+        return principal
 
     def get_queryset(self):
         status = tycho.status({"username": self.request.user.username})
@@ -242,33 +263,40 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Provide all active instances.
         """
+
         active = self.get_queryset()
-
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
         instances = []
-        for instance in active:
-            # Note that total_util is formatted differently than instance['util']
-            # TODO confirm which to use going forward and format based
-            # on standard.
-            # TODO could probably pull this list and search it locally instead
-            # of a call per loop.
 
-            app = tycho.apps.get(
-                instance.app_id.replace(f"-{instance.identifier}", ""), {}
-            )
+        # host should be in the form of the deployment domain, if ambassador is
+        # marked as host then app url construction will be invalid.
+        if not host.lower() == "ambassador":
+            for instance in active:
+                app_name = instance.app_id.replace(f"-{instance.identifier}", "")
+                logger.debug(f"\nActive instance type:\n{app_name}\n")
 
-            inst = Instance(
-                app.get("name"),
-                app.get("docs"),
-                instance.identifier,
-                instance.app_id,
-                instance.creation_time,
-                instance.total_util["cpu"],
-                instance.total_util["gpu"],
-                instance.total_util["memory"],
-            )
+                app = tycho.apps.get(app_name)
+                if app:
 
-            logger.debug(f"Instance definition: {inst}")
-            instances.append(asdict(inst))
+                    inst = Instance(
+                        app.get("name"),
+                        app.get("docs"),
+                        app_name,
+                        instance.identifier,
+                        instance.app_id,
+                        instance.workspace_name,
+                        instance.creation_time,
+                        instance.total_util["cpu"],
+                        instance.total_util["gpu"],
+                        instance.total_util["memory"],
+                        host,
+                        username,
+                    )
+                    instances.append(asdict(inst))
+        else:
+            logger.error(f"\nAmbassador seen as host:\n{host}\n")
 
         serializer = self.get_serializer(data=instances, many=True)
         serializer.is_valid(raise_exception=True)
@@ -286,13 +314,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
-        logger.debug("Tokens fetched for user.")
         principal = Principal(*tokens)
-        logger.debug("Principal built.")
 
         app_id = serializer.data["app_id"]
         system = tycho.start(principal, app_id, resource_request.resources)
-        logger.debug(f"Spec submitted to Tycho. \n\n {system}\n\n")
 
         s = InstanceSpec(
             principal.username,
@@ -305,8 +330,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
             system.services[0].identifier,
             system.identifier,
         )
-
-        logger.debug(f"Final instance spec \n\n {s} \n\n")
 
         # TODO: better status capture from Tycho on submission
         if s:
@@ -335,6 +358,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
         Provide active instance details.
         """
         active = self.get_queryset()
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
 
         for instance in active:
             if instance.identifier == sid:
@@ -348,13 +374,16 @@ class InstanceViewSet(viewsets.GenericViewSet):
                     instance.total_util["cpu"],
                     instance.total_util["gpu"],
                     instance.total_util["memory"],
+                    app.get("app_id"),
+                    host,
+                    username,
                 )
 
                 serializer = self.get_serializer(data=asdict(inst))
                 serializer.is_valid(raise_exception=True)
                 return Response(serializer.validated_data)
 
-        logger.debug(f"\n{sid} not found\n")
+        logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
 
     def destroy(self, request, sid=None):
@@ -370,7 +399,21 @@ class InstanceViewSet(viewsets.GenericViewSet):
         # a successful submission? Can we do a follow up with Web Sockets or SSE
         # to the front end?
         time.sleep(2)
-        logger.debug(f"\nDelete response: {response}")
+        return Response(response)
+
+    def partial_update(self, request, sid=None):
+        """
+        Pass labels, cpu and memory to tycho for patching a running deployment.
+        """
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        data.update({"tycho-guid": sid})
+        response = tycho.update(data)
+
+        logger.debug(f"Update Response: {response}")
         return Response(response)
 
 
@@ -379,17 +422,18 @@ class UsersViewSet(viewsets.GenericViewSet):
     User information.
     """
 
-    permission_classes = [IsAuthenticated]
-    serializer_class = UserSerializer
+    def get_serializer_class(self):
+        if self.action == "list":
+            return UserSerializer
+        elif self.action == "logout":
+            return EmptySerializer
 
     def _get_access_token(self, request):
         if request.session.get("Authorization", None):
             return request.session["Authorization"].split(" ")[1]
         else:
             logger.error(f"Authorization not set for {request.user.username}")
-            raise AuthorizationTokenUnavailable(
-                detail=f"Authorization token not found for {request.user.username}"
-            )
+            return None
 
     def list(self, request):
         """
@@ -398,17 +442,16 @@ class UsersViewSet(viewsets.GenericViewSet):
         Supports the use case where a reverse proxy like nginx is being used to
         test authentication of a principal before proxying a request upstream.
         """
-        serializer = self.get_serializer(
-            data={
-                "REMOTE_USER": request.user.username,
-                "ACCESS_TOKEN": self._get_access_token(request),
-            }
-        )
+        user = User(request.user.username, self._get_access_token(request), settings.SESSION_IDLE_TIMEOUT)
+        serializer = self.get_serializer(data=asdict(user))
         serializer.is_valid(raise_exception=True)
-        logger.debug(
-            f"Access Token for {serializer.validated_data['REMOTE_USER']} provided"
-        )
         return Response(serializer.validated_data)
+
+    @action(methods=["POST"], detail=False)
+    def logout(self, request):
+        logout(request)
+        data = {"success": "Successfully logged out"}
+        return Response(data=data, status=status.HTTP_200_OK)
 
 
 class LoginProviderViewSet(viewsets.GenericViewSet):

@@ -1,0 +1,46 @@
+{% extends "core/base.html" %}
+{% load i18n %}
+{% load account socialaccount %}
+{% load crispy_forms_tags %}
+{% block head_title %}{% trans "Index" %}{% endblock %}
+
+{% block content %}
+  
+<div id="content-container" class="container p-none">
+    <h1>{% trans "Sign In" %}</h1>
+    <p>{% blocktrans with site.name as site_name %}Please sign in with one of your existing third party accounts:{% endblocktrans %}</p>
+
+    <div class="socialaccount_ballot">
+        <ul class="socialaccount_providers">
+            {% if ALLOW_SAML_LOGIN == "true" %}
+                <li>
+                    <a title="SAML" class="socialaccount_provider" href="/accounts/saml">UNC Chapel Hill Single Sign-On</a>
+                </li>
+            {% endif %}
+
+            {% get_providers as socialaccount_providers %}
+            {% if socialaccount_providers %}
+                {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+                {% include "socialaccount/snippets/login_extra.html" %}
+            {% endif %}
+        </ul>
+    </div>
+
+    {% if ALLOW_DJANGO_LOGIN == "true" %}
+        <br/>
+        <form class="login" method="post" action="{% url 'account_login' %}">
+            {% csrf_token %}
+            {{ form | crispy }}
+            {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+            {% endif %}
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">
+                    {% trans "sign in" %}
+                </button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+
+{% endblock content %}

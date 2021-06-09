@@ -1,0 +1,15 @@
+version: "3"
+
+services:
+  appstore:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: helxplatform/appstore:1.1.dev3
+    volumes:
+      - $HOME/.kube/config:/home/appstore/.kube/config
+      - $HOME/.minikube/:$HOME/.minikube/
+    env_file:
+      - .env
+    ports:
+      - 8000:8000

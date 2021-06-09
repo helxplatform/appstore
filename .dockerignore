@@ -1,0 +1,14 @@
+.env
+.env.sample
+docker-compose.yml
+docker-compose.test.yml
+appstore/tycho-registry.sqlite
+appstore/DATABASE.sqlite3
+appstore/static/
+.git/
+.github/
+.idea/
+.vscode/
+build/
+coverage/
+docs/

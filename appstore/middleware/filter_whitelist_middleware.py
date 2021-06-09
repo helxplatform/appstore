@@ -12,7 +12,7 @@ from smtplib import SMTPSenderRefused, SMTPResponseException
 from core.models import AuthorizedUser
 
 logger = logging.getLogger(__name__)
-FORMAT = '%(asctime)-15s %(clientip)s %(user)-8s %(message)s'
+FORMAT = "%(asctime)-15s %(clientip)s %(user)-8s %(message)s"
 logging.basicConfig(format=FORMAT)
 
 
@@ -30,14 +30,14 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                     request.path.startswith(settings.STATIC_URL),
                     request.path.startswith(settings.SAML_URL),
                     request.path.startswith(settings.SAML_ACS_URL),
-                    request.path.startswith(settings.APP_CONTEXT_URL),
-                    request.path.startswith(settings.APP_LOGIN_PROVIDER_URL),
+                    request.path.startswith("/api/v1/context"),
+                    request.path.startswith("/api/v1/providers"),
                 ]
             ):
 
                 if self.is_authorized(user):
                     logger.info(f"Adding user {user} to whitelist")
-                    whitelist_group = Group.objects.get(name='whitelisted')
+                    whitelist_group = Group.objects.get(name="whitelisted")
                     user.groups.add(whitelist_group)
                 else:
                     logger.info(f"Filtering user {user} is not authorized")
@@ -47,7 +47,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                         # route the user correctly.
                         self.send_whitelist_email(request, user)
                     except (SMTPSenderRefused, SMTPResponseException) as err:
-                        logger.error(f"SMTP misconfigured, please check settings.\n{err}\n")
+                        logger.error(
+                            f"SMTP misconfigured, please check settings.\n{err}\n"
+                        )
                     finally:
                         # Make sure to always run the redirect.
                         return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
@@ -56,7 +58,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
 
     @staticmethod
     def is_whitelisted(user):
-        if user.groups.filter(name='whitelisted').exists():
+        if user.groups.filter(name="whitelisted").exists():
             return True
         return False
 
@@ -76,18 +78,27 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
 
     @staticmethod
     def send_whitelist_email(request, user):
-        print('sending email')
+        print("sending email")
 
-        msg = 'A user ' + user.email + ' is requesting access to AppStore on ' + settings.APPLICATION_BRAND \
-              + ' and needs to be reviewed for whitelisting. Upon successful review, kindly add the user to' \
-              + ' Authorized Users using django admin panel at ' \
-              + request.scheme + '://' + request.META['HTTP_HOST'] + settings.ADMIN_URL + '.'
+        msg = (
+            "A user "
+            + user.email
+            + " is requesting access to AppStore on "
+            + settings.APPLICATION_BRAND
+            + " and needs to be reviewed for whitelisting. Upon successful review, kindly add the user to"
+            + " Authorized Users using django admin panel at "
+            + request.scheme
+            + "://"
+            + request.META["HTTP_HOST"]
+            + settings.ADMIN_URL
+            + "."
+        )
         print(msg)
 
         send_mail(
-            'Whitelisting Required',
+            "Whitelisting Required",
             msg,
             settings.EMAIL_HOST_USER,
-            [settings.APPLICATION_BRAND + '-admin@lists.renci.org'],
+            [settings.APPLICATION_BRAND + "-admin@lists.renci.org"],
             fail_silently=False,
         )
