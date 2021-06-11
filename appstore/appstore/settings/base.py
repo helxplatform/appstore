@@ -73,6 +73,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "api",
+    "appstore",
     "core",
     "frontend",
     "middleware",
