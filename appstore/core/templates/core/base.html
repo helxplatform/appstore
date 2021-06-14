@@ -10,6 +10,8 @@
     <title>Biodata Catalyst</title>
     {% elif APPLICATION_BRAND == "restartr" %}
     <title>Restarting Research</title>
+    {% elif APPLICATION_BRAND == "eduhelx" %}
+    <title>EduHeLx</title>
     {% else %}
     <title>HeLx AppStore</title>
     {% endif %}
@@ -53,6 +55,9 @@
                              alt="Restarting Research Logo"></a>
             {% elif APPLICATION_BRAND == "heal" %}
             <a href="/"><img class="navbar-brand navbar-brand-heal" id="img-brand-heal-logo" src="{% static "images/heal/heal-social-logo.png" %}"
+                             alt="HEAL Logo"></a>
+            {% elif APPLICATION_BRAND == "eduhelx" %}
+            <a href="/"><img class="navbar-brand" id="img-brand-eduhelx-logo" src="{% static "images/heal/logo.png" %}"
                              alt="HEAL Logo"></a>
             {% else %}
             <a href="/"><img class="navbar-brand" id="img-brand-logo" src="{% static "images/catalyst/bdc-logo.svg" %}"

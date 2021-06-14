@@ -264,6 +264,7 @@ def get_brand_details(brand):
             "logo": "restartingresearch.png",
         },
         "heal": {"name": "NIH Heal Initiative", "logo": "heal-social-logo.png"},
+        "eduhelx": {"name": "EduHeLx", "logo": "logo.png"},
         "commonsshare": {"name": "CommonsShare", "logo": "logo-lg.png"},
     }[brand]
 

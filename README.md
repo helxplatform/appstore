@@ -39,7 +39,7 @@ During development, environment variables can be set to control execution:
 
 | Variable                                    | Description                                                       |
 | :-------------------------------------      | :---------------------------------------------------------------- |
-| BRAND=[braini, cat, heal, restartr, scidas] | Product context configuration for the appstore.                   |
+| BRAND=[braini, cat, heal, restartr, scidas, eduhelx] | Product context configuration for the appstore.                   |
 | DJANGO_SETTINGS_MODULE=[appstore.settings.<brand>_settings] | Product settings module configuration for the appstore.                   |
 | DEV_PHASE=[stub, local, dev, val, prod]     | In stub, does not require a Tycho service.                        |
 | ALLOW_DJANGO_LOGIN=[TRUE, FALSE]            | When true, presents username and password authentication options. |
