@@ -11,6 +11,6 @@ services:
     env_file: 
       .env
     command:
-      make collectstatic test
+      make test
     ports:
       - 8000:8000

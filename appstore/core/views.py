@@ -263,7 +263,7 @@ def get_brand_details(brand):
             "name": "UNC Restarting Research",
             "logo": "restartingresearch.png",
         },
-        "heal": {"name": "NIH Heal Initiative", "logo": "heal-social-logo.png"},
+        "heal": {"name": "NIH Heal Initiative", "logo": "logo.png"},
         "commonsshare": {"name": "CommonsShare", "logo": "logo-lg.png"},
     }[brand]
 
