@@ -57,7 +57,6 @@ cover/
 
 # Django stuff:
 *.log
-static
 local_settings.py
 *.sqlite3
 *.sqlite3-journal
@@ -156,3 +155,7 @@ appstore/frontend/templates/frontend/index.html
 
 # Open API, generated at run time
 appstore/schema.yml
+
+# transient static directories 
+appstore/appstore/static
+appstore/static/
