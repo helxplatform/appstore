@@ -8,11 +8,7 @@ APPLICATION_BRAND = "eduhelx"
 PRODUCT_SETTINGS = ProductSettings(
     brand="eduhelx",
     title="EduHeLx",
-<<<<<<< HEAD
-    logo_url="/static/images/cmas/cmas-logo.png", #TBD
-=======
     logo_url="/static/images/eduhelx/logo.png",
->>>>>>> 3912c8fab845d5a7c0d46b39df2799a411360c71
     color_scheme=ProductColorScheme("#666666", "#e6e6e6"), #TBD
     links=[],
 )
@@ -39,8 +35,4 @@ SAML2_AUTH = {
     "ENTITY_ID": os.environ.get(
         "SAML2_AUTH_ENTITY_ID"
     ),  # Populates the Issuer element in authn request
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 3912c8fab845d5a7c0d46b39df2799a411360c71
