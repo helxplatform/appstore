@@ -263,20 +263,8 @@ def get_brand_details(brand):
             "name": "UNC Restarting Research",
             "logo": "restartingresearch.png",
         },
-<<<<<<< HEAD
-        "commonsshare": {
-            "name": "CommonsShare",
-            "logo": "logo-lg.png"
-        },
-        "eduhelx": {
-            "name": "EduHeLx",
-            "logo": "heal-social-logo.png" #TBD
-        }
-=======
         "heal": {"name": "NIH Heal Initiative", "logo": "heal-social-logo.png"},
         "eduhelx": {"name": "EduHeLx", "logo": "logo.png"},
-        "commonsshare": {"name": "CommonsShare", "logo": "logo-lg.png"},
->>>>>>> 3912c8fab845d5a7c0d46b39df2799a411360c71
     }[brand]
 
 
