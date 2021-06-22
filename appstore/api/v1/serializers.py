@@ -7,11 +7,23 @@ from .validators import memory_format_validator
 logger = logging.getLogger(__name__)
 
 
+class InstanceModifySerializer(serializers.Serializer):
+    labels = serializers.DictField(
+        child=serializers.CharField(), required=False, allow_empty=False
+    )
+    cpu = serializers.CharField(required=False, allow_blank=False)
+    memory = serializers.CharField(
+        validators=[memory_format_validator], required=False, allow_blank=False
+    )
+
+
 class InstanceSerializer(serializers.Serializer):
     name = serializers.CharField()
     docs = serializers.CharField()
+    aid = serializers.CharField(allow_null=True)
     sid = serializers.CharField()
     fqsid = serializers.CharField()
+    workspace_name = serializers.CharField(allow_blank=True)
     creation_time = (
         serializers.CharField()
     )  # serializers.DateTimeField(format='iso-8601') - date error from tycho
@@ -19,6 +31,8 @@ class InstanceSerializer(serializers.Serializer):
     gpus = serializers.IntegerField(default=0)
     # TODO switch to Float potentially, or validator
     memory = serializers.CharField()
+    url = serializers.CharField()
+    status = serializers.CharField()
 
 
 class AppDetailSerializer(serializers.Serializer):
@@ -62,7 +76,8 @@ class InstanceIdentifierSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.Serializer):
     REMOTE_USER = serializers.CharField()
-    ACCESS_TOKEN = serializers.CharField()
+    ACCESS_TOKEN = serializers.CharField(required=False, allow_null=True)
+    SESSION_TIMEOUT = serializers.IntegerField()
 
 
 class LoginProviderSerializer(serializers.Serializer):
@@ -76,3 +91,8 @@ class AppContextSerializer(serializers.Serializer):
     logo_url = serializers.CharField()
     color_scheme = serializers.DictField()
     links = serializers.ListField(required=False, allow_null=True)
+    capabilities = serializers.ListField()
+
+
+class EmptySerializer(serializers.Serializer):
+    pass

@@ -1,0 +1,57 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% load account socialaccount %}
+{% load crispy_forms_tags %}
+{% block head_title %}{% trans "Home" %}{% endblock %}
+
+{% block content %}
+<div class="signin-container">  
+    <p class="signin-notice">
+        {% blocktrans with site.name as site_name %}
+            Please sign in with one of the following accounts:
+        {% endblocktrans %}
+    </p>
+
+    {% if ALLOW_SAML_LOGIN == "true" %}
+        <a title="SAML" class="btn btn-block btn-social btn-unc-chapel-hill socialaccount_provider unc-chapel-hill" href="/accounts/saml">
+            <i class="fab fa-openid"></i>
+            UNC Chapel Hill Single Sign-On
+        </a>
+    {% endif %}
+
+    {% get_providers as socialaccount_providers %}
+    {% if socialaccount_providers %}
+        {% for provider in socialaccount_providers %}
+            {% if provider.id == "openid" %}
+                {% for brand in provider.get_brands %}
+                    <a title="{{brand.name}}" class="btn btn-block btn-social btn-{{provider.id}} socialaccount_provider {{provider.id}} {{brand.id}}" href="{% provider_login_url provider.id openid=brand.openid_url process=process %}">
+                        <i class="fab fa-{{provider.id}}"></i>
+                        {{brand.name}}
+                    </a>
+                {% endfor %}
+            {% endif %}
+                <a title="{{provider.name}}" class="btn btn-block btn-social btn-{{provider.id}} socialaccount_provider {{provider.id}}" href="{% provider_login_url provider.id process=process scope=scope auth_params=auth_params %}">
+                    <i class="fab fa-{{provider.id}}"></i>
+                    {{provider.name}}
+                </a>
+        {% endfor %}
+        {% include "socialaccount/snippets/login_extra.html" %}
+    {% endif %}
+
+    {% if ALLOW_DJANGO_LOGIN == "true" %}
+        <br/>
+        <form class="login" method="post" action="{% url 'account_login' %}">
+            {% csrf_token %}
+            {{ form | crispy }}
+            {% if redirect_field_value %}
+                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}"/>
+            {% endif %}
+            <div class="form-actions">
+                <button class="btn btn-primary" type="submit">
+                    {% trans "sign in" %}
+                </button>
+            </div>
+        </form>
+    {% endif %}
+</div>  
+{% endblock content %}

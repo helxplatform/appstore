@@ -1,0 +1,8 @@
+recursive-include appstore/templates *
+recursive-include appstore/appstore/static *
+recursive-include appstore/appstore/templates *
+recursive-include appstore/core/static *
+recursive-include appstore/core/templates *
+recursive-include appstore/frontend/static *
+recursive-include appstore/frontend/templates *
+include README.md

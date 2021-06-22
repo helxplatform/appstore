@@ -1,0 +1,23 @@
+{% extends "core/base.html" %}
+
+{% load i18n %}
+
+{% block head_title %}
+    {% trans "404 Not Found" %}
+{% endblock head_title%}
+
+{% block content %}
+
+<h1>
+  {% trans "404 Not Found" %}
+</h1>
+
+<p>
+  {% trans "App running at " %} {{ req_path }} {% trans " is no longer available." %}
+</p>
+
+<p>
+  Return to <a href="{% url 'apps' %}">{% trans " Apps " %}</a> {% trans "page." %}
+</p>
+
+{% endblock content %}
