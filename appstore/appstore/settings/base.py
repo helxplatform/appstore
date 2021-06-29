@@ -76,6 +76,7 @@ LOCAL_APPS = [
     "appstore",
     "core",
     "frontend",
+    "logpipe",
     "middleware",
     "product",
 ]
