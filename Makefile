@@ -45,6 +45,7 @@ start:
 	${MANAGE} addingwhitelistedsocialapp
 	${MANAGE} shell < bin/superuser.py
 	${MANAGE} shell < bin/authorizeuser.py
+	if [ "${CREATE_TEST_USERS}" == "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=5
