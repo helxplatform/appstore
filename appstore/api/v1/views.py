@@ -2,10 +2,12 @@ import functools
 import logging
 from dataclasses import asdict
 import time
+import os
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model, logout
+from django.contrib.auth.decorators import login_required
 
 from rest_framework import status as drf_status, viewsets, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -550,6 +552,9 @@ class AppContextViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
         settings = self.get_queryset()
-        serializer = self.get_serializer(data=asdict(settings.PRODUCT_SETTINGS))
+        data = asdict(settings.PRODUCT_SETTINGS)
+        data['env'] = {}
+        for k,v in sorted(os.environ.items()): data['env'][k] = v
+        serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
