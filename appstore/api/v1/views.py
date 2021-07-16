@@ -6,6 +6,7 @@ import time
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model, logout
+from django.http import HttpResponseRedirect
 
 from rest_framework import status as drf_status, viewsets, serializers
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -13,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
 
-from allauth import socialaccount
+#from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
 
@@ -251,7 +252,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
         Retrieve principal information from Tycho based on the request
         user.
         """
-        tokens = get_social_tokens(user)
+        #tokens = get_social_tokens(user)
+        tokens = [user.username]
         principal = Principal(*tokens)
         return principal
 
@@ -313,7 +315,17 @@ class InstanceViewSet(viewsets.GenericViewSet):
         resource_request = serializer.create(serializer.validated_data)
 
         # TODO update social query to fetch user.
-        tokens = get_social_tokens(request.user)
+        #tokens = get_social_tokens(request.user)
+        user = request.user
+        if user != None: logger.info("xxxxxxxxxxxxxxx request.user {0} {1} {2} {3}".format(user.username,user.first_name,user.last_name,user.email))
+        logger.info("xxxxxxxxxxxxxxx request.auth = " + str(request.auth))
+        if request.session != None:
+            logger.info("xxxxxxxxxxxxxxx request.session = ")
+            for k,v in request.session.items(): logger.info("{0} -> {1}".format(k,v))
+        if request.META != None:
+            logger.info("xxxxxxxxxxxxxxx request.META = ")
+            for k,v in request.META.items(): logger.info("{0} -> {1}".format(k,v))
+        tokens = [user.username]
         principal = Principal(*tokens)
 
         app_id = serializer.data["app_id"]
@@ -454,87 +466,87 @@ class UsersViewSet(viewsets.GenericViewSet):
         return Response(data=data, status=status.HTTP_200_OK)
 
 
-class LoginProviderViewSet(viewsets.GenericViewSet):
-    """
-    Login provider information.
-    """
-
-    permission_classes = [AllowAny]
-    serializer_class = LoginProviderSerializer
-
-    def get_queryset(self):
-        return settings
-
-    def _get_social_providers(self, request, settings):
-        """
-        Get social login providers from allauth.
-        """
-
-        provider_data = []
-
-        if (
-            "allauth.account.auth_backends.AuthenticationBackend"
-            in settings.AUTHENTICATION_BACKENDS
-        ):
-            for provider in socialaccount.providers.registry.get_list():
-                provider_data.append(
-                    asdict(
-                        LoginProvider(provider.name, provider.get_login_url(request))
-                    )
-                )
-
-        return provider_data
-
-    def _get_django_provider(self, settings):
-        """
-        Check for default settings logins.
-        """
-
-        if settings.ALLOW_DJANGO_LOGIN == "true":
-            return asdict(LoginProvider("Django", settings.LOGIN_URL))
-
-    def _get_product_providers(self, settings):
-        """
-        Check for SSO defined in appstore settings.
-        """
-
-        if settings.PRODUCT_SETTINGS.brand in ("braini", "restarts"):
-            # TODO can we get the provider name from metadata so that if
-            # we support something beyond UNC we dont need another func
-            # or clause? What happens if we have multiple SAML SSO providers
-            # today it's handled with SAML_URL and the saml2_auth package,
-            # but appears to be setup for one provider at a time.
-            return asdict(
-                LoginProvider(
-                    "UNC Chapel Hill Single Sign-On",
-                    settings.SAML_URL,
-                )
-            )
-
-    def _get_login_providers(self, request):
-        """
-        Aggregate defined login providers for appstore.
-        """
-        settings = self.get_queryset()
-        provider_data = []
-
-        provider_data.extend(self._get_social_providers(request, settings))
-
-        django = self._get_django_provider(settings)
-        if django:
-            provider_data.append(django)
-
-        product = self._get_product_providers(settings)
-        if product:
-            provider_data.append(product)
-
-        return provider_data
-
-    def list(self, request):
-        providers = self._get_login_providers(request)
-        serializer = self.get_serializer(data=providers, many=True)
-        serializer.is_valid(raise_exception=True)
-        return Response(serializer.validated_data)
+#class LoginProviderViewSet(viewsets.GenericViewSet):
+#    """
+#    Login provider information.
+#    """
+#
+#    permission_classes = [AllowAny]
+#    serializer_class = LoginProviderSerializer
+#
+#    def get_queryset(self):
+#        return settings
+#
+#    def _get_social_providers(self, request, settings):
+#        """
+#        Get social login providers from allauth.
+#        """
+#
+#        provider_data = []
+#
+#        if (
+#            "allauth.account.auth_backends.AuthenticationBackend"
+#            in settings.AUTHENTICATION_BACKENDS
+#        ):
+#            for provider in socialaccount.providers.registry.get_list():
+#                provider_data.append(
+#                    asdict(
+#                        LoginProvider(provider.name, provider.get_login_url(request))
+#                    )
+#                )
+#
+#        return provider_data
+#
+#    def _get_django_provider(self, settings):
+#        """
+#        Check for default settings logins.
+#        """
+#
+#        if settings.ALLOW_DJANGO_LOGIN == "true":
+#            return asdict(LoginProvider("Django", settings.LOGIN_URL))
+#
+#    def _get_product_providers(self, settings):
+#        """
+#        Check for SSO defined in appstore settings.
+#        """
+#
+#        if settings.PRODUCT_SETTINGS.brand in ("braini", "restarts"):
+#            # TODO can we get the provider name from metadata so that if
+#            # we support something beyond UNC we dont need another func
+#            # or clause? What happens if we have multiple SAML SSO providers
+#            # today it's handled with SAML_URL and the saml2_auth package,
+#            # but appears to be setup for one provider at a time.
+#            return asdict(
+#                LoginProvider(
+#                    "UNC Chapel Hill Single Sign-On",
+#                    settings.SAML_URL,
+#                )
+#            )
+#
+#    def _get_login_providers(self, request):
+#        """
+#        Aggregate defined login providers for appstore.
+#        """
+#        settings = self.get_queryset()
+#        provider_data = []
+#
+#        provider_data.extend(self._get_social_providers(request, settings))
+#
+#        django = self._get_django_provider(settings)
+#        if django:
+#            provider_data.append(django)
+#
+#        product = self._get_product_providers(settings)
+#        if product:
+#            provider_data.append(product)
+#
+#        return provider_data
+#
+#    def list(self, request):
+#        providers = self._get_login_providers(request)
+#        serializer = self.get_serializer(data=providers, many=True)
+#        serializer.is_valid(raise_exception=True)
+#        return Response(serializer.validated_data)
 
 
 class AppContextViewSet(viewsets.GenericViewSet):

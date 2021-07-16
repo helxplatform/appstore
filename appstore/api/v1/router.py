@@ -3,13 +3,13 @@ from .views import (
     AppViewSet,
     InstanceViewSet,
     UsersViewSet,
-    LoginProviderViewSet,
+#    LoginProviderViewSet,
     AppContextViewSet,
 )
 
 router = DefaultRouter()
 router.register(r"apps", AppViewSet, basename="apps")
-router.register(r"providers", LoginProviderViewSet, basename="providers")
+#router.register(r"providers", LoginProviderViewSet, basename="providers")
 router.register(r"instances", InstanceViewSet, basename="instances")
 router.register(r"users", UsersViewSet, basename="users")
 router.register(r"context", AppContextViewSet, basename="context")

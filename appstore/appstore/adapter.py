@@ -1,5 +1,5 @@
-from allauth.account.adapter import DefaultAccountAdapter
-from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+#from allauth.account.adapter import DefaultAccountAdapter
+#from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 
 from django.conf import settings
 from django.forms import ValidationError
@@ -37,7 +37,7 @@ class LoginRedirectAdapter(DefaultAccountAdapter, DefaultSocialAccountAdapter):
         if request.session.get("helx_frontend") == "django":
             url = "/"
         elif request.session.get("helx_frontend") == "react":
-            url = "/helx/login/"
+            url = "/helx/login"
         else:
             url = settings.ACCOUNT_LOGOUT_REDIRECT_URL
         return url

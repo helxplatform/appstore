@@ -1,5 +1,5 @@
 # use the ui container to pull in webpack artifacts
-FROM helxplatform/helx-ui:latest as builder
+FROM helxplatform/helx-ui:oidc as builder
 
 FROM python:3.9.0-slim
 

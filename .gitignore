@@ -149,6 +149,7 @@ venv
 # Appstore optional dev dependencies
 tycho
 *.sqlite*
+.env
 
 # React frontend template
 appstore/frontend/templates/frontend/index.html

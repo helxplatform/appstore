@@ -76,7 +76,7 @@
                 </ul>
             {% else %}
                 <ul class="nav navbar-nav navbar-right">
-                    <li class="nav-item" id="cs_apps"><a href="{%  url 'account_login'  %}">Sign in</a></li>
+                    <li class="nav-item" id="cs_apps"><a href="{% url 'oidc_authentication_init' %}">Sign in</a></li>
                 </ul>
                 {% if APPLICATION_BRAND == "braini" %}
                     <ul class="nav navbar-nav navbar-right">

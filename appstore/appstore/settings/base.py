@@ -60,15 +60,16 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    "allauth",
-    "allauth.account",
-    "allauth.socialaccount",
-    "allauth.socialaccount.providers.github",
-    "allauth.socialaccount.providers.google",
+#    "allauth",
+#    "allauth.account",
+#    "allauth.socialaccount",
+#    "allauth.socialaccount.providers.github",
+#    "allauth.socialaccount.providers.google",
     "corsheaders",
     "crispy_forms",
     "rest_framework",
     "drf_spectacular",
+    "mozilla_django_oidc"
 ]
 
 LOCAL_APPS = [
@@ -88,14 +89,15 @@ ROOT_URLCONF = "appstore.urls"
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.contrib.auth.middleware.RemoteUserMiddleware",
-    "middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly",
-    "middleware.session_idle_timeout.SessionIdleTimeout",
+#    "middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly",
+    "middleware.session_idle_timeout.SessionIdleTimeout"
 ]
 
 SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
@@ -103,10 +105,11 @@ SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.RemoteUserBackend",
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
+#    "allauth.account.auth_backends.AuthenticationBackend",
+    "mozilla_django_oidc.auth.OIDCAuthenticationBackend"
 )
 
-ACCOUNT_ADAPTER = "appstore.adapter.LoginRedirectAdapter"
+#ACCOUNT_ADAPTER = "appstore.adapter.LoginRedirectAdapter"
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
@@ -114,10 +117,22 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
-LOGIN_REDIRECT_URL = "/apps/"
+LOGIN_REDIRECT_URL = "/helx/"
 LOGIN_URL = "/accounts/login"
+LOGOUT_REDIRECT_URL = "/helx/"
 LOGIN_WHITELIST_URL = "/login_whitelist/"
+
 OIDC_SESSION_MANAGEMENT_ENABLE = True
+OIDC_RP_SIGN_ALGO = "RS256"
+OIDC_OP_LOGOUT_URL_METHOD = "auth.provider_logout"
+OIDC_RP_CLIENT_ID = os.environ['OIDC_RP_CLIENT_ID']
+OIDC_RP_CLIENT_SECRET = os.environ['OIDC_RP_CLIENT_SECRET']
+OIDC_OP_AUTHORIZATION_ENDPOINT = os.environ['OIDC_OP_AUTHORIZATION_ENDPOINT']
+OIDC_OP_TOKEN_ENDPOINT = os.environ['OIDC_OP_TOKEN_ENDPOINT']
+OIDC_OP_USER_ENDPOINT = os.environ['OIDC_OP_USER_ENDPOINT']
+OIDC_OP_JWKS_ENDPOINT = os.environ['OIDC_OP_JWKS_ENDPOINT']
+OIDC_OP_LOGOUT_ENDPOINT = os.environ['OIDC_OP_LOGOUT_ENDPOINT']
+
 SAML_URL = "/accounts/saml"
 SAML_ACS_URL = "/saml2_auth/acs/"
 SOCIALACCOUNT_QUERY_EMAIL = ACCOUNT_EMAIL_REQUIRED
@@ -281,6 +296,15 @@ LOGGING = {
     },
 }
 
+CORS_ALLOWED_ORIGINS = [
+    "https://localhost:8000",
+    "https://127.0.0.1:8000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
 # All debug settings
 if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     INSTALLED_APPS += [
@@ -291,12 +315,7 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
         "127.0.0.1",
     ]
 
-    CORS_ALLOWED_ORIGINS = [
-        "https://localhost:3000",
-        "https://127.0.0.1:3000",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+    
 
     CSRF_TRUSTED_ORIGINS = [
         "localhost",

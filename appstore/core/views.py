@@ -3,8 +3,10 @@ import os
 from time import sleep
 import uuid
 
-from allauth.account.views import LoginView
-from allauth.socialaccount.signals import pre_social_login
+from django.views.generic import TemplateView
+
+#from allauth.account.views import LoginView
+#from allauth.socialaccount.signals import pre_social_login
 
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -34,12 +36,12 @@ tycho = ContextFactory.get(
 )
 
 
-@receiver(pre_social_login)
-def pre_login(sender, request, sociallogin, **kwargs):
-    if sociallogin.token:
-        access_token = sociallogin.token
-        request.session["Authorization"] = f"Bearer {access_token}"
-        logger.debug(f"----------> Adding Bearer token to the user session")
+#@receiver(pre_social_login)
+#def pre_login(sender, request, sociallogin, **kwargs):
+#    if sociallogin.token:
+#        access_token = sociallogin.token
+#        request.session["Authorization"] = f"Bearer {access_token}"
+#        logger.debug(f"----------> Adding Bearer token to the user session")
 
 
 def get_host(request):
@@ -309,22 +311,26 @@ def auth(request):
     return response
 
 
-class IndexView(LoginView):
-    """
-    Homepage view from core.
+#class IndexView(LoginView):
+#    """
+#    Homepage view from core.
+#
+#    Provides the login form based on allauth package.
+#    """
+#
+#    template_name = "core/index.html"
+#    success_url = reverse_lazy("apps")
+#    redirect_field_name = "next"
+#
+#    def get(self, request, *args, **kwargs):
+#        request.session["helx_frontend"] = "django"
+#        if request.user.is_authenticated:
+#            return redirect(success_url)
+#        return super(LoginView, self).get(request, *args, **kwargs)
 
-    Provides the login form based on allauth package.
-    """
-
-    template_name = "core/index.html"
-    success_url = reverse_lazy("apps")
-    redirect_field_name = "next"
-
+class IndexView(TemplateView):
     def get(self, request, *args, **kwargs):
-        request.session["helx_frontend"] = "django"
-        if request.user.is_authenticated:
-            return redirect(success_url)
-        return super(LoginView, self).get(request, *args, **kwargs)
+        return HttpResponseRedirect('/helx')
 
 
 def custom404(request, exception):
@@ -336,9 +342,10 @@ def custom404(request, exception):
     available. We want to notify the user and let them return to the app page.
     """
 
-    if "private" in request.path:
-        template_name = "private404.html"
-    else:
-        template_name = "404.html"
+    #if "private" in request.path:
+    #    template_name = "private404.html"
+    #else:
+    #    template_name = "404.html"
+    template_name = "404.html"
     context = {"req_path": request.path}
     return render(request, template_name, context=context, status=404)
