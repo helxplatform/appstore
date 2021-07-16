@@ -554,7 +554,8 @@ class AppContextViewSet(viewsets.GenericViewSet):
         settings = self.get_queryset()
         data = asdict(settings.PRODUCT_SETTINGS)
         data['env'] = {}
-        for k,v in sorted(os.environ.items()): data['env'][k] = v
+        for k,v in sorted(os.environ.items()): 
+            if k in settings.EXPORTABLE_ENV: data['env'][k] = v
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)

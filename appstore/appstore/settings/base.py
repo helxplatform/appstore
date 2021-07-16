@@ -99,6 +99,9 @@ MIDDLEWARE = [
 ]
 
 SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
+EXPORTABLE_ENV = os.environ.get("EXPORTABLE_ENV",None)
+if EXPORTABLE_ENV != None: EXPORTABLE_ENV = EXPORTABLE_ENV.split(':')
+else: EXPORTABLE_ENV = []
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.RemoteUserBackend",
