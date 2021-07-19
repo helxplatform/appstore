@@ -80,6 +80,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
     def send_whitelist_email(request, user):
         print("sending email")
 
+        recipient_list_string = settings.RECIPIENT_EMAILS
+        recipient_list = recipient_list_string.split(",")
+
         msg = (
             "A user "
             + user.email
@@ -99,6 +102,6 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
             "Whitelisting Required",
             msg,
             settings.EMAIL_HOST_USER,
-            [settings.APPLICATION_BRAND + "-admin@lists.renci.org"],
+            recipient_list,
             fail_silently=False,
         )
