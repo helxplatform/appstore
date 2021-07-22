@@ -5,9 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: helxplatform/appstore:1.1.dev3
+    image: helxplatform/appstore:context_config-0.2
+#    image: helxplatform/appstore:oidc-0.18
     volumes:
-      - $HOME/.kube/config:/home/appstore/.kube/config
+      - $HOME/.kube/local:/home/appstore/.kube/config
       - $HOME/.minikube/:$HOME/.minikube/
     env_file:
       - .env
