@@ -59,6 +59,6 @@ build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
 #publish.image: Push the Docker image
-publish: build build.test
+publish: build
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 	docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
