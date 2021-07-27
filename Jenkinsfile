@@ -23,7 +23,9 @@ pipeline {
         }
         stage('Publish') {
             when {
-                buildingTag()
+                anyOf {
+                    branch 'develop'; buildingTag()
+                }
             }
             environment {
                 DOCKERHUB_CREDS = credentials('rencibuild_dockerhub_machine_user')
