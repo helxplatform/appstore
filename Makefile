@@ -1,6 +1,7 @@
 PYTHON          := /usr/bin/env python3
 VERSION_FILE    := ./appstore/appstore/_version.py
 VERSION         := $(shell grep __version__ ${VERSION_FILE} | cut -d " " -f 3 ${VERSION_FILE} | tr -d '"')
+COMMIT_HASH		:= $(shell git rev-parse --short HEAD)
 DOCKER_REGISTRY := docker.io
 DOCKER_OWNER    := helxplatform
 DOCKER_APP	    := appstore
@@ -53,6 +54,8 @@ start:
 #build: Build the Docker image
 build:
 	docker build --no-cache --pull -t ${DOCKER_IMAGE} -f Dockerfile .
+	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}-${COMMIT_HASH}
 
 #build.test: Test the Docker image (requires docker compose)
 build.test:
@@ -60,5 +63,5 @@ build.test:
 
 #publish.image: Push the Docker image
 publish: build
-	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 	docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+	docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}-${COMMIT_HASH}
