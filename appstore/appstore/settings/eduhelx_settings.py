@@ -3,12 +3,12 @@ from product.configuration import ProductSettings, ProductColorScheme, ProductLi
 
 # TODO remove Application brand once the new frontend is complete and
 # the django templates in core are removed.
-APPLICATION_BRAND = "braini"
+APPLICATION_BRAND = "eduhelx"
 
 PRODUCT_SETTINGS = ProductSettings(
-    brand="braini",
-    title="Brain-I",
-    logo_url="/static/images/braini/braini-lg-gray.png",
-    color_scheme=ProductColorScheme("#666666", "#e6e6e6"),
-    links=[ProductLink("Image Download", IMAGE_DOWNLOAD_URL)],
+    brand="eduhelx",
+    title="EduHeLx",
+    logo_url="/static/images/eduhelx/logo.png",
+    color_scheme=ProductColorScheme("#666666", "#e6e6e6"), #TBD
+    links=[],
 )

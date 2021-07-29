@@ -99,6 +99,9 @@ MIDDLEWARE = [
 ]
 
 SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
+EXPORTABLE_ENV = os.environ.get("EXPORTABLE_ENV",None)
+if EXPORTABLE_ENV != None: EXPORTABLE_ENV = EXPORTABLE_ENV.split(':')
+else: EXPORTABLE_ENV = []
 
 AUTHENTICATION_BACKENDS = (
     "django.contrib.auth.backends.RemoteUserBackend",
@@ -113,8 +116,8 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
-ACCOUNT_LOGOUT_REDIRECT_URL = "/"
-LOGIN_REDIRECT_URL = "/apps/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/helx"
+LOGIN_REDIRECT_URL = "/helx"
 LOGIN_URL = "/accounts/login"
 LOGIN_WHITELIST_URL = "/login_whitelist/"
 OIDC_SESSION_MANAGEMENT_ENABLE = True
@@ -193,6 +196,7 @@ EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = "587"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "appstore@renci.org")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+RECIPIENT_EMAILS = os.environ.get("RECIPIENT_EMAILS", "")
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.environ.get("APPSTORE_DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 DEFAULT_SUPPORT_EMAIL = os.environ.get(
@@ -311,3 +315,27 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     # Add debug middleware early on so it doesn't conflict or process through
     # middleware that would disrupt in the process
     MIDDLEWARE[1:1] = DEBUG_MIDDLEWARE
+
+SAML2_AUTH = {
+    # Metadata is required, choose either remote url or local file path
+    "METADATA_AUTO_CONF_URL": "https://sso.unc.edu/metadata/unc",
+    # Optional settings below
+    "DEFAULT_NEXT_URL": "/helx/",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
+    "CREATE_USER": "TRUE",  # Create a new Django user when a new user logs in. Defaults to True.
+    "NEW_USER_PROFILE": {
+        "USER_GROUPS": [],  # The default group name when a new user logs in
+        "ACTIVE_STATUS": True,  # The default active status for new users
+        "STAFF_STATUS": True,  # The staff status for new users
+        "SUPERUSER_STATUS": False,  # The superuser status for new users
+    },
+    "ATTRIBUTES_MAP": {  # Change Email/UserName/FirstName/LastName to corresponding SAML2 userprofile attributes.
+        "email": "mail",
+        "username": "uid",
+        "first_name": "givenName",
+        "last_name": "sn",
+    },
+    "ASSERTION_URL": os.environ.get("SAML2_AUTH_ASSERTION_URL"),
+    "ENTITY_ID": os.environ.get(
+        "SAML2_AUTH_ENTITY_ID"
+    ),  # Populates the Issuer element in authn request
+}

@@ -1,6 +1,7 @@
 PYTHON          := /usr/bin/env python3
 VERSION_FILE    := ./appstore/appstore/_version.py
 VERSION         := $(shell grep __version__ ${VERSION_FILE} | cut -d " " -f 3 ${VERSION_FILE} | tr -d '"')
+COMMIT_HASH		:= $(shell git rev-parse --short HEAD)
 DOCKER_REGISTRY := docker.io
 DOCKER_OWNER    := helxplatform
 DOCKER_APP	    := appstore
@@ -8,7 +9,7 @@ DOCKER_TAG      := ${VERSION}
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
-BRANDS          := braini cat heal restartr scidas
+BRANDS          := braini cat heal restartr scidas eduhelx
 MANAGE	        := ${PYTHON} appstore/manage.py
 SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
 
@@ -45,6 +46,7 @@ start:
 	${MANAGE} addingwhitelistedsocialapp
 	${MANAGE} shell < bin/superuser.py
 	${MANAGE} shell < bin/authorizeuser.py
+	if [ "${CREATE_TEST_USERS}" = "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=5
@@ -52,12 +54,14 @@ start:
 #build: Build the Docker image
 build:
 	docker build --no-cache --pull -t ${DOCKER_IMAGE} -f Dockerfile .
+	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}-${COMMIT_HASH}
 
 #build.test: Test the Docker image (requires docker compose)
 build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
 #publish.image: Push the Docker image
-publish: build build.test
-	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+publish: build
 	docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
+	docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}-${COMMIT_HASH}
