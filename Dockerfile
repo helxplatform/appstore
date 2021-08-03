@@ -1,8 +1,11 @@
 # use the ui container to pull in webpack artifacts
-FROM helxplatform/helx-ui:2.0.0-dev.0 as builder
+FROM helxplatform/helx-ui:connect-0.1 as builder
 
+RUN npm run build
+
+###
 FROM python:3.9.0-slim
-
+#
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
@@ -20,11 +23,12 @@ RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && 
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
 	apt-get install -y build-essential git xmlsec1
-   
+
 WORKDIR $APP_HOME
 COPY . .
-COPY --from=builder /usr/share/nginx/html/index.html ./appstore/frontend/templates/frontend
-COPY --from=builder /usr/share/nginx/static/ ./appstore/frontend/static
+
+COPY --from=builder /usr/src/app/build/index.html ./appstore/frontend/templates/frontend
+COPY --from=builder /usr/src/app/build/static ./appstore/frontend/static
 
 RUN make install
 
