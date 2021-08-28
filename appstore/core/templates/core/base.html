@@ -12,6 +12,8 @@
     <title>Restarting Research</title>
     {% elif APPLICATION_BRAND == "eduhelx" %}
     <title>EduHelx</title>
+    {% elif APPLICATION_BRAND == "argus" %}
+    <title>Argus Array</title>
     {% else %}
     <title>HeLx AppStore</title>
     {% endif %}
@@ -56,6 +58,9 @@
             {% elif APPLICATION_BRAND == "heal" %}
             <a href="/"><img class="navbar-brand navbar-brand-heal" id="img-brand-heal-logo" src="{% static "images/heal/logo.png" %}"
                              alt="HEAL Logo"></a>
+            {% elif APPLICATION_BRAND == "argus" %}
+            <a href="/"><img class="navbar-brand navbar-brand-argus" id="img-brand-argus-logo" src="{% static "images/argus/argus-array-256.png" %}"
+                             alt="Argus Array Logo"></a>
             {% elif APPLICATION_BRAND == "eduhelx" %}
             <a href="/"><img class="navbar-brand" id="img-brand-eduhelx-logo" src="{% static "images/eduhelx/logo.png" %}"
                              alt="EduHelx Logo"></a>
