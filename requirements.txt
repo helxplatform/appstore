@@ -14,5 +14,5 @@ python3-openid==3.1.0
 requests==2.20.1
 requests-oauthlib==1.3.0 
 selenium==3.141.0 
-tycho-api==1.0.26
+tycho-api==1.0.27
 webdriver-manager==3.2.1 
