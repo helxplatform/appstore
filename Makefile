@@ -55,7 +55,7 @@ start:
 	if [ "${CREATE_TEST_USERS}" = "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
-	#bash /usr/src/inst-mgmt/bin/populate_env.sh /usr/src/inst-mgmt/appstore/static/frontend/env.json
+	bash /usr/src/inst-mgmt/bin/populate_env.sh /usr/src/inst-mgmt/appstore/static/frontend/env.json
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
 
 #build: Build the Docker image
