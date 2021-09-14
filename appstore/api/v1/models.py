@@ -22,6 +22,7 @@ class App:
     detail: str
     docs: str
     spec: str
+    count: int
     minimum_resources: dict
     maximum_resources: dict
 
