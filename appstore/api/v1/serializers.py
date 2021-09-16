@@ -42,6 +42,7 @@ class AppDetailSerializer(serializers.Serializer):
     detail = serializers.CharField()
     docs = serializers.CharField()
     spec = serializers.CharField()
+    count = serializers.IntegerField()
     minimum_resources = serializers.DictField()
     maximum_resources = serializers.DictField()
 

@@ -166,6 +166,7 @@ class AppViewSet(viewsets.GenericViewSet):
                     app_data["details"],
                     app_data["docs"],
                     app_data["spec"],
+                    app_data["count"],
                     asdict(
                         Resources(
                             reservations.get("cpus", 0),
@@ -211,6 +212,7 @@ class AppViewSet(viewsets.GenericViewSet):
             app_data["details"],
             app_data["docs"],
             app_data["spec"],
+            app_data["count"],
             asdict(
                 Resources(
                     reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
