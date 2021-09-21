@@ -18,9 +18,8 @@ logging.basicConfig(format=FORMAT)
 
 class AllowWhiteListedUserOnly(MiddlewareMixin):
     def process_request(self, request):
-        logger.info(request)
         user = request.user
-        logger.info(f"testing user: {user}")
+        logger.debug(f"testing user: {user}")
         if user.is_authenticated and not user.is_superuser:
             if not any(
                 [
@@ -36,11 +35,11 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
             ):
 
                 if self.is_authorized(user):
-                    logger.info(f"Adding user {user} to whitelist")
+                    logger.debug(f"Adding user {user} to whitelist")
                     whitelist_group = Group.objects.get(name="whitelisted")
                     user.groups.add(whitelist_group)
                 else:
-                    logger.info(f"Filtering user {user} is not authorized")
+                    logger.debug(f"Filtering user {user} is not authorized")
                     self.clear_session(request)
                     try:
                         # This will fail if email isn't setup correctly and won't
@@ -65,9 +64,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
     @staticmethod
     def is_authorized(user):
         if AuthorizedUser.objects.filter(email=user.email).exists():
-            logger.info(f"found user email {user.email} in AuthorizedUser")
+            logger.debug(f"found user email {user.email} in AuthorizedUser")
             return True
-        logger.info(f"user email {user.email} not found in AuthorizedUser")
+        logger.debug(f"user email {user.email} not found in AuthorizedUser")
         return False
 
     @staticmethod
@@ -78,7 +77,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
 
     @staticmethod
     def send_whitelist_email(request, user):
-        print("sending email")
+        logger.debug("sending email")
 
         recipient_list_string = settings.RECIPIENT_EMAILS
         recipient_list = recipient_list_string.split(",")
@@ -96,7 +95,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
             + settings.ADMIN_URL
             + "."
         )
-        print(msg)
+        logger.debug(msg)
 
         send_mail(
             "Whitelisting Required",

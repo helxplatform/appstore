@@ -63,8 +63,6 @@ THIRD_PARTY_APPS = [
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
-    "allauth.socialaccount.providers.github",
-    "allauth.socialaccount.providers.google",
     "corsheaders",
     "crispy_forms",
     "rest_framework",
@@ -79,6 +77,11 @@ LOCAL_APPS = [
     "middleware",
     "product",
 ]
+
+OAUTH_PROVIDERS = os.environ.get("OAUTH_PROVIDERS", "").split(",")
+for PROVIDER in OAUTH_PROVIDERS:
+    if PROVIDER != '':
+        THIRD_PARTY_APPS.append(f"allauth.socialaccount.providers.{PROVIDER}")
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 

@@ -1,4 +1,4 @@
-# AppStore Overview
+# AppStore Overview.
 
 ## Introduction
 

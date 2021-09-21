@@ -264,6 +264,7 @@ def get_brand_details(brand):
             "logo": "restartingresearch.png",
         },
         "heal": {"name": "NIH Heal Initiative", "logo": "logo.png"},
+        "argus": {"name": "Argus Array", "logo": "argus-array-256.png"},
         "eduhelx": {"name": "EduHelx", "logo": "logo.png"},
     }[brand]
 
@@ -317,7 +318,8 @@ class IndexView(LoginView):
     """
 
     template_name = "core/index.html"
-    success_url = reverse_lazy("apps")
+    login_redirect_url = settings.LOGIN_REDIRECT_URL
+    success_url = reverse_lazy(login_redirect_url.strip("/"))
     redirect_field_name = "next"
 
     def get(self, request, *args, **kwargs):
