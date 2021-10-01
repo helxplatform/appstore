@@ -29,10 +29,11 @@ pipeline {
             }
             environment {
                 DOCKERHUB_CREDS = credentials('rencibuild_dockerhub_machine_user')
+                DOCKER_REGISTRY = "harbor2.renci.org"
             }
             steps {
                 sh '''
-                echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin
+                echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin $DOCKER_REGISTRY
                 make publish
                 '''
             }

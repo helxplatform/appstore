@@ -1,10 +1,22 @@
 PYTHON          := /usr/bin/env python3
 VERSION_FILE    := ./appstore/appstore/_version.py
 VERSION         := $(shell grep __version__ ${VERSION_FILE} | cut -d " " -f 3 ${VERSION_FILE} | tr -d '"')
-COMMIT_HASH		:= $(shell git rev-parse --short HEAD)
-DOCKER_REGISTRY := docker.io
+COMMIT_HASH     := $(shell git rev-parse --short HEAD)
+
+# If env defines a registry, use it, else use the default
+DEFAULT_REGISTRY := docker.io
+ifdef DOCKER_REGISTRY
+ifeq "$(origin DOCKER_REGISTRY)" "environment"
+DOCKER_REGISTRY := ${DOCKER_REGISTRY}
+else
+DOCKER_REGISTRY := ${DEFAULT_REGISTRY}
+endif
+else
+DOCKER_REGISTRY := ${DEFAULT_REGISTRY}
+endif
+
 DOCKER_OWNER    := helxplatform
-DOCKER_APP	    := appstore
+DOCKER_APP      := appstore
 DOCKER_TAG      := ${VERSION}
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY      := $(shell openssl rand -base64 12)
