@@ -28,8 +28,8 @@ pipeline {
                 }
             }
             environment {
-                DOCKERHUB_CREDS = credentials(${env.REGISTRY_CREDS_ID_STR})
-                DOCKER_REGISTRY = ${env.DOCKER_REGISTRY}
+                DOCKERHUB_CREDS = credentials("${env.REGISTRY_CREDS_ID_STR}")
+                DOCKER_REGISTRY = "${env.DOCKER_REGISTRY}"
             }
             steps {
                 sh '''
