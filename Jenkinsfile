@@ -28,8 +28,8 @@ pipeline {
                 }
             }
             environment {
-                DOCKERHUB_CREDS = credentials('rencibuild_dockerhub_machine_user')
-                DOCKER_REGISTRY = "harbor2.renci.org"
+                DOCKERHUB_CREDS = credentials(${env.REGISTRY_CREDS_ID_STR})
+                DOCKER_REGISTRY = ${env.DOCKER_REGISTRY}
             }
             steps {
                 sh '''
