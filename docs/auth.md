@@ -65,7 +65,7 @@ view a page after being logged in
 1. Assuming a user logged in and whitelisted `User` Django sets up a session, and allauth
 stores a token for the user in `socialaccount_socialtoken`
 ![Social Auth Table](./assets/images/social-auth-socialaccount-socialtoken.png)
-1. Inside of `core/views.py` there is a [Django signal receiver](https://docs.djangoproject.com/en/3.1/topics/signals/#connecting-receiver-functions)
+1. Inside of `core/views.py` there is a [Django signal receiver](https://docs.djangoproject.com/en/3.2/topics/signals/#connecting-receiver-functions)
 that connects to an [allauth signal](https://django-allauth.readthedocs.io/en/latest/signals.html?highlight=pre_social_login#allauth-socialaccount)
 and adds the user token as `Authorization` to the session
 1. The user is now authenticated and able to navigate to the apps page or other endpoints

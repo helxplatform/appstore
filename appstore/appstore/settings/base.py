@@ -19,7 +19,7 @@ ALLOWED_HOSTS = [
     "0.0.0.0",
 ]
 
-# Generic Django settings https://docs.djangoproject.com/en/3.1/ref/settings/
+# Generic Django settings https://docs.djangoproject.com/en/3.2/ref/settings/
 ADMIN_URL = "/admin"
 APPEND_SLASH = True
 LANGUAGE_CODE = "en-us"
