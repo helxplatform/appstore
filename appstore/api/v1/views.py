@@ -340,28 +340,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
             system.identifier,
         )
 
-        # TODO: better status capture from Tycho on submission
-        if s:
-            serializer = InstanceSpecSerializer(data=asdict(s))
-            try:
-                serializer.is_valid(raise_exception=True)
-                return Response(serializer.validated_data)
-            except serializers.ValidationError:
-                # Delete invalid instance configuration that we won't be tracking
-                # for the user.
-                tycho.delete({"name": system.services[0].identifier})
-                return Response(
-                    serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST
-                )
-        else:
-            # Failed to construct a tracked instance, attempt to remove
-            # potentially created instance rather than leaving it hanging.
-            tycho.delete({"name": system.services[0].identifier})
-            return Response(
-                {"message": "failed to submit app start."},
-                status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-
     def retrieve(self, request, sid=None):
         """
         Provide active instance details.
