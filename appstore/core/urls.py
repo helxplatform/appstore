@@ -7,7 +7,6 @@ from .views import (
     IndexView,
     ProbeServices,
     auth,
-    list_services,
     login_whitelist,
 )
 
