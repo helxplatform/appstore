@@ -46,8 +46,6 @@ ALLOW_SAML_LOGIN = os.environ.get("ALLOW_SAML_LOGIN", "True").lower()
 IMAGE_DOWNLOAD_URL = os.environ.get(
     "IMAGE_DOWNLOAD_URL", "https://braini-metalnx.renci.org/metalnx"
 )
-# Determine whitelist middleware behavior, see middleware for explanation.
-WHITELIST_REDIRECT = os.environ.get("WHITELIST_REDIRECT", "true").lower()
 
 DJANGO_APPS = [
     "django.contrib.admin",

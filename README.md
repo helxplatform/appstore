@@ -59,7 +59,6 @@ During development, environment variables can be set to control execution:
 | APPSTORE_DEFAULT_FROM_EMAIL                 | Default email address for appstore.                               |
 | APPSTORE_DEFAULT_SUPPORT_EMAIL              | Default support email for appstore.                               |
 | ACCOUNT_DEFAULT_HTTP_PROTOCOL               | Allows to switch between http and https protocol.                 |
-| WHITELIST_REDIRECT                          | Toggle authorized user middleware to redirect or raise a 403.     |
 
 The provided .env.sample contains a starter that you can update and source for
 development.
