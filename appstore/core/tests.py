@@ -38,15 +38,6 @@ class AppTests(TestCase):
         response = self.client.get('/start?app_id=x&cpu=0.5&gpu=0&memory=2G')
         self.assertEqual(response.status_code, 301)
 
-    def test_app_delete(self):
-        """ Test deleting a running app. """
-        logger.info(f"-- testing app delete")
-        response = self.client.post("/list_pods/", {
-            "id": "xyz",
-            'action': 'delete'
-        })
-        self.assertEqual(response.status_code, 302)
-
     def test_auth_loggedin_admin_user(self):
         """Test the auth endpoint for a logged in User"""
         logger.info(f"-- testing auth endpoint for logged in admin user")

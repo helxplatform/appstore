@@ -222,21 +222,6 @@ class ProbeServices(generic.View):
             pass  # we're testing connectivity and this URL is failing to connect.
         return JsonResponse(result)
 
-
-def list_services(request):
-    """ Should probably move this to an Ajax JSON request like the probe. """
-    if request.method == "POST":
-        action = request.POST.get("action")
-        sid = request.POST.get("id")
-        logger.debug(f"-- action: {action} sid: {sid}")
-        if action == "delete":
-            logger.debug(f"-- deleting: {sid}")
-            response = tycho.delete({"name": sid})
-            sleep(2)
-            logger.debug(f"-- delete response: status: {response}")
-    return HttpResponseRedirect("/apps/")
-
-
 def login_whitelist(request):
     full_brand = get_brand_details(settings.APPLICATION_BRAND)["name"]
     logger.debug(
