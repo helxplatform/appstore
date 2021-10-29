@@ -381,3 +381,216 @@ in the frontend Django app, stop and remove the container. You can then run
 If changes need to happen to the frontend artifacts (react components, etc) those
 changes will need to be done in the `helx-ui` repo which has instructions for
 developing the frontend and testing appstore integration.
+
+
+## Coordination of Development for Tycho and Appstore
+
+Tycho is a library that provides a facility and API to manipulate launch and 
+get state information for kubernetes objects in a more simplistic manner.
+Appstor relies on this facility to launch apps as defined by an external 
+repository  and then later query/manager those objects afterwards.  Thus,
+Tycho is an Appstore dependency.  It's functionality is made available as
+a python package, and changes to tycho are accessed through an updated
+package.  During the development process this can be accomplished by either
+using a published package or using a locally created package.
+
+### Setting up the tycho repo for development
+
+Following the gitflow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow),
+perform the following
+
+    git clone git@github.com:helxplatform/tycho.git
+    cd tycho
+    git checkout develop
+    git checkout -b <new feature-branch name>
+
+
+### Install build support packages
+
+    pip install setuptools==53.0.0
+    pip install wheel==0.36.2
+    pip install twine==3.3.0
+
+### Method 1 Publish a new tycho package
+
+#### Create a pypi account and establish credentials
+
+1. Log into pypi.org with credentials from helx-pypi-credentials.txt in Keybase
+2. Go to Account Settings->API Tokens and generate a new token
+  - don’t limit its scope to a new project
+  - copy the token before you exit the screen
+  - create a ~/.pypirc file with this content
+
+    [pypi]
+      username = __token__
+      password = <pypi-token>
+
+#### Publishing
+
+This will build Tyco with your updates and publish a package to pypi.org
+
+1.  Update version in /tycho.__init__.py
+
+Use the  .dev* suffix for test versions
+
+2. publish
+
+    python setup.py publish
+
+#### Updating Appstore
+ 
+1. Go to appstore code base and update tycho version in following files `requirements.txt`
+and `setup.cfg` created in the publishing step
+
+2. build and publish appstore
+
+### Method 2 Incorporate Local Tycho
+
+1. Build a local .whl
+
+    python setup.py bdist_wheel
+
+2. Copy the .whl to appstore/whl
+
+3. Copy .whl to appstore with altered `Dockerfile` `docker-compose.yml` and `requirements.txt`
+
+- Add the following line to Dockerfile
+
+    RUN pip install whl/*.whl
+
+- alter docker-compose to produce an image named using a controlled tag
+
+    image: <username>/appstore:<tag>
+
+- Remove/Comment the tycho requirement from requirements.txt
+
+## Cluster Kubernetes Config
+
+Two files are provided, a kubeconfig which is used by helm and kubectl to define how
+to connect to the BlackBalsam cluster, and a helm values yaml file (BB-values) used to override 
+the default values established by a one time initialization described below.
+
+### Github config
+
+It's easier to just get a github oauth application set up, navigate to
+`github->Settings->Developer Setting->OAuth Apps` and create a new OAuth App.
+The name is arbitrary, but should have something to do with BlackBalsam and
+Kubernetes as that's what it will authorize.  There needs to be a `homepage url`
+and a `authorization callback url` set as follows.
+
+    homepage url: https://helx.<your namespace>.blackbalsam-cluster.edc.renci.org/accounts/login
+    authorization callback url: https://helx.<your namespace>.blackbalsam-cluster.edc.renci.org/accounts/github/login/callback/
+
+Create the app, and add a secret.  The client id and secret need to be copied
+into BB-values.
+
+    GITHUB_CLIENT_ID: "<the client id>"
+    GITHUB_SECRET: "<the secret>"
+
+### Configuration using Helm
+
+Value files should only contain those things which are not the default, to create the default values,
+the following commands need to be run 1 time per namespace (usually there will only be 1 namespace).
+
+That the top level directory of the devops repo, set the branch to develop
+
+#### To obtain helm configs
+
+    git clone git@github.com:helxplatform/devops.git
+
+and then switch to the develop branch
+
+    git checkout develop
+
+and execute the following helm commands
+
+    cd helx && helm dependency update && cd -
+    cd helx/charts/dug && helm dependency update && cd -
+    cd helx/charts/helx-monitoring && helm dependency update && cd -
+    cd helx/charts/image-utils && helm dependency update && cd -
+    cd helx/charts/roger && helm dependency update && cd -
+    cd helx/charts/search && helm dependency update && cd -
+
+followed up by the specializing config
+
+    helm -n <namespace> upgrade --install helx devops/helx --values <BB-values>
+## Helm Configuration
+
+The configuration variables that control the configuration of Appstore are transmitted from helm
+and as part of helm creation, the following values are typical
+
+appstore:
+  image:
+    repository: <imagename>
+    tag: <branchname>
+    pullPolicy: Always
+  django:
+    AUTHORIZED_USERS: <a list emails of authorized users>
+    EMAIL_HOST_USER: "appstore@renci.org"
+    EMAIL_HOST_PASSWORD: <secret>
+    DOCKSTORE_APPS_BRANCH: <appstore branch>
+    oauth:
+      OAUTH_PROVIDERS: "github,google"
+      GITHUB_NAME: <github name>
+      GITHUB_CLIENT_ID: <github id>
+      GITHUB_SECRET: <github secret>
+      GOOGLE_NAME: <google name>
+      GOOGLE_CLIENT_ID: <google client id>
+      GOOGLE_SECRET: <google client secret>
+  ACCOUNT_DEFAULT_HTTP_PROTOCOL: https
+  appstoreEntrypointArgs: "make start"
+  userStorage:
+    createPVC: true
+nfs-server:
+  enabled: false
+nginx:
+  service:
+    IP: <nginx ip>
+    serverName: <appstore dns hostname>
+  SSL:
+    nginxTLSSecret: <tls secret>
+
+### Parameters given by system administration
+
+As part of user configuration, system administration will obtain the following
+
+  - OAUTH_PROVIDERS
+  - GITHUB_NAME
+  - GITHUB_CLIENT_ID
+  - GITHUB_SECRET
+  - GOOGLE_NAME
+  - GOOGLE_CLIENT_ID
+  - GOOGLE_SECRET
+  - serverName
+  - IP
+  - nginxTLSSecret
+  - AUTHORIZED_USERS
+
+### Typical configurable values
+
+#### Image Name
+
+- Parameter Name: repository
+
+In the form of <username>/appstore and corresponds to the `docker push` used to push the
+appstore image resulting from the build process.
+
+#### Image Tag
+
+- Parameter Name: tag
+
+Also a parameter to the publiished image
+
+#### Image Pull Rules
+
+- Parameter Name: pullPolicy
+- Typical Value: Always
+
+A value of always guarantees that the image will be updated upon helm create if it is different than the
+currently used one and is underpins the simple cycle push to docker, helm delete, follow by helm create
+
+#### Dockstore Branch
+
+- Parameter Name: DOCKSTORE_APPS_BRANCH
+
+Indicates the branch contains the dockstore kubernetes app launch parameters
