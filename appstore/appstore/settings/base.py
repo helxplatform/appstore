@@ -179,8 +179,12 @@ DB_DIR = Path(os.environ.get("OAUTH_DB_DIR", DJANGO_PROJECT_ROOT_DIR))
 DB_FILE = Path(os.environ.get("OAUTH_DB_FILE", "DATABASE.sqlite3"))
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": DB_DIR / DB_FILE,
+        "ENGINE": f"django.db.backends.{os.environ.get('PG_DB_ENGINE', 'postgresql')}",
+        "NAME": os.environ.get("PG_DB_DATABASE", "appstore-oauth"),
+        "USER": os.environ.get("PG_DB_USERNAME", "renci"),
+        "PASSWORD": os.environ.get("PG_DB_PASSWORD", "renci"),
+        "HOST": os.environ.get("PG_DB_HOST", "appstore-postgresql"),
+        "PORT": os.environ.get("PG_DB_PORT", "5432"),
     }
 }
 
