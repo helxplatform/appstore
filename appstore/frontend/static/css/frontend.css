@@ -762,7 +762,7 @@ img#img-brand-logo {
     width: 100%;
     object-fit: scale-down;
     max-width: 5em;
-    padding: 0;
+    padding: 2px;
     margin: 0;
     position: absolute;
     top: 50%;
