@@ -178,14 +178,15 @@ SPECTACULAR_DEFAULTS = {
 DB_DIR = Path(os.environ.get("OAUTH_DB_DIR", DJANGO_PROJECT_ROOT_DIR))
 DB_FILE = Path(os.environ.get("OAUTH_DB_FILE", "DATABASE.sqlite3"))
 
-if DEV_PHASE == "prod":
+# Default DEV_PHASE is always local, which enables sqlite3.
+if DEV_PHASE in ["prod", "dev"]:
     DATABASES = {
         "default": {
             "ENGINE": f"django.db.backends.{os.environ.get('PG_DB_ENGINE', 'postgresql')}",
-            "NAME": os.environ.get("PG_DB_DATABASE", "appstore-oauth"),
-            "USER": os.environ.get("PG_DB_USERNAME", "renci"),
-            "PASSWORD": os.environ.get("PG_DB_PASSWORD", "renci"),
-            "HOST": os.environ.get("PG_DB_HOST", "appstore-postgresql"),
+            "NAME": os.environ.get("PG_DB_DATABASE", "postgres"),
+            "USER": os.environ.get("PG_DB_USERNAME", "postgres"),
+            "PASSWORD": os.environ.get("PG_DB_PASSWORD", "postgres"),
+            "HOST": os.environ.get("PG_DB_HOST", "0.0.0.0"),
             "PORT": os.environ.get("PG_DB_PORT", "5432"),
         }
     }
