@@ -2,7 +2,6 @@ import logging
 import os
 from time import sleep
 import uuid
-import urllib
 
 from allauth.account.views import LoginView
 from allauth.socialaccount.signals import pre_social_login
