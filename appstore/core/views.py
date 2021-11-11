@@ -2,6 +2,7 @@ import logging
 import os
 from time import sleep
 import uuid
+import urllib
 
 from allauth.account.views import LoginView
 from allauth.socialaccount.signals import pre_social_login
@@ -186,21 +187,6 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
                 system,
             ),
         }
-
-
-class AppConnect(LoginRequiredMixin, generic.TemplateView):
-    """ Show a splash screen while starting the application. """
-
-    template_name = "core/starting.html"
-
-    def get_context_data(self, *args, **kwargs):
-        """ Return to a running application. """
-        return {
-            "url": self.request.GET.get("url"),
-            "icon": self.request.GET.get("icon"),
-            "name": self.request.GET.get("name"),
-        }
-
 
 class ProbeServices(generic.View):
     """Do a quick network connectivity test on an app endpoint.
