@@ -46,9 +46,9 @@ class AppTests(TestCase):
         response = self.client.get("/auth/")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(isinstance(response, HttpResponse))
-        header_ak, access_token = response._headers.get("access_token")
+        access_token = response.headers.get("ACCESS_TOKEN")
         self.assertEqual(access_token, "")
-        header_rm, remote_user = response._headers.get("remote_user")
+        remote_user = response.headers.get("REMOTE_USER")
         self.assertEqual(remote_user, "admin")
 
     def test_auth_nonloggedin_user(self):
