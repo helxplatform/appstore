@@ -20,8 +20,8 @@ template='{
 }'
 
 echo $template | sed \
-  -e "s/%WORKSPACES_ENABLED%/$workspaces_enabled/" \
-  -e "s/%SEARCH_ENABLED%/$search_enabled/" \
-  -e "s/%SEARCH_URL%/$search_url/" \
-  -e "s/%BRAND%/$brand_name/" \
-  > $1
+     -e "s+%WORKSPACES_ENABLED%+$workspaces_enabled+" \
+     -e "s+%SEARCH_ENABLED%+$search_enabled+" \
+     -e "s+%SEARCH_URL%+$search_url+" \
+     -e "s+%BRAND%+$brand_name+" \
+     > $1
