@@ -205,7 +205,7 @@ source venv/bin/activate
 - Install the requirements
 
 > NOTE: To work with a custom Tycho version and appstore locally comment
-> `tycho-api` in requirements.txt and add Tycho to your `PYTHON_PATH`. At this
+> `tycho-api` in requirements.txt and setup.cfg and add Tycho to your `PYTHON_PATH`. At this
 > stage you should reference the Tycho note below then return to this step.
 
 ```bash
