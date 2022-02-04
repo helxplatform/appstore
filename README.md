@@ -82,6 +82,19 @@ is provided, that is used as the application's icon.
 
 ## Development Environment
 
+#### Prerequisites
+
+The appstore default database engine is postgresql. To setup a postgresql docker
+container, the following steps are required.
+```  
+make build.postgresql
+```
+
+To use sqlite3 as the database backend,
+```
+export DEV_PHASE=local
+```
+
 ### Local Development
 
 For local development you should have Python 3, a python virtual environment dedicated
