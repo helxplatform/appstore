@@ -272,9 +272,7 @@ source .env
 ```bash
 make
 make install
-make appstore.frontend brand=cat
-make appstore.all brand=cat
-make appstore.start brand=cat
+make start brand=cat
 ```
 
 Appstore is now up and running. You should be able to see output from `gunicorn`
