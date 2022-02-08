@@ -130,13 +130,13 @@ Install requirements
 
 > NOTE: The below command will install requirements necessary for appstore which includes 
 > Tycho pypi package, and it's requirements.
-> Skip to [Cloning Tycho locally](#With Tycho cloned locally) to work on simultaneous changes to both projects.
+> Skip to [Cloning Tycho locally](#with-tycho-cloned-locally) to work on simultaneous changes to both projects.
 
 ```
 make install
 ```
 
-#### With Tycho cloned locally
+####With Tycho cloned locally
 
 > NOTE: To work with Tycho and appstore locally comment
 > `tycho-api` in requirements.txt and setup.cfg.
