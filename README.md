@@ -136,7 +136,7 @@ Install requirements
 make install
 ```
 
-####With Tycho cloned locally
+#### With Tycho cloned locally
 
 > NOTE: To work with Tycho and appstore locally comment
 > `tycho-api` in requirements.txt and setup.cfg.
