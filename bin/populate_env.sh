@@ -15,6 +15,7 @@ tranql_url="${REACT_APP_TRANQL_URL:-\/tranql}"
 analytics="${REACT_APP_ANALYTICS:-0c39f8410fd548bfa1976957d0248289}"
 hidden_support_sections="${REACT_APP_HIDDEN_SUPPORT_SECTIONS}"
 
+
 template='{
     "brand": "%BRAND%",
     "color_scheme": { "primary": "#8a5a91", "secondary": "#505057" },
@@ -35,7 +36,7 @@ template='{
 }'
 
 echo $template | sed \
-  -e "+/%WORKSPACES_ENABLED%+$workspaces_enabled+" \
+  -e "s+%WORKSPACES_ENABLED%+$workspaces_enabled+" \
   -e "s+%SEARCH_ENABLED%+$search_enabled+" \
   -e "s+%SEARCH_URL%+$search_url+" \
   -e "s+%BRAND%+$brand_name+" \
