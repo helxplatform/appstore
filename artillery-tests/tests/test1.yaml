@@ -1,0 +1,87 @@
+config:
+  target: "http://localhost:8000"
+  processor: "../helpers.js"
+  environments:
+    load:
+      phases:
+        - duration: 5
+          arrivalRate: 5
+    smoke:
+      phases:
+        - duration: 1
+          arrivalRate: 1
+      ensure:
+        maxErrorRate: 0
+      plugins:
+        expect: {}
+before:
+  name: "Simple login"
+  flow:
+    - log: "Get CSRF and login"
+    - get:
+        url: "/"
+        expect:
+          - statusCode: 200
+        afterResponse: updateSession
+    - get:
+        url: "/admin/login/"
+        # If csrftoken wasn't set in the previous request, get it now.
+        afterResponse: "updateSession"
+    - post:
+        url: "/accounts/login/"
+        formData:
+          login: admin
+          password: admin
+          csrfmiddlewaretoken: "{{ csrf_token }}"
+        expect:
+          - statusCode: 302
+          - hasHeader: set-cookie
+        afterResponse: updateSession
+scenarios:
+  - name: "Load app"
+    flow:
+      - log: "Loading initial app count"
+      - get:
+          # Count initial number of apps
+          url: "/api/v1/instances/"
+          headers:
+            Cookie: "csrftoken={{ csrf_token }}; sessionid={{ session_id }}"
+            # X-CSRFToken: "{{ csrf_token }}"
+          expect:
+            - statusCode: 200
+          beforeRequest: disableCookies
+          # The way JSONPath is implemented in Artillery makes it essentially useless for all intents and purposes.
+          # Instead, have to manually capture and parse it with JS and set the context var.
+          afterResponse:
+            - updateSession
+            - parseInitialApps
+      - log: "Creating a new app"
+      - post:
+          # Create a new app
+          url: "/api/v1/instances/"
+          headers:
+            Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
+            X-CSRFToken: "{{ csrf_token }}"
+          json:
+            app_id: octave
+            cpus: 1
+            memory: 1000M
+            gpus: 0
+          expect:
+            - statusCode: 200
+          beforeRequest: disableCookies
+          afterResponse: updateSession
+      - log: "Loading new app count"
+      - get:
+          url: "/api/v1/instances/"
+          afterResponse: parseNewApps
+      - get:
+          # Basically only way to parse the apps from the request body is manually using JS in the GET /api/v1/instances/ requests.
+          # This is because JSONPath implementation is useless (it chooses a random element if the request body returns an array, instead of just the request body array as-is).
+          # Since it needs to be parsed in afterResponse, it isn't parsed in time to use expect -> equals in the same request/
+          # Thus, it also requires an extra dummy request to be made just to use the expect plugin's functionality properly.
+          url: "/"
+          expect:
+            - equals:
+              - "{{ spawned_app.aid }}"
+              - "octave"

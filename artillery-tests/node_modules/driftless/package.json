@@ -1,0 +1,42 @@
+{
+  "name": "driftless",
+  "version": "2.0.3",
+  "description": "Driftless setInterval and setTimeout replacement for Node and the browser",
+  "keywords": [
+    "setInterval",
+    "setTimeout",
+    "precise",
+    "accurate",
+    "drift",
+    "driftless"
+  ],
+  "homepage": "https://github.com/dbkaplun/driftless",
+  "repository": "https://github.com/dbkaplun/driftless",
+  "bugs": "https://github.com/dbkaplun/driftless/issues",
+  "main": "./lib/driftless.js",
+  "scripts": {
+    "test": "npm run eslint && npm run jest",
+    "build": "rm -rf lib/ && babel -d lib/ src/",
+    "version": "npm run build && git add -A lib/ && npm test",
+    "eslint": "eslint .",
+    "jest": "jest"
+  },
+  "dependencies": {
+    "present": "^0.0.3"
+  },
+  "devDependencies": {
+    "babel-cli": "6.26.0",
+    "babel-jest": "22.4.3",
+    "babel-preset-env": "1.7.0",
+    "blessed": "0.1.81",
+    "eslint": "4.19.1",
+    "eslint-config-airbnb": "16.1.0",
+    "eslint-plugin-import": "2.11.0",
+    "eslint-plugin-jsx-a11y": "6.0.3",
+    "eslint-plugin-react": "7.8.2",
+    "jest": "22.4.3",
+    "lolex": "2.6.0"
+  },
+  "author": "Dan Kaplun <dbkaplun@gmail.com>",
+  "license": "MIT"
+}

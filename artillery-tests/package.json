@@ -1,0 +1,16 @@
+{
+  "name": "artillery-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "helpers.js",
+  "scripts": {
+    "smoke": "ls -1 ./tests | xargs -L1 -I{} npx artillery run tests/{} --quiet --environment smoke"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "artillery": "^2.0.0-11",
+    "artillery-plugin-expect": "^2.0.0-3"
+  }
+}
