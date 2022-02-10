@@ -42,12 +42,10 @@ function disableCookies(requestParams, context, ee, next) {
 function parseInitialApps(requestParams, response, context, ee, next) {
     const apps = JSON.parse(response.body);
     context.vars["apps"] = apps;
-    console.log(apps.length);
     return next();
 }
 function parseNewApps(requestParams, response, context, ee, next) {
     const apps = JSON.parse(response.body);
-
     const oldAppIds = context.vars["apps"].map((app) => app.sid);
     const spawnedApp = apps.filter((app) => !oldAppIds.includes(app.sid))[0];
     context.vars["spawned_app"] = spawnedApp;
