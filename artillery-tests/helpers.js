@@ -19,19 +19,12 @@ function updateSession(requestParams, response, context, ee, next) {
     // if (typeof context.vars["csrf_token"] === "undefined") context.vars["csrf_token"] = "";
     if (cookies.hasOwnProperty("sessionid")) {
         context.vars["session_id"] = cookies["sessionid"];
-        console.log("Update sess id");
+        // console.log("Update sess id");
     }
     if (cookies.hasOwnProperty("csrftoken")) {
         context.vars["csrf_token"] = cookies["csrftoken"];
-        console.log("Update csrf");
+        // console.log("Update csrf");
     }
-    return next();
-}
-function countApps(requestParams, response, context, ee, next) {
-    // Set app_count context variable from GET /api/v1/instances/
-    if (!context.vars.hasOwnProperty("app_count")) context.vars["app_count"] = [];
-    context.vars["app_count"].push(JSON.parse(response.body).length);
-    console.log(context.vars["app_count"]);
     return next();
 }
 function disableCookies(requestParams, context, ee, next) {
@@ -51,10 +44,16 @@ function parseNewApps(requestParams, response, context, ee, next) {
     context.vars["spawned_app"] = spawnedApp;
     return next();
 }
+function getRandomApp(requestParams, response, context, ee, next) {
+    const availableApps = Object.values(context.vars["available_apps"]);
+    context.vars["random_app"] = availableApps[Math.floor(Math.random()*availableApps.length)];
+    return next();
+}
+
 module.exports = {
     disableCookies,
     updateSession,
-    countApps,
     parseInitialApps,
-    parseNewApps
+    parseNewApps,
+    getRandomApp
 };

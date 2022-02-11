@@ -1,5 +1,8 @@
 config:
   target: "http://localhost:8000"
+  http:
+    # Give requests a 30 second window before they timeout.
+    timeout: 30
   processor: "../helpers.js"
   environments:
     load:
@@ -54,7 +57,23 @@ scenarios:
           afterResponse:
             - updateSession
             - parseInitialApps
-      - log: "Creating a new app"
+      - log: "Getting available apps"
+      - get:
+          url: "/api/v1/apps/"
+          headers:
+            Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
+            X-CSRFToken: "{{ csrf_token }}"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$"
+              as: available_apps
+          beforeRequest:
+            - disableCookies
+          afterResponse:
+            - updateSession
+            - getRandomApp
+      - log: "Spawning a new app"
       - post:
           # Create a new app
           url: "/api/v1/instances/"
@@ -62,13 +81,14 @@ scenarios:
             Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
             X-CSRFToken: "{{ csrf_token }}"
           json:
-            app_id: octave
-            cpus: 1
-            memory: 1000M
-            gpus: 0
+            app_id: "{{ random_app.app_id }}"
+            cpus: "{{ random_app.minimum_resources.cpus }}"
+            memory: "{{ random_app.minimum_resources.memory }}"
+            gpus: "{{ random_app.minimum_resources.gpus }}"
           expect:
             - statusCode: 200
-          beforeRequest: disableCookies
+          beforeRequest:
+            - disableCookies
           afterResponse: updateSession
       - log: "Confirming new app is created"
       - get:
@@ -83,7 +103,7 @@ scenarios:
           expect:
             - equals:
               - "{{ spawned_app.aid }}"
-              - "octave"
+              - "{{ random_app.app_id }}"
           afterResponse: updateSession
       - log: "Deleting new app"
       - delete:
@@ -95,7 +115,6 @@ scenarios:
             - json: "$.status"
               as: "delete_status"
           expect:
-            - statusCode: 200
             - equals:
               - "{{ delete_status }}"
               - "success"
