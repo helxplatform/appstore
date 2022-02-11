@@ -20,7 +20,7 @@ config:
 before:
   name: "Simple login"
   flow:
-    - log: "Get CSRF and login"
+    - log: "Logging in and retrieving CSRF"
     - get:
         url: "/"
         expect:
@@ -120,3 +120,14 @@ scenarios:
               - "success"
           beforeRequest: disableCookies
           afterResponse: updateSession
+      - log: "Logging out"
+      - post:
+          url: "/accounts/logout/"
+          headers:
+            Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
+            X-CSRFToken: "{{ csrf_token }}"
+          formData:
+            csrfmiddlewaretoken: "{{ csrf_token }}"
+          expect:
+            - statusCode: 302
+          beforeRequest: disableCookies
