@@ -81,7 +81,7 @@ build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
 build.postgresql:
-	docker-compose -f docker-compose-postgresql.yaml up --build
+	docker-compose -f docker-compose-postgresql.yaml up -d --build
 
 #publish.image: Push the Docker image
 publish: build
