@@ -16,6 +16,8 @@ DOCKER_REGISTRY := ${DEFAULT_REGISTRY}
 endif
 
 DOCKER_OWNER    := helxplatform
+
+
 DOCKER_APP      := appstore
 DOCKER_TAG      := ${VERSION}
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
@@ -23,12 +25,22 @@ SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
 BRANDS          := braini cat heal restartr scidas eduhelx argus
 MANAGE	        := ${PYTHON} appstore/manage.py
-SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
 
 ifdef GUNICORN_WORKERS
 NO_OF_GUNICORN_WORKERS := $(GUNICORN_WORKERS)
 else
 NO_OF_GUNICORN_WORKERS := 5
+endif
+
+ENV := $(PWD)/.env
+ifdef DEV_PHASE
+DEV_PHASE := ${DEV_PHASE}
+else
+DEV_PHASE := local
+ifeq "$(DEV_PHASE)" "local"
+include $(ENV)
+export
+endif
 endif
 
 .PHONY: help clean install test build image publish
@@ -57,8 +69,8 @@ test:
 	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings ${MANAGE} test $(APP_LIST);)
 
 #start: Run the gunicorn server
-start:
-	if [ -z ${SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
+start:	build.postgresql
+	if [ -z ${DJANGO_SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	${MANAGE} makemigrations
 	${MANAGE} migrate
 	${MANAGE} addingwhitelistedsocialapp
@@ -81,7 +93,7 @@ build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
 build.postgresql:
-	docker-compose -f docker-compose-postgresql.yaml up -d --build
+	if [ "${POSTGRES_ENABLED}" = "true" ]; then docker-compose -f docker-compose-postgresql.yaml up -d --build; fi
 
 #publish.image: Push the Docker image
 publish: build

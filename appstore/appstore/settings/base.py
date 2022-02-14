@@ -179,7 +179,8 @@ DB_DIR = Path(os.environ.get("OAUTH_DB_DIR", DJANGO_PROJECT_ROOT_DIR))
 DB_FILE = Path(os.environ.get("OAUTH_DB_FILE", "DATABASE.sqlite3"))
 
 # Default DEV_PHASE is always local, which enables sqlite3.
-if DEV_PHASE in ["prod", "dev"]:
+POSTGRES_ENABLED = os.environ.get("POSTGRES_ENABLED", "true")
+if POSTGRES_ENABLED == "true":
     DATABASES = {
         "default": {
             "ENGINE": f"django.db.backends.{os.environ.get('PG_DB_ENGINE', 'postgresql')}",
