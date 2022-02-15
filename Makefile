@@ -71,7 +71,6 @@ test:
 
 #start: Run the gunicorn server
 start:	build.postgresql
-	env
 	if [ -z ${DJANGO_SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	${MANAGE} makemigrations
 	${MANAGE} migrate
