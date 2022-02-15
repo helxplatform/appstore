@@ -94,7 +94,7 @@ build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
 build.postgresql:
-	if [ "${POSTGRES_ENABLED}" = "true" ]; then docker-compose -f docker-compose-postgresql.yaml up -d --build; fi
+	if [ "${POSTGRES_ENABLED}" = "true" && "${DEV_PHASE}" = "local" ]; then docker-compose -f docker-compose-postgresql.yaml up -d --build; fi
 
 #publish.image: Push the Docker image
 publish: build
