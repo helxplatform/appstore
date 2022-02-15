@@ -26,7 +26,9 @@ COPY . .
 COPY --from=builder /usr/share/nginx/html/index.html ./appstore/frontend/templates/frontend
 COPY --from=builder /usr/share/nginx/static/ ./appstore/frontend/static
 
-RUN make install
+RUN export DEV_PHASE=dev \
+    && make install \
+    && unset DEV_PHASE
 
 RUN chown -R 1000:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
