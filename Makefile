@@ -37,10 +37,11 @@ ifdef DEV_PHASE
 DEV_PHASE := ${DEV_PHASE}
 else
 DEV_PHASE := local
-ifeq "$(DEV_PHASE)" "local"
+endif
+
+ifeq ($(DEV_PHASE), local)
 include $(ENV)
 export
-endif
 endif
 
 .PHONY: help clean install test build image publish
@@ -70,6 +71,7 @@ test:
 
 #start: Run the gunicorn server
 start:	build.postgresql
+	env
 	if [ -z ${DJANGO_SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	${MANAGE} makemigrations
 	${MANAGE} migrate
@@ -79,7 +81,7 @@ start:	build.postgresql
 	if [ "${CREATE_TEST_USERS}" = "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
-	bash bin/populate_env.sh ./appstore/static/frontend/env.json
+	if [ "${DEV_PHASE}" != "local"]; then bash bin/populate_env.sh ./appstore/static/frontend/env.json; fi
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
 
 #build: Build the Docker image
