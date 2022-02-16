@@ -32,15 +32,16 @@ else
 NO_OF_GUNICORN_WORKERS := 5
 endif
 
-ENV := $(PWD)/.env
-ifdef DEV_PHASE
-DEV_PHASE := ${DEV_PHASE}
+# Use only when working locally
+ENV_FILE := $(PWD)/.env
+ifdef SET_BUILD_ENV_FROM_FILE
+ENVS_FROM_FILE := ${SET_BUILD_ENV_FROM_FILE}
 else
-DEV_PHASE := local
+ENVS_FROM_FILE := true
 endif
 
-ifeq ($(DEV_PHASE), local)
-include $(ENV)
+ifeq ($(ENVS_FROM_FILE), true)
+include $(ENV_FILE)
 export
 endif
 
@@ -70,7 +71,7 @@ test:
 	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings ${MANAGE} test $(APP_LIST);)
 
 #start: Run the gunicorn server
-start:	build.postgresql
+start:
 	if [ -z ${DJANGO_SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	${MANAGE} makemigrations
 	${MANAGE} migrate
@@ -93,7 +94,7 @@ build:
 build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
-build.postgresql:
+build.postgresql.local:
 	if [ "${POSTGRES_ENABLED}" = "true" && "${DEV_PHASE}" = "local" ]; then docker-compose -f docker-compose-postgresql.yaml up -d --build; fi
 
 #publish.image: Push the Docker image
