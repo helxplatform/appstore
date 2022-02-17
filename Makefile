@@ -2,6 +2,7 @@ PYTHON          := /usr/bin/env python3
 VERSION_FILE    := ./appstore/appstore/_version.py
 VERSION         := $(shell grep __version__ ${VERSION_FILE} | cut -d " " -f 3 ${VERSION_FILE} | tr -d '"')
 COMMIT_HASH     := $(shell git rev-parse --short HEAD)
+SHELL           := /bin/bash
 
 # If env defines a registry, use it, else use the default
 DEFAULT_REGISTRY := docker.io
@@ -40,7 +41,7 @@ else
 ENVS_FROM_FILE := true
 endif
 
-ifeq ($(ENVS_FROM_FILE), true)
+ifeq "${ENVS_FROM_FILE}" "true"
 include $(ENV_FILE)
 export
 endif
@@ -71,7 +72,7 @@ test:
 	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings ${MANAGE} test $(APP_LIST);)
 
 #start: Run the gunicorn server
-start:
+start:	build.postgresql.local
 	if [ -z ${DJANGO_SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	${MANAGE} makemigrations
 	${MANAGE} migrate
@@ -95,7 +96,7 @@ build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore
 
 build.postgresql.local:
-	if [ "${POSTGRES_ENABLED}" = "true" && "${DEV_PHASE}" = "local" ]; then docker-compose -f docker-compose-postgresql.yaml up -d --build; fi
+	if [[ "${POSTGRES_ENABLED}" = "true" && "${DEV_PHASE}" = "local" ]]; then docker-compose -f ./docker-compose-postgresql.yaml up -d --build; fi
 
 #publish.image: Push the Docker image
 publish: build
