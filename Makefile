@@ -82,7 +82,7 @@ start:	build.postgresql.local
 	if [ "${CREATE_TEST_USERS}" = "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
-	if [ "${DEV_PHASE}" != "local"]; then bash bin/populate_env.sh ./appstore/static/frontend/env.json; fi
+	if [[ "${DEV_PHASE}" != "local" ]]; then bash bin/populate_env.sh ./appstore/static/frontend/env.json; fi
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
 
 #build: Build the Docker image
