@@ -38,7 +38,13 @@ function parseInitialApps(requestParams, response, context, ee, next) {
     return next();
 }
 function parseNewApps(requestParams, response, context, ee, next) {
-    const apps = JSON.parse(response.body);
+    let apps;
+    try {
+        apps = JSON.parse(response.body);
+    } catch (e) {
+        // It seems that authentication can be rejected at this step.
+        return next(new Error(response.body));
+    }
     const oldAppIds = context.vars["apps"].map((app) => app.sid);
     const spawnedApp = apps.filter((app) => !oldAppIds.includes(app.sid))[0];
     context.vars["spawned_app"] = spawnedApp;

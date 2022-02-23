@@ -7,8 +7,8 @@ config:
   environments:
     load:
       phases:
-        - duration: 5
-          arrivalRate: 5
+        - duration: 1
+          arrivalRate: 2
     smoke:
       phases:
         - duration: 1
@@ -93,6 +93,8 @@ scenarios:
       - log: "Confirming new app is created"
       - get:
           url: "/api/v1/instances/"
+          expect:
+            - statusCode: 200
           afterResponse: parseNewApps
       - get:
           # Basically only way to parse the apps from the request body is manually using JS in the GET /api/v1/instances/ requests.
@@ -101,10 +103,13 @@ scenarios:
           # Thus, it also requires an extra dummy request to be made just to use the expect plugin's functionality properly.
           url: "/"
           expect:
+            - statusCode: 200
             - equals:
               - "{{ spawned_app.aid }}"
               - "{{ random_app.app_id }}"
           afterResponse: updateSession
+      # If we want to give some time for the app to startup.
+      # - think: 1
       - log: "Deleting new app"
       - delete:
           url: "/api/v1/instances/{{ spawned_app.sid }}/"
