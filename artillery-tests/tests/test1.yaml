@@ -4,6 +4,17 @@ config:
     # Give requests a 30 second window before they timeout.
     timeout: 30
   processor: "../helpers.js"
+  payload:
+    # Load login data for smoke/load environments.
+    # Load-testing login data was generated with random data.
+    # User records should be created in the DB before running.
+    path: "../payloads/{{ $environment }}-logins.csv"
+    fields:
+      - "username"
+      - "password"
+      - "email"
+    # Select a new user row each time a virtual user logs in.
+    order: random
   environments:
     load:
       phases:
@@ -33,8 +44,8 @@ before:
     - post:
         url: "/accounts/login/"
         formData:
-          login: admin
-          password: admin
+          login: "{{ username }}" 
+          password: "{{ password }}"
           csrfmiddlewaretoken: "{{ csrf_token }}"
         expect:
           - statusCode: 302
@@ -103,7 +114,6 @@ scenarios:
           # Thus, it also requires an extra dummy request to be made just to use the expect plugin's functionality properly.
           url: "/"
           expect:
-            - statusCode: 200
             - equals:
               - "{{ spawned_app.aid }}"
               - "{{ random_app.app_id }}"
