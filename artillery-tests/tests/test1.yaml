@@ -5,10 +5,10 @@ config:
     timeout: 30
   processor: "../helpers.js"
   payload:
-    # Load login data for smoke/load environments.
+    # Load login (csv) data for smoke/load environments.
     # Load-testing login data was generated with random data.
     # User records should be created in the DB before running.
-    path: "../payloads/{{ $environment }}-logins.csv"
+    path: "../payloads/{{ $environment }}/test-users/users.txt"
     fields:
       - "username"
       - "password"
