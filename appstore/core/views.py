@@ -1,27 +1,14 @@
 import logging
-import os
-from time import sleep
-import uuid
 
-from allauth.account.views import LoginView
 from allauth.socialaccount.signals import pre_social_login
 
 from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.contrib.contenttypes.models import ContentType
-from django.core.mail import EmailMessage
 from django.dispatch import receiver
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from django.urls import reverse_lazy
 from django.shortcuts import render
-from django.views import generic
-from django.views.generic.edit import FormView
-
-import requests
 
 from tycho.context import ContextFactory
-from tycho.context import Principal
 
 logger = logging.getLogger(__name__)
 
@@ -40,18 +27,6 @@ def pre_login(sender, request, sociallogin, **kwargs):
         access_token = sociallogin.token
         request.session["Authorization"] = f"Bearer {access_token}"
         logger.debug(f"----------> Adding Bearer token to the user session")
-
-
-def login_whitelist(request):
-    full_brand = get_brand_details(settings.APPLICATION_BRAND)["name"]
-    logger.debug(
-        f"-- login_whitelist: brand: {settings.APPLICATION_BRAND}, full_brand: {full_brand}"
-    )
-    return render(
-        request,
-        "core/whitelist.html",
-        {"brand": settings.APPLICATION_BRAND, "full_brand": full_brand},
-    )
 
 
 def get_brand_details(brand):
@@ -113,6 +88,7 @@ def auth(request):
             f"----------> user is not authenticated on the server ----- {request.user}"
         )
     return response
+
 
 def custom404(request, exception):
     """

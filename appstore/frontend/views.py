@@ -117,3 +117,19 @@ class HelxSpaLoaderView(TemplateView):
     @method_decorator(login_required(login_url=reverse_lazy("helx_login")))
     def dispatch(self, *args, **kwargs):
         return super(HelxSpaLoaderView, self).dispatch(*args, **kwargs)
+
+
+class LoginWhitelistView(TemplateView):
+
+    template_name = "frontend/whitelist.html"
+    brand_context = get_brand_details()
+    brand = brand_context["brand"]
+    full_brand = brand_context["title"]
+    brand_logo = brand_context["logo_url"]
+
+    def get_context_data(self, *args, **kwargs):
+        context = super(LoginWhitelistView, self).get_context_data(*args, **kwargs)
+        context["brand"] = self.brand
+        context["full_brand"] = self.full_brand
+        context["brand_logo"] = self.brand_logo
+        return context
