@@ -1,7 +1,6 @@
 import logging
 
 from core.admin_tests import *
-from core.views import form_service_url
 from django.http import HttpResponse, HttpResponseRedirect
 
 logger = logging.getLogger(__name__)
@@ -42,9 +41,3 @@ class AppTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(isinstance(response, HttpResponseRedirect))
         self.assertEqual(response.url, "/accounts/login?next=/auth/")
-
-    def test_form_service_url(self):
-        """Testing the form service url by passing mock data."""
-        url = form_service_url(host="127.0.0.1", app_id='x', service=self.service, username='admin')
-        logger.info(f"---- Testing form-service_url{url}")
-        self.assertEqual(url, 'http://x.y.z:9090')
