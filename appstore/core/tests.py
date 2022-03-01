@@ -23,21 +23,6 @@ class AppTests(TestCase):
         """ Create SuperUser """
         self.superuser = User.objects.create_superuser(username='admin', email="admin@admin.com", password='admin')
 
-    def test_app_list(self):
-        """ Test listing running apps. """
-        logger.info(f"-- testing app list")
-        credentials = {'username': 'admin', 'password': 'admin'}
-        self.client.login(**credentials)
-        response = self.client.get('/apps/')
-        self.assertEqual(response.status_code, 200)
-        logger.info(f"-- response.context {response.context}")
-
-    def test_app_start(self):
-        """ Test starting an app. """
-        logger.info(f"-- testing app start")
-        response = self.client.get('/start?app_id=x&cpu=0.5&gpu=0&memory=2G')
-        self.assertEqual(response.status_code, 301)
-
     def test_auth_loggedin_admin_user(self):
         """Test the auth endpoint for a logged in User"""
         logger.info(f"-- testing auth endpoint for logged in admin user")
@@ -63,8 +48,3 @@ class AppTests(TestCase):
         url = form_service_url(host="127.0.0.1", app_id='x', service=self.service, username='admin')
         logger.info(f"---- Testing form-service_url{url}")
         self.assertEqual(url, 'http://x.y.z:9090')
-
-    def test_prob_service(self):
-        logger.info("---Test Prob URL")
-        response = self.client.get("/probe/?url=127.0.0.0:31242")
-        self.assertEqual(response.json()['status'], 'fail')
