@@ -24,6 +24,7 @@ APP_LIST        ?= api appstore core frontend middleware product
 BRANDS          := braini cat heal restartr scidas eduhelx argus
 MANAGE	        := ${PYTHON} appstore/manage.py
 SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
+ARTILLERY_ENV   := ${ARTILLERY_ENVIRONMENT}
 
 ifdef GUNICORN_WORKERS
 NO_OF_GUNICORN_WORKERS := $(GUNICORN_WORKERS)
@@ -48,13 +49,28 @@ clean:
 	${PYTHON} -m pip uninstall -y -r requirements.txt
 
 #install: Install application along with required development packages
-install:
+install: install.artillery
 	${PYTHON} -m pip install --upgrade pip
 	${PYTHON} -m pip install -r requirements.txt
 
 #test: Run all tests
 test:
 	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings ${MANAGE} test $(APP_LIST);)
+
+#install.artillery: Install required packages for artillery testing
+install.artillery:
+	cd artillery-tests
+	npm install
+
+#test.artillery: Run artillery testing
+test.artillery:
+ifndef ARTILLERY_ENV
+	$(error ARTILLERY_ENVIRONMENT not set (smoke|load))
+endif
+	export TEST_USERS_PATH=artillery-tests/payloads/${ARTILLERY_ENV} && ${MANAGE} shell < bin/createtestusers.py
+	cd artillery-tests; \
+	ls -1 tests | xargs -L1 -I{} npx artillery run tests/{} --quiet --environment ${ARTILLERY_ENV}
+	
 
 #start: Run the gunicorn server
 start:

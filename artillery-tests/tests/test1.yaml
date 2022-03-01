@@ -24,10 +24,11 @@ config:
       phases:
         - duration: 1
           arrivalRate: 1
-      ensure:
-        maxErrorRate: 0
-      plugins:
-        expect: {}
+  plugins:
+    expect: {}
+    ensure: {}
+  ensure: {}
+  
 before:
   name: "Simple login"
   flow:
