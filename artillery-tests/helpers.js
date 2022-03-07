@@ -14,16 +14,10 @@ function simpleParseSetCookies(header) {
             return acc;
         }, {});
 }
-function updateSession(requestParams, response, context, ee, next) {
+function getCSRFToken(requestParams, response, context, ee, next) {
     const cookies = simpleParseSetCookies(response.headers["set-cookie"]);
-    // if (typeof context.vars["csrf_token"] === "undefined") context.vars["csrf_token"] = "";
-    if (cookies.hasOwnProperty("sessionid")) {
-        context.vars["session_id"] = cookies["sessionid"];
-        // console.log("Update sess id");
-    }
     if (cookies.hasOwnProperty("csrftoken")) {
         context.vars["csrf_token"] = cookies["csrftoken"];
-        // console.log("Update csrf");
     }
     return next();
 }
@@ -58,7 +52,7 @@ function getRandomApp(requestParams, response, context, ee, next) {
 
 module.exports = {
     disableCookies,
-    updateSession,
+    getCSRFToken,
     parseInitialApps,
     parseNewApps,
     getRandomApp

@@ -29,41 +29,38 @@ config:
     ensure: {}
   ensure: {}
   
-before:
-  name: "Simple login"
-  flow:
-    - log: "Logging in and retrieving CSRF"
-    - get:
-        url: "/"
-        expect:
-          - statusCode: 200
-        afterResponse: updateSession
-    - get:
-        url: "/admin/login/"
-        # If csrftoken wasn't set in the previous request, get it now.
-        afterResponse: "updateSession"
-    - post:
-        url: "/accounts/login/"
-        formData:
-          login: "{{ username }}" 
-          password: "{{ password }}"
-          csrfmiddlewaretoken: "{{ csrf_token }}"
-        expect:
-          - statusCode: 302
-          - hasHeader: set-cookie
-        afterResponse: updateSession
 scenarios:
   - flow:
+      - log: "Logging in and retrieving CSRF"
+      - get:
+          # Get a session id (and possibly a CSRF token) created for the session.
+          url: "/"
+          expect:
+            - statusCode: 200
+          afterResponse: getCSRFToken
+      - get:
+          url: "/admin/login/"
+          # If csrftoken wasn't set in the previous request, get it now (it will only sometimes be set by accessing root, but always on /admin/login/).
+          afterResponse: getCSRFToken
+      - post:
+          url: "/accounts/login/"
+          formData:
+            login: "{{ username }}" 
+            password: "{{ password }}"
+            csrfmiddlewaretoken: "{{ csrf_token }}"
+          expect:
+            - statusCode: 302
+            - hasHeader: set-cookie
       - log: "Loading initial app count"
       - get:
           # Count initial number of apps
           url: "/api/v1/instances/"
-          headers:
-            Cookie: "csrftoken={{ csrf_token }}; sessionid={{ session_id }}"
+          # headers:
+            # Cookie: "csrftoken={{ csrf_token }}; sessionid={{ session_id }}"
             # X-CSRFToken: "{{ csrf_token }}"
           expect:
             - statusCode: 200
-          beforeRequest: disableCookies
+          # beforeRequest: disableCookies
           # The way JSONPath is implemented in Artillery makes it essentially useless for all intents and purposes.
           # Instead, have to manually capture and parse it with JS and set the context var.
           afterResponse:
