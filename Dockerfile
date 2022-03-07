@@ -19,7 +19,7 @@ RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && 
 
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
-	apt-get install -y build-essential git xmlsec1
+	apt-get install -y build-essential git xmlsec1 nodejs npm
    
 WORKDIR $APP_HOME
 COPY . .
