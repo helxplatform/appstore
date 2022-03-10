@@ -17,7 +17,7 @@ endif
 
 DOCKER_OWNER    := frostyfan109
 DOCKER_APP      := appstore
-DOCKER_TAG      := 1.3.dev5
+DOCKER_TAG      := 1.3.dev6
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
