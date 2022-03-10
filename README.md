@@ -82,11 +82,28 @@ is provided, that is used as the application's icon.
 
 ## Development Environment
 
-### Local Development
+### Prerequisites
+
+- The appstore default database engine is postgresql. To setup a postgresql docker
+container, the following steps are required.
+```  
+make build.postgresql
+```
+
+To use sqlite3 as the database backend,
+```
+export DEV_PHASE=local
+```
+
+- Some form of local kubernetes environment (minikube, kind, k3
+etc).
+
+### Local Development 
+
+#### With Tycho (default)
 
 For local development you should have Python 3, a python virtual environment dedicated
-to the project, and some form of local kubernetes environment (minikube, kind, k3
-etc). You can configure your python environment with the following steps.
+to the project. You can configure your python environment with the following steps.
 
 ```bash
 #!/bin/bash
@@ -106,31 +123,69 @@ if [ ! -d venv ]; then
     python3 -m venv venv
 fi
 source venv/bin/activate
-
-# use develop branch and install requirements
 git checkout develop
+```
+
+Install requirements
+
+> NOTE: The below command will install requirements necessary for appstore which includes 
+> Tycho pypi package, and it's requirements.
+> Skip to [Cloning Tycho locally](#with-tycho-cloned-locally) to work on simultaneous changes to both projects.
+
+```
 make install
 ```
 
-You can use the commands packaged in `make` to configure and run the appstore.
+#### With Tycho cloned locally
+
+> NOTE: To work with Tycho and appstore locally comment
+> `tycho-api` in requirements.txt and setup.cfg.
+
+Clone Tycho repo locally outside the appstore project.
+
+```
+git clone https://github.com/helxplatform/tycho.git
+cd tycho
+git checkout develop
+```
+
+Add Tycho folder to the PYTHON PATH. 
+
+```
+export PYTHONPATH=${PYTHONPATH}:/path/to/tycho/folder
+
+Example:
+export PYTHONPATH=$PYTHONPATH:/home/user/tycho
+```
+
+Install appstore and Tycho requirements
+```
+# To install appstore requirements
+make install
+
+# To install Tycho requirements
+pip install -r /path/to/tycho/folder/requirements.txt
+
+Example:
+pip install -r /home/user/tycho/requirements.txt
+```
+
+You can use the commands packaged in `make` to configure and run the appstore. The below command is a way to
+start appstore development server.
 
 ```bash
 # configure environment variables, see above or .env.sample
 export DEV_PHASE=stub
 export SECRET_KEY=f00barBaz
-# setup local frontend assets
-make appstore.frontend 
 # Runs database migrations, creates super user, runs test then runs the appstore
 # at 0.0.0.0:8000
-make appstore.start brand=braini
+make start brand=braini
 ```
 
-> NOTE: After running `make appstore.start` for the first time, use
-> `make appstore` every other time so that migrations to the database
-> will only run once.
+With appstore running, make the necessary changes (including Tycho if necessary). Next steps involve publishing the 
+Tycho package to PyPI (Python Package Index). Jump to 
+[Publishing the Tycho package](#coordination-of-development-for-tycho-and-appstore) for details.
 
-For additional configuration options (`DEV_PHASE`, `product`, `OAUTH_PROVIDERS`)
-inspect `Makefile` and `appstore/appstore/settings/*`.
 
 ### Development environment with Kubernetes
 
@@ -182,124 +237,6 @@ helm install release-name $HELXPLATFORM_HOME/devops/helx --values basic-values.y
 
 You now have appstore and tycho running in a kubernetes environment ready for
 testing. You can monitor pods/service status via `kubectl`.
-
-### Kubernetes + local appstore configuration
-
-With the helx chart installed in a local kubernetes environment you can run
-appstore outside of `stub` mode and Tycho will launch services into your local
-kubernetes cluster.
-
-- Clone the appstore repo (develop branch)
-
-```bash
-git clone -b develop [https://github.com/helxplatform/appstore.git](https://github.com/helxplatform/appstore.git)
-```
-
-- Activate virtual environment
-
-```bash
-python3 -m venv venv 
-source venv/bin/activate
-```
-
-- Install the requirements
-
-> NOTE: To work with a custom Tycho version and appstore locally comment
-> `tycho-api` in requirements.txt and add Tycho to your `PYTHON_PATH`. At this
-> stage you should reference the Tycho note below then return to this step.
-
-```bash
-pip install -r requirements.txt
-```
-
-OR
-
-```bash
-make install
-```
-
-- Create a .env file containing environment variables used by both Tycho and appstore.
-
-```text
-export SECRET_KEY=<insert value>
-
-# Project specific settings. (scidas | braini | cat | reccap | eduhelx)
-export DJANGO_SETTINGS_MODULE="appstore.settings.<project>_settings"
-
-# Optional: Google or GitHub OAuth web app credentials.
-export OAUTH_PROVIDERS="github,google"
-export GOOGLE_NAME=""
-export GOOGLE_CLIENT_ID=""
-export GOOGLE_SECRET=""
-export GITHUB_NAME=""
-export GITHUB_CLIENT_ID=""
-export GITHUB_SECRET=""
-
-# To skip the whitelisting step, add emails to authorize access to appstore home.
-export AUTHORIZED_USERS=""
-
-# Running Tycho in dev mode.
-export DEV_PHASE=dev
-
-# Namespace that Tycho launches Apps into on the cluster.
-export NAMESPACE=""
-
-# Default PVC used by Tycho.
-export stdnfsPvc="stdnfs"
-```
-
-- Export the environment variables in a terminal where appstore and Tycho are cloned.
-
-```bash
-source .env
-```
-
-- Run appstore by using the commands defined in `Makefile`.
-
-```bash
-make
-make install
-make appstore.frontend brand=cat
-make appstore.all brand=cat
-make appstore.start brand=cat
-```
-
-Appstore is now up and running. You should be able to see output from `gunicorn`
-and `appstore`. Due to kubernetes running in a separate process space see the
-notes below on viewing the apps that Tycho starts in your local Kubernetes
-cluster.
-
-### Developing with tycho locally
-
-You may need to make changes to tycho and test them with the appstore. To do
-this locally install tycho from a local repo clone with your changes instead
-of the pypi version in the `appstore` requirements file.
-
-- Clone the Tycho repo (develop branch):
-
-```bash
-git clone -b develop [https://github.com/helxplatform/tycho.git](https://github.com/helxplatform/tycho.git)
-```
-
-- Checkout you branch and make changes if required
-
-```bash
-git checkout -b <branch-name>
-```
-
-- Add cloned Tycho repo to the PYTHONPATH.
-
-```bash
-PYTHONPATH=$PYTHONPATH:/path/to/the/tycho/project/root
-```
-
-- Install the requirements:
-
-```bash
-pip install -r requirements.txt
-```
-
-- Return to appstore and continue setup.
 
 ### Manual OAuth provider setup
 
@@ -384,25 +321,14 @@ developing the frontend and testing appstore integration.
 
 ## Coordination of Development for Tycho and Appstore
 
-Tycho is a library that provides a facility and API to manipulate launch and 
-get state information for kubernetes objects in a more simplistic manner.
-Appstor relies on this facility to launch apps as defined by an external 
-repository  and then later query/manager those objects afterwards.  Thus,
-Tycho is an Appstore dependency.  It's functionality is made available as
-a python package, and changes to tycho are accessed through an updated
-package.  During the development process this can be accomplished by either
-using a published package or using a locally created package.
-
-### Setting up the tycho repo for development
-
-Following the gitflow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow),
-perform the following
-
-    git clone git@github.com:helxplatform/tycho.git
-    cd tycho
-    git checkout develop
-    git checkout -b <new feature-branch name>
-
+>NOTE: Tycho is a library that provides a facility and API to manipulate launch and 
+>get state information for kubernetes objects in a more simplistic manner.
+>Appstore relies on this facility to launch apps as defined by an external 
+>repository  and then later query/manager those objects afterwards.  Thus,
+>Tycho is an Appstore dependency.  It's functionality is made available as
+>a python package, and changes to tycho are accessed through an updated
+>package.  During the development process this can be accomplished by either
+>using a published package or using a locally created package.
 
 ### Install build support packages
 
@@ -410,7 +336,7 @@ perform the following
     pip install wheel==0.36.2
     pip install twine==3.3.0
 
-### Method 1 Publish a new tycho package
+### Publish a new tycho package
 
 #### Create a pypi account and establish credentials
 
@@ -426,42 +352,23 @@ perform the following
 
 #### Publishing
 
-This will build Tyco with your updates and publish a package to pypi.org
+This will build Tycho with your updates and publish a package to pypi.org
 
 1.  Update version in /tycho.__init__.py
 
 Use the  .dev* suffix for test versions
 
-2. publish
-
-    python setup.py publish
+2. Publish from within the Tycho project folder.
+```
+python setup.py publish
+```
 
 #### Updating Appstore
  
 1. Go to appstore code base and update tycho version in following files `requirements.txt`
 and `setup.cfg` created in the publishing step
 
-2. build and publish appstore
-
-### Method 2 Incorporate Local Tycho
-
-1. Build a local .whl
-
-    python setup.py bdist_wheel
-
-2. Copy the .whl to appstore/whl
-
-3. Copy .whl to appstore with altered `Dockerfile` `docker-compose.yml` and `requirements.txt`
-
-- Add the following line to Dockerfile
-
-    RUN pip install whl/*.whl
-
-- alter docker-compose to produce an image named using a controlled tag
-
-    image: <username>/appstore:<tag>
-
-- Remove/Comment the tycho requirement from requirements.txt
+2. Build and publish appstore
 
 ## Cluster Kubernetes Config
 
