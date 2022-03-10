@@ -14,18 +14,6 @@ function simpleParseSetCookies(header) {
             return acc;
         }, {});
 }
-function getCSRFToken(requestParams, response, context, ee, next) {
-    const cookies = simpleParseSetCookies(response.headers["set-cookie"]);
-    if (cookies.hasOwnProperty("csrftoken")) {
-        context.vars["csrf_token"] = cookies["csrftoken"];
-    }
-    return next();
-}
-function disableCookies(requestParams, context, ee, next) {
-    context._enableCookieJar = false;
-    if (requestParams.cookieJar) requestParams.cookieJar.removeAllCookiesSync();
-    return next();
-}
 function parseInitialApps(requestParams, response, context, ee, next) {
     const apps = JSON.parse(response.body);
     context.vars["apps"] = apps;
@@ -49,11 +37,38 @@ function getRandomApp(requestParams, response, context, ee, next) {
     context.vars["random_app"] = availableApps[Math.floor(Math.random()*availableApps.length)];
     return next();
 }
+/**
+ * Set the X-CSRFToken header to the current `csrftoken` cookie value.
+ * 
+ * Required to be set on non-safe methods ^(?!GET|HEAD|OPTIONS|TRACE)$, e.g. POST.
+ */
+function setXCSRF(requestParams, context, ee, next) {
+    const isRequiredMethod = (method) => !/^(GET|HEAD|OPTIONS|TRACE)$/i.test(method);
+    if (!isRequiredMethod(requestParams.method)) return next();
+    const baseURL = context.vars["target"] + "/";
+    const cookies = requestParams.cookieJar.getCookiesSync(baseURL);
+    const csrfCookie = cookies.find((c) => c.key === "csrftoken");
+    const csrfToken = csrfCookie.value;
+    if (!requestParams.hasOwnProperty("headers")) requestParams.headers = {};
+    requestParams.headers["X-CSRFToken"] = csrfToken;
+    if (requestParams.json) {
+        requestParams.json["csrfmiddlewaretoken"] = csrfToken;
+    }
+    // console.log(requestParams);
+    // console.log("==============================");
+
+    return next();
+}
+function logUrl(requestParams, context, ee, next) {
+    console.log(requestParams.method, requestParams.url);
+    return next();
+}
 
 module.exports = {
-    disableCookies,
-    getCSRFToken,
+    setXCSRF,
+    logUrl,
     parseInitialApps,
     parseNewApps,
-    getRandomApp
+    getRandomApp,
+    ...require("./cookies.js")
 };

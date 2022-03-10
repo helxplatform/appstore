@@ -15,9 +15,9 @@ else
 DOCKER_REGISTRY := ${DEFAULT_REGISTRY}
 endif
 
-DOCKER_OWNER    := helxplatform
+DOCKER_OWNER    := frostyfan109
 DOCKER_APP      := appstore
-DOCKER_TAG      := ${VERSION}
+DOCKER_TAG      := 1.3.dev5
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
@@ -25,6 +25,7 @@ BRANDS          := braini cat heal restartr scidas eduhelx argus
 MANAGE	        := ${PYTHON} appstore/manage.py
 SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
 ARTILLERY_ENV   := ${ARTILLERY_ENVIRONMENT}
+ARTILLERY_TARGET:= ${ARTILLERY_TARGET}
 
 ifdef GUNICORN_WORKERS
 NO_OF_GUNICORN_WORKERS := $(GUNICORN_WORKERS)
@@ -67,9 +68,12 @@ test.artillery:
 ifndef ARTILLERY_ENV
 	$(error ARTILLERY_ENVIRONMENT not set (smoke|load))
 endif
+ifndef ARTILLERY_TARGET
+	$(error ARTILLERY_TARGET not set (should point to the base URL of appstore, e.g. "http://localhost:8000"))
+endif
 	export TEST_USERS_PATH=artillery-tests/payloads/${ARTILLERY_ENV} && ${MANAGE} shell < bin/createtestusers.py
 	cd artillery-tests; \
-	ls -1 tests | xargs -L1 -I{} npx artillery run tests/{} --quiet --environment ${ARTILLERY_ENV}
+	ls -1 tests | xargs -L1 -I%TEST_NAME% npx artillery run tests/%TEST_NAME% --quiet --environment ${ARTILLERY_ENV} --target ${ARTILLERY_TARGET}
 	
 
 #start: Run the gunicorn server
@@ -83,7 +87,7 @@ start:
 	if [ "${CREATE_TEST_USERS}" = "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
-	bash /usr/src/inst-mgmt/bin/populate_env.sh /usr/src/inst-mgmt/appstore/static/frontend/env.json
+	# bash /usr/src/inst-mgmt/bin/populate_env.sh /usr/src/inst-mgmt/appstore/static/frontend/env.json
 	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
 
 #build: Build the Docker image

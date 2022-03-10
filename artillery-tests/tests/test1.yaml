@@ -1,8 +1,7 @@
 config:
-  target: "http://localhost:8000"
+  # target: "{{ target }}"
   http:
-    # Give requests a 30 second window before they timeout.
-    timeout: 30
+    timeout: 5000
   processor: "../helpers.js"
   payload:
     # Load login (csv) data for smoke/load environments.
@@ -27,68 +26,83 @@ config:
   plugins:
     expect: {}
     ensure: {}
-  ensure: {}
-  
+  ensure:
+    conditions:
+      - expression: errors.ETIMEDOUT == undefined
+      - expression: errors.ECONNREFUSED == undefined
+
 scenarios:
-  - flow:
+  - beforeRequest:
+      # This will run the setXCSRF hook before every request in the scenario.
+      # This hook will only modify requests that require additional CSRF processing.
+      - setXCSRF
+    
+    # Enable for manual session management of cookies and csrf tokens. Not necessary anymore.
+    # beforeRequest:
+    #   - setCookies
+    # afterResponse:
+    #  - updateSession
+    flow:
+      ##############################
+      # Retrieve session id cookie #
+      ##############################
       - log: "Logging in and retrieving CSRF"
       - get:
           # Get a session id (and possibly a CSRF token) created for the session.
           url: "/"
           expect:
             - statusCode: 200
-          afterResponse: getCSRFToken
+      ##############################################
+      # Make sure server sets the csrftoken cookie #
+      ##############################################
       - get:
           url: "/admin/login/"
-          # If csrftoken wasn't set in the previous request, get it now (it will only sometimes be set by accessing root, but always on /admin/login/).
-          afterResponse: getCSRFToken
+          # Unclear why, but sometimes a CSRF won't set by nagivating to the root. However, it will always set at this endpoint,
+          # so navigate here just in case it wasn't already set.
+      #########
+      # Login #
+      #########
       - post:
           url: "/accounts/login/"
           formData:
             login: "{{ username }}" 
             password: "{{ password }}"
-            csrfmiddlewaretoken: "{{ csrf_token }}"
           expect:
             - statusCode: 302
             - hasHeader: set-cookie
+          # For some strange reason, artillery completely breaks down if it tries to follow the redirect sent by logging in
+          # causing all the following tests to stall out and fail.
+          followRedirect: false
+      #################################################################################
+      # Get the currently running apps on the account and set the context var `apps`. #
+      #################################################################################
       - log: "Loading initial app count"
       - get:
-          # Count initial number of apps
           url: "/api/v1/instances/"
-          # headers:
-            # Cookie: "csrftoken={{ csrf_token }}; sessionid={{ session_id }}"
-            # X-CSRFToken: "{{ csrf_token }}"
           expect:
             - statusCode: 200
-          # beforeRequest: disableCookies
-          # The way JSONPath is implemented in Artillery makes it essentially useless for all intents and purposes.
-          # Instead, have to manually capture and parse it with JS and set the context var.
           afterResponse:
-            - updateSession
             - parseInitialApps
+      ########################################################################
+      # Get dict of available apps and set the context var `available_apps`. #
+      ########################################################################
       - log: "Getting available apps"
       - get:
           url: "/api/v1/apps/"
-          headers:
-            Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
-            X-CSRFToken: "{{ csrf_token }}"
           expect:
             - statusCode: 200
           capture:
             - json: "$"
               as: available_apps
-          beforeRequest:
-            - disableCookies
           afterResponse:
-            - updateSession
             - getRandomApp
+      ####################################################################
+      # Spawn a random app from `available_apps` with minimum resources. #
+      ####################################################################
       - log: "Spawning a new app"
       - post:
           # Create a new app
           url: "/api/v1/instances/"
-          headers:
-            Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
-            X-CSRFToken: "{{ csrf_token }}"
           json:
             app_id: "{{ random_app.app_id }}"
             cpus: "{{ random_app.minimum_resources.cpus }}"
@@ -96,15 +110,18 @@ scenarios:
             gpus: "{{ random_app.minimum_resources.gpus }}"
           expect:
             - statusCode: 200
-          beforeRequest:
-            - disableCookies
-          afterResponse: updateSession
+      ########################################################################################################
+      # Get the list of currently running apps again and set the context var `spawned_app` from the new app. #
+      ########################################################################################################
       - log: "Confirming new app is created"
       - get:
           url: "/api/v1/instances/"
           expect:
             - statusCode: 200
           afterResponse: parseNewApps
+      #################################################################################################################
+      # Make sure the app id of `spawned_app` is the same as the randomly chosen app that was supposed to be created. #
+      #################################################################################################################
       - get:
           # Basically only way to parse the apps from the request body is manually using JS in the GET /api/v1/instances/ requests.
           # This is because JSONPath implementation is useless (it chooses a random element if the request body returns an array, instead of just the request body array as-is).
@@ -115,15 +132,12 @@ scenarios:
             - equals:
               - "{{ spawned_app.aid }}"
               - "{{ random_app.app_id }}"
-          afterResponse: updateSession
-      # If we want to give some time for the app to startup.
-      # - think: 1
+      #########################
+      # Delete `spawned_app`. #
+      #########################
       - log: "Deleting new app"
       - delete:
           url: "/api/v1/instances/{{ spawned_app.sid }}/"
-          headers:
-            Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
-            X-CSRFToken: "{{ csrf_token }}"
           capture:
             - json: "$.status"
               as: "delete_status"
@@ -131,16 +145,14 @@ scenarios:
             - equals:
               - "{{ delete_status }}"
               - "success"
-          beforeRequest: disableCookies
-          afterResponse: updateSession
+      ##########
+      # Logout #
+      ##########
       - log: "Logging out"
       - post:
           url: "/accounts/logout/"
-          headers:
-            Cookie: "sessionid={{ session_id }}; csrftoken={{ csrf_token }}"
-            X-CSRFToken: "{{ csrf_token }}"
-          formData:
-            csrfmiddlewaretoken: "{{ csrf_token }}"
           expect:
             - statusCode: 302
-          beforeRequest: disableCookies
+      #########################################################################################
+      # Make sure that a protected endpoint (requiring login) is forbidden after logging out. #
+      #########################################################################################
