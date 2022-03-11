@@ -85,7 +85,6 @@ endif
 ifndef ARTILLERY_TARGET
 	$(error ARTILLERY_TARGET not set (should point to the base URL of appstore, e.g. "http://localhost:8000"))
 endif
-	export TEST_USERS_PATH=artillery-tests/payloads && ${MANAGE} shell < bin/createtestusers.py
 	cd artillery-tests; \
 	ls -1 tests | xargs -L1 -I%TEST_NAME% npx artillery run tests/%TEST_NAME% --quiet --environment ${ARTILLERY_ENV} --target ${ARTILLERY_TARGET}
 	
