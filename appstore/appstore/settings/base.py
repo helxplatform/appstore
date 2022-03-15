@@ -269,7 +269,7 @@ LOGGING = {
         "": {
             "handlers": ["app_store_log", "console"],
             "propagate": False,
-            "level": "DEBUG"
+            "level": MIN_DJANGO_LEVEL
         },
         "django": {
             "handlers": ["syslog", "djangoLog", "console"],
@@ -278,7 +278,7 @@ LOGGING = {
         },
         "django.template": {
             "handlers": ["syslog", "djangoLog"],
-            "level": "INFO",
+            "level": MIN_DJANGO_LEVEL,
             "propagate": True,
         },
         "django.db.backends": {
@@ -288,15 +288,15 @@ LOGGING = {
         },
         "admin": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": MIN_DJANGO_LEVEL,
         },
         "tycho.client": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": MIN_DJANGO_LEVEL,
         },
         "tycho.kube": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": MIN_DJANGO_LEVEL,
         },
     },
 }
