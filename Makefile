@@ -16,8 +16,8 @@ else
 DOCKER_REGISTRY := ${DEFAULT_REGISTRY}
 endif
 
+DEFAULT_LOG_LEVEL := "info"
 DOCKER_OWNER    := helxplatform
-
 
 DOCKER_APP      := appstore
 DOCKER_TAG      := ${VERSION}
@@ -39,6 +39,18 @@ ifdef SET_BUILD_ENV_FROM_FILE
 ENVS_FROM_FILE := ${SET_BUILD_ENV_FROM_FILE}
 else
 ENVS_FROM_FILE := true
+endif
+
+ifdef DEBUG
+DEBUG := ${DEBUG}
+else
+DEBUG := false
+endif
+
+ifeq DEBUG "true"
+LOG_LEVEL := "debug"
+else
+LOG_LEVEL := DEFAULT_LOG_LEVEL
 endif
 
 ifeq "${ENVS_FROM_FILE}" "true"
@@ -83,7 +95,7 @@ start:	build.postgresql.local
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
 	if [[ "${DEV_PHASE}" != "local" ]]; then bash bin/populate_env.sh ./appstore/static/frontend/env.json; fi
-	gunicorn --bind 0.0.0.0:8000 --log-level=debug --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
+	gunicorn --bind 0.0.0.0:8000 --log-level=${LOG_LEVEL} --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
 
 #build: Build the Docker image
 build:
