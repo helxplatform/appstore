@@ -47,7 +47,7 @@ else
 DEBUG := false
 endif
 
-ifeq DEBUG "true"
+ifeq "${DEBUG}" "true"
 LOG_LEVEL := "debug"
 else
 LOG_LEVEL := DEFAULT_LOG_LEVEL
