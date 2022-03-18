@@ -221,7 +221,7 @@ DEFAULT_SUPPORT_EMAIL = os.environ.get(
 
 # Logging
 MIN_LOG_LEVEL = "INFO"
-LOG_LEVEL = "DEBUG" if DEBUG else MIN_LOG_LEVEL
+LOG_LEVEL = "DEBUG" if DEBUG else os.environ.get("LOG_LEVEL", MIN_LOG_LEVEL)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,  # keep Django's default loggers
