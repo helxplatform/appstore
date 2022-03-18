@@ -52,7 +52,7 @@ else
 LOG_LEVEL := "info"
 endif
 
-ifeq DEBUG "true"
+ifeq "${DEBUG}" "true"
 LOG_LEVEL := "debug"
 endif
 
