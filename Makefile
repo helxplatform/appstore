@@ -16,7 +16,6 @@ else
 DOCKER_REGISTRY := ${DEFAULT_REGISTRY}
 endif
 
-DEFAULT_LOG_LEVEL := "info"
 DOCKER_OWNER    := helxplatform
 
 DOCKER_APP      := appstore
@@ -47,10 +46,14 @@ else
 DEBUG := false
 endif
 
-ifeq "${DEBUG}" "true"
-LOG_LEVEL := "debug"
+ifdef LOG_LEVEL
+LOG_LEVEL = ${LOG_LEVEL}
 else
-LOG_LEVEL := DEFAULT_LOG_LEVEL
+LOG_LEVEL := "info"
+endif
+
+ifeq DEBUG "true"
+LOG_LEVEL := "debug"
 endif
 
 ifeq "${ENVS_FROM_FILE}" "true"
