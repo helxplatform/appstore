@@ -34,6 +34,10 @@ endif
 
 # Use only when working locally
 ENV_FILE := $(PWD)/.env
+ifeq ("$(wildcard $(ENV_FILE))","")
+_ := $(shell cp -v .env.default .env)
+endif
+
 ifdef SET_BUILD_ENV_FROM_FILE
 ENVS_FROM_FILE := ${SET_BUILD_ENV_FROM_FILE}
 else
