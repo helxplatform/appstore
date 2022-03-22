@@ -55,7 +55,7 @@ def get_host(request):
     return host
 
 
-def parse_spec_resources(app_id, spec):
+def parse_spec_resources(app_id, spec, app_data):
     """
     Parse spec dictionary based on docker-compose definition files managed by tycho.
 
@@ -68,6 +68,11 @@ def parse_spec_resources(app_id, spec):
         resource_scope = app_scope["deploy"]["resources"]
         limits = resource_scope["limits"]
         reservations = resource_scope["reservations"]
+        # If lock-resources is set to True, the reservations and limits should
+        # be equal.
+        lock_resources = app_data.get("lock-resources", False)
+        if lock_resources:
+            limits = reservations
         return limits, reservations
     except KeyError:
         logger.error(f"Could not parse {app_id}.\nInvalid spec {spec}")
@@ -150,7 +155,7 @@ class AppViewSet(viewsets.GenericViewSet):
         for app_id, app_data in self.get_queryset().items():
             try:
                 spec = tycho.get_definition(app_id)
-                limits, reservations = parse_spec_resources(app_id, spec)
+                limits, reservations = parse_spec_resources(app_id, spec, app_data)
 
                 # TODO GPUs can be defined differently in docker-compose than in the
                 # submission from Tycho to k8s, how do we want to handle this?
@@ -201,7 +206,7 @@ class AppViewSet(viewsets.GenericViewSet):
         """
         app_data = self.get_queryset()[app_id]
         spec = tycho.get_definition(app_id)
-        limits, reservations = parse_spec_resources(app_id, spec)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
 
         gpu = search_for_gpu_reservation(reservations)
 
@@ -394,16 +399,22 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Submit instance id (sid) to tycho for removal.
         """
-
         serializer = self.get_serializer(data={"sid": sid})
         serializer.is_valid(raise_exception=True)
         logger.debug(f"\nDeleting: {sid}")
-        response = tycho.delete({"name": serializer.validated_data["sid"]})
-        # TODO How can we avoid this sleep? Do we need an immediate response beyond
-        # a successful submission? Can we do a follow up with Web Sockets or SSE
-        # to the front end?
-        time.sleep(2)
-        return Response(response)
+        status = tycho.status({"name": serializer.validated_data["sid"]})
+        if status.services != None and len(status.services) == 1:
+            logger.info("service username: " + str(status.services[0].username))
+            logger.info("request username: " + str(request.user.username))
+            if status.services[0].username == request.user.username:
+                response = tycho.delete({"name": serializer.validated_data["sid"]})
+                # TODO How can we avoid this sleep? Do we need an immediate response beyond
+                # a successful submission? Can we do a follow up with Web Sockets or SSE
+                # to the front end?
+                time.sleep(2)
+                return Response(response)
+            else: return Response(status=drf_status.HTTP_403_FORBIDDEN)
+        else: return Response(status=drf_status.HTTP_404_NOT_FOUND)
 
     def partial_update(self, request, sid=None):
         """

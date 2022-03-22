@@ -187,21 +187,6 @@ class AppStart(LoginRequiredMixin, generic.TemplateView):
             ),
         }
 
-
-class AppConnect(LoginRequiredMixin, generic.TemplateView):
-    """ Show a splash screen while starting the application. """
-
-    template_name = "core/starting.html"
-
-    def get_context_data(self, *args, **kwargs):
-        """ Return to a running application. """
-        return {
-            "url": self.request.GET.get("url"),
-            "icon": self.request.GET.get("icon"),
-            "name": self.request.GET.get("name"),
-        }
-
-
 class ProbeServices(generic.View):
     """Do a quick network connectivity test on an app endpoint.
     This is a JSON interface hence no class and no template.
@@ -221,21 +206,6 @@ class ProbeServices(generic.View):
             logger.info(f"probe services Error  ===> {e}")
             pass  # we're testing connectivity and this URL is failing to connect.
         return JsonResponse(result)
-
-
-def list_services(request):
-    """ Should probably move this to an Ajax JSON request like the probe. """
-    if request.method == "POST":
-        action = request.POST.get("action")
-        sid = request.POST.get("id")
-        logger.debug(f"-- action: {action} sid: {sid}")
-        if action == "delete":
-            logger.debug(f"-- deleting: {sid}")
-            response = tycho.delete({"name": sid})
-            sleep(2)
-            logger.debug(f"-- delete response: status: {response}")
-    return HttpResponseRedirect("/apps/")
-
 
 def login_whitelist(request):
     full_brand = get_brand_details(settings.APPLICATION_BRAND)["name"]

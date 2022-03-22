@@ -38,15 +38,6 @@ class AppTests(TestCase):
         response = self.client.get('/start?app_id=x&cpu=0.5&gpu=0&memory=2G')
         self.assertEqual(response.status_code, 301)
 
-    def test_app_delete(self):
-        """ Test deleting a running app. """
-        logger.info(f"-- testing app delete")
-        response = self.client.post("/list_pods/", {
-            "id": "xyz",
-            'action': 'delete'
-        })
-        self.assertEqual(response.status_code, 302)
-
     def test_auth_loggedin_admin_user(self):
         """Test the auth endpoint for a logged in User"""
         logger.info(f"-- testing auth endpoint for logged in admin user")
@@ -55,9 +46,9 @@ class AppTests(TestCase):
         response = self.client.get("/auth/")
         self.assertEqual(response.status_code, 200)
         self.assertTrue(isinstance(response, HttpResponse))
-        header_ak, access_token = response._headers.get("access_token")
+        access_token = response.headers.get("ACCESS_TOKEN")
         self.assertEqual(access_token, "")
-        header_rm, remote_user = response._headers.get("remote_user")
+        remote_user = response.headers.get("REMOTE_USER")
         self.assertEqual(remote_user, "admin")
 
     def test_auth_nonloggedin_user(self):

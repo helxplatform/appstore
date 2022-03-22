@@ -19,7 +19,7 @@ ALLOWED_HOSTS = [
     "0.0.0.0",
 ]
 
-# Generic Django settings https://docs.djangoproject.com/en/3.1/ref/settings/
+# Generic Django settings https://docs.djangoproject.com/en/3.2/ref/settings/
 ADMIN_URL = "/admin"
 APPEND_SLASH = True
 LANGUAGE_CODE = "en-us"
@@ -46,8 +46,6 @@ ALLOW_SAML_LOGIN = os.environ.get("ALLOW_SAML_LOGIN", "True").lower()
 IMAGE_DOWNLOAD_URL = os.environ.get(
     "IMAGE_DOWNLOAD_URL", "https://braini-metalnx.renci.org/metalnx"
 )
-# Determine whitelist middleware behavior, see middleware for explanation.
-WHITELIST_REDIRECT = os.environ.get("WHITELIST_REDIRECT", "true").lower()
 
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -179,12 +177,27 @@ SPECTACULAR_DEFAULTS = {
 
 DB_DIR = Path(os.environ.get("OAUTH_DB_DIR", DJANGO_PROJECT_ROOT_DIR))
 DB_FILE = Path(os.environ.get("OAUTH_DB_FILE", "DATABASE.sqlite3"))
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": DB_DIR / DB_FILE,
+
+# Default DEV_PHASE is always local, which enables sqlite3.
+POSTGRES_ENABLED = os.environ.get("POSTGRES_ENABLED", "true")
+if POSTGRES_ENABLED == "true":
+    DATABASES = {
+        "default": {
+            "ENGINE": f"django.db.backends.{os.environ.get('PG_DB_ENGINE', 'postgresql')}",
+            "NAME": os.environ.get("PG_DB_DATABASE", "postgres"),
+            "USER": os.environ.get("PG_DB_USERNAME", "postgres"),
+            "PASSWORD": os.environ.get("PG_DB_PASSWORD", "postgres"),
+            "HOST": os.environ.get("PG_DB_HOST", "0.0.0.0"),
+            "PORT": os.environ.get("PG_DB_PORT", "5432"),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": DB_DIR / DB_FILE,
+        }
+    }
 
 STATIC_URL = "/static/"
 STATIC_ROOT = DJANGO_PROJECT_ROOT_DIR / "static"
@@ -206,7 +219,9 @@ DEFAULT_SUPPORT_EMAIL = os.environ.get(
     "APPSTORE_DEFAULT_SUPPORT_EMAIL", EMAIL_HOST_USER
 )
 
-MIN_DJANGO_LEVEL = "INFO"
+# Logging
+MIN_LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG" if DEBUG else os.environ.get("LOG_LEVEL", MIN_LOG_LEVEL)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,  # keep Django's default loggers
@@ -233,10 +248,11 @@ LOGGING = {
             "backupCount": 10,
         },
         "console": {
+            "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
         },
         "djangoLog": {
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOG_DIR / "django_debug.log",
             "formatter": "timestampthread",
@@ -244,7 +260,7 @@ LOGGING = {
             "backupCount": 10,
         },
         "app_store_log": {
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOG_DIR / "app_store.log",
             "formatter": "timestampthread",
@@ -256,16 +272,16 @@ LOGGING = {
         "": {
             "handlers": ["app_store_log", "console"],
             "propagate": False,
-            "level": "DEBUG"
+            "level": LOG_LEVEL
         },
         "django": {
             "handlers": ["syslog", "djangoLog", "console"],
-            "level": MIN_DJANGO_LEVEL,
+            "level": LOG_LEVEL,
             "propagate": False,
         },
         "django.template": {
             "handlers": ["syslog", "djangoLog"],
-            "level": "INFO",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
         "django.db.backends": {
@@ -275,15 +291,15 @@ LOGGING = {
         },
         "admin": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
         "tycho.client": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
         "tycho.kube": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
     },
 }

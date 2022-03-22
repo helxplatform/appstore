@@ -1,4 +1,4 @@
-Django==3.1.7
+Django==3.2
 django-allauth==0.44.0 
 django-cors-headers==3.7.0
 django-crispy-forms==1.11.2
@@ -11,8 +11,11 @@ flake8==3.9.0
 mock==4.0.2 
 pysaml2==6.3.1 
 python3-openid==3.1.0 
-requests==2.20.1
-requests-oauthlib==1.3.0 
+requests==2.27.1
+requests-oauthlib==1.3.1 
 selenium==3.141.0 
-tycho-api==1.0.30
+tycho-api==1.4.dev2
 webdriver-manager==3.2.1 
+sqlparse==0.4.2
+asgiref==3.4.1
+psycopg2-binary

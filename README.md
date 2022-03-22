@@ -59,7 +59,6 @@ During development, environment variables can be set to control execution:
 | APPSTORE_DEFAULT_FROM_EMAIL                 | Default email address for appstore.                               |
 | APPSTORE_DEFAULT_SUPPORT_EMAIL              | Default support email for appstore.                               |
 | ACCOUNT_DEFAULT_HTTP_PROTOCOL               | Allows to switch between http and https protocol.                 |
-| WHITELIST_REDIRECT                          | Toggle authorized user middleware to redirect or raise a 403.     |
 
 The provided .env.sample contains a starter that you can update and source for
 development.
@@ -83,11 +82,28 @@ is provided, that is used as the application's icon.
 
 ## Development Environment
 
-### Local Development
+### Prerequisites
+
+- The appstore default database engine is postgresql. To setup a postgresql docker
+container, the following steps are required.
+```  
+make build.postgresql
+```
+
+To use sqlite3 as the database backend,
+```
+export DEV_PHASE=local
+```
+
+- Some form of local kubernetes environment (minikube, kind, k3
+etc).
+
+### Local Development 
+
+#### With Tycho (default)
 
 For local development you should have Python 3, a python virtual environment dedicated
-to the project, and some form of local kubernetes environment (minikube, kind, k3
-etc). You can configure your python environment with the following steps.
+to the project. You can configure your python environment with the following steps.
 
 ```bash
 #!/bin/bash
@@ -107,31 +123,69 @@ if [ ! -d venv ]; then
     python3 -m venv venv
 fi
 source venv/bin/activate
-
-# use develop branch and install requirements
 git checkout develop
+```
+
+Install requirements
+
+> NOTE: The below command will install requirements necessary for appstore which includes 
+> Tycho pypi package, and it's requirements.
+> Skip to [Cloning Tycho locally](#with-tycho-cloned-locally) to work on simultaneous changes to both projects.
+
+```
 make install
 ```
 
-You can use the commands packaged in `make` to configure and run the appstore.
+#### With Tycho cloned locally
+
+> NOTE: To work with Tycho and appstore locally comment
+> `tycho-api` in requirements.txt and setup.cfg.
+
+Clone Tycho repo locally outside the appstore project.
+
+```
+git clone https://github.com/helxplatform/tycho.git
+cd tycho
+git checkout develop
+```
+
+Add Tycho folder to the PYTHON PATH. 
+
+```
+export PYTHONPATH=${PYTHONPATH}:/path/to/tycho/folder
+
+Example:
+export PYTHONPATH=$PYTHONPATH:/home/user/tycho
+```
+
+Install appstore and Tycho requirements
+```
+# To install appstore requirements
+make install
+
+# To install Tycho requirements
+pip install -r /path/to/tycho/folder/requirements.txt
+
+Example:
+pip install -r /home/user/tycho/requirements.txt
+```
+
+You can use the commands packaged in `make` to configure and run the appstore. The below command is a way to
+start appstore development server.
 
 ```bash
 # configure environment variables, see above or .env.sample
 export DEV_PHASE=stub
 export SECRET_KEY=f00barBaz
-# setup local frontend assets
-make appstore.frontend 
 # Runs database migrations, creates super user, runs test then runs the appstore
 # at 0.0.0.0:8000
-make appstore.start brand=braini
+make start brand=braini
 ```
 
-> NOTE: After running `make appstore.start` for the first time, use
-> `make appstore` every other time so that migrations to the database
-> will only run once.
+With appstore running, make the necessary changes (including Tycho if necessary). Next steps involve publishing the 
+Tycho package to PyPI (Python Package Index). Jump to 
+[Publishing the Tycho package](#coordination-of-development-for-tycho-and-appstore) for details.
 
-For additional configuration options (`DEV_PHASE`, `product`, `OAUTH_PROVIDERS`)
-inspect `Makefile` and `appstore/appstore/settings/*`.
 
 ### Development environment with Kubernetes
 
@@ -183,124 +237,6 @@ helm install release-name $HELXPLATFORM_HOME/devops/helx --values basic-values.y
 
 You now have appstore and tycho running in a kubernetes environment ready for
 testing. You can monitor pods/service status via `kubectl`.
-
-### Kubernetes + local appstore configuration
-
-With the helx chart installed in a local kubernetes environment you can run
-appstore outside of `stub` mode and Tycho will launch services into your local
-kubernetes cluster.
-
-- Clone the appstore repo (develop branch)
-
-```bash
-git clone -b develop [https://github.com/helxplatform/appstore.git](https://github.com/helxplatform/appstore.git)
-```
-
-- Activate virtual environment
-
-```bash
-python3 -m venv venv 
-source venv/bin/activate
-```
-
-- Install the requirements
-
-> NOTE: To work with a custom Tycho version and appstore locally comment
-> `tycho-api` in requirements.txt and add Tycho to your `PYTHON_PATH`. At this
-> stage you should reference the Tycho note below then return to this step.
-
-```bash
-pip install -r requirements.txt
-```
-
-OR
-
-```bash
-make install
-```
-
-- Create a .env file containing environment variables used by both Tycho and appstore.
-
-```text
-export SECRET_KEY=<insert value>
-
-# Project specific settings. (scidas | braini | cat | reccap | eduhelx)
-export DJANGO_SETTINGS_MODULE="appstore.settings.<project>_settings"
-
-# Optional: Google or GitHub OAuth web app credentials.
-export OAUTH_PROVIDERS="github,google"
-export GOOGLE_NAME=""
-export GOOGLE_CLIENT_ID=""
-export GOOGLE_SECRET=""
-export GITHUB_NAME=""
-export GITHUB_CLIENT_ID=""
-export GITHUB_SECRET=""
-
-# To skip the whitelisting step, add emails to authorize access to appstore home.
-export AUTHORIZED_USERS=""
-
-# Running Tycho in dev mode.
-export DEV_PHASE=dev
-
-# Namespace that Tycho launches Apps into on the cluster.
-export NAMESPACE=""
-
-# Default PVC used by Tycho.
-export stdnfsPvc="stdnfs"
-```
-
-- Export the environment variables in a terminal where appstore and Tycho are cloned.
-
-```bash
-source .env
-```
-
-- Run appstore by using the commands defined in `Makefile`.
-
-```bash
-make
-make install
-make appstore.frontend brand=cat
-make appstore.all brand=cat
-make appstore.start brand=cat
-```
-
-Appstore is now up and running. You should be able to see output from `gunicorn`
-and `appstore`. Due to kubernetes running in a separate process space see the
-notes below on viewing the apps that Tycho starts in your local Kubernetes
-cluster.
-
-### Developing with tycho locally
-
-You may need to make changes to tycho and test them with the appstore. To do
-this locally install tycho from a local repo clone with your changes instead
-of the pypi version in the `appstore` requirements file.
-
-- Clone the Tycho repo (develop branch):
-
-```bash
-git clone -b develop [https://github.com/helxplatform/tycho.git](https://github.com/helxplatform/tycho.git)
-```
-
-- Checkout you branch and make changes if required
-
-```bash
-git checkout -b <branch-name>
-```
-
-- Add cloned Tycho repo to the PYTHONPATH.
-
-```bash
-PYTHONPATH=$PYTHONPATH:/path/to/the/tycho/project/root
-```
-
-- Install the requirements:
-
-```bash
-pip install -r requirements.txt
-```
-
-- Return to appstore and continue setup.
 
 ### Manual OAuth provider setup
 
@@ -381,3 +317,186 @@ in the frontend Django app, stop and remove the container. You can then run
 If changes need to happen to the frontend artifacts (react components, etc) those
 changes will need to be done in the `helx-ui` repo which has instructions for
 developing the frontend and testing appstore integration.
+
+
+## Coordination of Development for Tycho and Appstore
+
+>NOTE: Tycho is a library that provides a facility and API to manipulate launch and 
+>get state information for kubernetes objects in a more simplistic manner.
+>Appstore relies on this facility to launch apps as defined by an external 
+>repository  and then later query/manager those objects afterwards.  Thus,
+>Tycho is an Appstore dependency.  It's functionality is made available as
+>a python package, and changes to tycho are accessed through an updated
+>package.  During the development process this can be accomplished by either
+>using a published package or using a locally created package.
+
+### Install build support packages
+
+    pip install setuptools==53.0.0
+    pip install wheel==0.36.2
+    pip install twine==3.3.0
+
+### Publish a new tycho package
+
+#### Create a pypi account and establish credentials
+
+1. Log into pypi.org with credentials from helx-pypi-credentials.txt in Keybase
+2. Go to Account Settings->API Tokens and generate a new token
+  - don’t limit its scope to a new project
+  - copy the token before you exit the screen
+  - create a ~/.pypirc file with this content
+
+    [pypi]
+      username = __token__
+      password = <pypi-token>
+
+#### Publishing
+
+This will build Tycho with your updates and publish a package to pypi.org
+
+1.  Update version in /tycho.__init__.py
+
+Use the  .dev* suffix for test versions
+
+2. Publish from within the Tycho project folder.
+```
+python setup.py publish
+```
+
+#### Updating Appstore
+ 
+1. Go to appstore code base and update tycho version in following files `requirements.txt`
+and `setup.cfg` created in the publishing step
+
+2. Build and publish appstore
+
+## Cluster Kubernetes Config
+
+Two files are provided, a kubeconfig which is used by helm and kubectl to define how
+to connect to the BlackBalsam cluster, and a helm values yaml file (BB-values) used to override 
+the default values established by a one time initialization described below.
+
+### Github config
+
+It's easier to just get a github oauth application set up, navigate to
+`github->Settings->Developer Setting->OAuth Apps` and create a new OAuth App.
+The name is arbitrary, but should have something to do with BlackBalsam and
+Kubernetes as that's what it will authorize.  There needs to be a `homepage url`
+and a `authorization callback url` set as follows.
+
+    homepage url: https://helx.<your namespace>.blackbalsam-cluster.edc.renci.org/accounts/login
+    authorization callback url: https://helx.<your namespace>.blackbalsam-cluster.edc.renci.org/accounts/github/login/callback/
+
+Create the app, and add a secret.  The client id and secret need to be copied
+into BB-values.
+
+    GITHUB_CLIENT_ID: "<the client id>"
+    GITHUB_SECRET: "<the secret>"
+
+### Configuration using Helm
+
+Value files should only contain those things which are not the default, to create the default values,
+the following commands need to be run 1 time per namespace (usually there will only be 1 namespace).
+
+That the top level directory of the devops repo, set the branch to develop
+
+#### To obtain helm configs
+
+    git clone git@github.com:helxplatform/devops.git
+
+and then switch to the develop branch
+
+    git checkout develop
+
+and execute the following helm commands
+
+    cd helx && helm dependency update && cd -
+    cd helx/charts/dug && helm dependency update && cd -
+    cd helx/charts/helx-monitoring && helm dependency update && cd -
+    cd helx/charts/image-utils && helm dependency update && cd -
+    cd helx/charts/roger && helm dependency update && cd -
+    cd helx/charts/search && helm dependency update && cd -
+
+followed up by the specializing config
+
+    helm -n <namespace> upgrade --install helx devops/helx --values <BB-values>
+## Helm Configuration
+
+The configuration variables that control the configuration of Appstore are transmitted from helm
+and as part of helm creation, the following values are typical
+
+appstore:
+  image:
+    repository: <imagename>
+    tag: <branchname>
+    pullPolicy: Always
+  django:
+    AUTHORIZED_USERS: <a list emails of authorized users>
+    EMAIL_HOST_USER: "appstore@renci.org"
+    EMAIL_HOST_PASSWORD: <secret>
+    DOCKSTORE_APPS_BRANCH: <appstore branch>
+    oauth:
+      OAUTH_PROVIDERS: "github,google"
+      GITHUB_NAME: <github name>
+      GITHUB_CLIENT_ID: <github id>
+      GITHUB_SECRET: <github secret>
+      GOOGLE_NAME: <google name>
+      GOOGLE_CLIENT_ID: <google client id>
+      GOOGLE_SECRET: <google client secret>
+  ACCOUNT_DEFAULT_HTTP_PROTOCOL: https
+  appstoreEntrypointArgs: "make start"
+  userStorage:
+    createPVC: true
+nfs-server:
+  enabled: false
+nginx:
+  service:
+    IP: <nginx ip>
+    serverName: <appstore dns hostname>
+  SSL:
+    nginxTLSSecret: <tls secret>
+
+### Parameters given by system administration
+
+As part of user configuration, system administration will obtain the following
+
+  - OAUTH_PROVIDERS
+  - GITHUB_NAME
+  - GITHUB_CLIENT_ID
+  - GITHUB_SECRET
+  - GOOGLE_NAME
+  - GOOGLE_CLIENT_ID
+  - GOOGLE_SECRET
+  - serverName
+  - IP
+  - nginxTLSSecret
+  - AUTHORIZED_USERS
+
+### Typical configurable values
+
+#### Image Name
+
+- Parameter Name: repository
+
+In the form of <username>/appstore and corresponds to the `docker push` used to push the
+appstore image resulting from the build process.
+
+#### Image Tag
+
+- Parameter Name: tag
+
+Also a parameter to the publiished image
+
+#### Image Pull Rules
+
+- Parameter Name: pullPolicy
+- Typical Value: Always
+
+A value of always guarantees that the image will be updated upon helm create if it is different than the
+currently used one and is underpins the simple cycle push to docker, helm delete, follow by helm create
+
+#### Dockstore Branch
+
+- Parameter Name: DOCKSTORE_APPS_BRANCH
+
+Indicates the branch contains the dockstore kubernetes app launch parameters
