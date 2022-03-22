@@ -44,7 +44,7 @@ pipeline {
         stage('Publish') {
             when {
                 anyOf {
-                    branch 'develop'; buildingTag()
+                    branch 'develop'; branch "master"; buildingTag()
                 }
             }
             environment {
