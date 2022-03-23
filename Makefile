@@ -46,9 +46,7 @@ else
 DEBUG := false
 endif
 
-ifdef LOG_LEVEL
-LOG_LEVEL = ${LOG_LEVEL}
-else
+ifndef LOG_LEVEL
 LOG_LEVEL := "info"
 endif
 
