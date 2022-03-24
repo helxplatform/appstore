@@ -1,0 +1,22 @@
+{% extends "frontend/base.html" %}
+{% load i18n %}
+{% block head_title %}
+{% trans "Whitelisting Required" %}
+{% endblock %}
+
+{% block content %}
+<div class="helx-container">
+  <h1 class="helx-header">
+    {% trans "Whitelisting Required" %}
+  </h1>
+  <p class="helx-info">
+    {% blocktrans with site.name as site_name %}
+    Your request to gain access to the {{ full_brand }} AppStore has been forwarded to website administrator for review and whitelisting.<br/>
+    Once your request is approved, you will be notified via an email.<br/>
+    This security feature is only required one time, for your initial access.<br/><br/>
+    Thank you.<br/>
+    {% endblocktrans %}
+    Return to <a href="/">Login</a> page.
+  </p>
+</div>
+{% endblock %}
