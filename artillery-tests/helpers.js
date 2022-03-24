@@ -27,9 +27,14 @@ function parseNewApps(requestParams, response, context, ee, next) {
         // It seems that authentication can be rejected at this step.
         return next(new Error(response.body));
     }
-    const oldAppIds = context.vars["apps"].map((app) => app.sid);
-    const spawnedApp = apps.filter((app) => !oldAppIds.includes(app.sid))[0];
+    const spawnedAppMetadata = context.vars["spawned_app_metadata"];
+    const spawnedApp = apps.find((app) => app.sid === spawnedAppMetadata.sid);
+    if (!spawnedApp) {
+        const validSids = apps.map((a) => a.sid);
+        return next(new Error(`Spawned app with sid=${spawnedAppMetadata.sid} not found in apps list ${JSON.stringify(validSids)}.`));
+    }
     context.vars["spawned_app"] = spawnedApp;
+    // context.vars["spawned_app"] = spawnedApp;
     return next();
 }
 function getRandomApp(requestParams, response, context, ee, next) {
@@ -63,12 +68,28 @@ function logUrl(requestParams, context, ee, next) {
     console.log(requestParams.method, requestParams.url);
     return next();
 }
-
+function confirmAppDeleted(requestParams, response, context, ee, next) {
+    // console.log("--------------- CONFIRMING ----------------")
+    let apps;
+    try {
+        apps = JSON.parse(response.body);
+    } catch (e) {
+        return next(new Error(response.body));
+    }
+    const deletedSid = context.vars["spawned_app"].sid;
+    const app = apps.find((app) => app.sid === deletedSid);
+    if (app) {
+        return next(new Error(`Instantiated app with sid=${deletedSid} still exists after deletion.`));
+    }
+    // console.log("--------------- CONFIRMED ----------------")
+    return next();
+}
 module.exports = {
     setXCSRF,
     logUrl,
     parseInitialApps,
     parseNewApps,
     getRandomApp,
+    confirmAppDeleted,
     ...require("./cookies.js")
 };
