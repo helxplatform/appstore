@@ -31,7 +31,7 @@ function parseNewApps(requestParams, response, context, ee, next) {
     const spawnedApp = apps.find((app) => app.sid === spawnedAppMetadata.sid);
     if (!spawnedApp) {
         const validSids = apps.map((a) => a.sid);
-        return next(new Error(`Spawned app with sid=${spawnedAppMetadata.sid} not found in apps list ${JSON.stringify(validSids)}.`));
+        return next(new Error(`app_not_spawned`));
     }
     context.vars["spawned_app"] = spawnedApp;
     // context.vars["spawned_app"] = spawnedApp;
@@ -79,7 +79,7 @@ function confirmAppDeleted(requestParams, response, context, ee, next) {
     const deletedSid = context.vars["spawned_app"].sid;
     const app = apps.find((app) => app.sid === deletedSid);
     if (app) {
-        return next(new Error(`Instantiated app with sid=${deletedSid} still exists after deletion.`));
+        return next(new Error(`app_not_deleted`));
     }
     // console.log("--------------- CONFIRMED ----------------")
     return next();
