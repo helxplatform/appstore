@@ -86,7 +86,7 @@ ifndef ARTILLERY_TARGET
 	$(error ARTILLERY_TARGET not set (should point to the base URL of appstore, e.g. "http://localhost:8000"))
 endif
 	cd artillery-tests; \
-	ls -1 tests | xargs -L1 -I%TEST_NAME% npx artillery run tests/%TEST_NAME% --quiet --environment ${ARTILLERY_ENV} --target ${ARTILLERY_TARGET}
+	ls -1 tests | xargs -L1 -I%TEST_NAME% npx artillery run tests/%TEST_NAME% --environment ${ARTILLERY_ENV} --target ${ARTILLERY_TARGET}
 	
 
 #start: Run the gunicorn server

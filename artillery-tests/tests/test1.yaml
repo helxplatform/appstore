@@ -23,7 +23,7 @@ config:
         # This has problematic implications for creating new apps, since two virtual users can create different apps at the same time on the same account
         # and both are unable to tell which app "they" spawned and which the other spawned, since the endpoint doesn't return a uid for the app instance.
         - duration: 10
-          arrivalRate: 2
+          arrivalRate: 10
     smoke:
       phases:
         - duration: 1
@@ -42,7 +42,6 @@ scenarios:
       # This will run the setXCSRF hook before every request in the scenario.
       # This hook will only modify requests that require additional CSRF processing.
       - setXCSRF
-      - logUrl
     
     # Enable for manual session management of cookies and csrf tokens. Not necessary anymore.
     # beforeRequest:
