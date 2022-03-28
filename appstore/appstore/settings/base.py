@@ -69,8 +69,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "api",
-    "appstore",
     "core",
+    "appstore",
     "frontend",
     "middleware",
     "product",
@@ -219,7 +219,9 @@ DEFAULT_SUPPORT_EMAIL = os.environ.get(
     "APPSTORE_DEFAULT_SUPPORT_EMAIL", EMAIL_HOST_USER
 )
 
-MIN_DJANGO_LEVEL = "INFO"
+# Logging
+MIN_LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG" if DEBUG else os.environ.get("LOG_LEVEL", MIN_LOG_LEVEL)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,  # keep Django's default loggers
@@ -246,10 +248,11 @@ LOGGING = {
             "backupCount": 10,
         },
         "console": {
+            "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
         },
         "djangoLog": {
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOG_DIR / "django_debug.log",
             "formatter": "timestampthread",
@@ -257,7 +260,7 @@ LOGGING = {
             "backupCount": 10,
         },
         "app_store_log": {
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOG_DIR / "app_store.log",
             "formatter": "timestampthread",
@@ -269,16 +272,16 @@ LOGGING = {
         "": {
             "handlers": ["app_store_log", "console"],
             "propagate": False,
-            "level": "DEBUG"
+            "level": LOG_LEVEL
         },
         "django": {
             "handlers": ["syslog", "djangoLog", "console"],
-            "level": MIN_DJANGO_LEVEL,
+            "level": LOG_LEVEL,
             "propagate": False,
         },
         "django.template": {
             "handlers": ["syslog", "djangoLog"],
-            "level": "INFO",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
         "django.db.backends": {
@@ -288,15 +291,15 @@ LOGGING = {
         },
         "admin": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
         "tycho.client": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
         "tycho.kube": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
     },
 }
