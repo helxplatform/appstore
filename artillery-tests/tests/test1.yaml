@@ -17,13 +17,8 @@ config:
   environments:
     load:
       phases:
-        # Note that Artillery runs each virtual user on its own thread, and each thread receives its own copy of the entire payload data.
-        # This means is it likely two virtual users will login using the same test account (simply by choosing the same random user credentials from the payload).
-        # See: https://github.com/artilleryio/artillery/issues/1221
-        # This has problematic implications for creating new apps, since two virtual users can create different apps at the same time on the same account
-        # and both are unable to tell which app "they" spawned and which the other spawned, since the endpoint doesn't return a uid for the app instance.
-        - duration: 10
-          arrivalRate: 10
+        - duration: "{{ $processEnvironment.ARTILLERY_DURATION }}"
+          arrivalRate: "{{ $processEnvironment.ARTILLERY_ARRIVAL_RATE }}"
     smoke:
       phases:
         - duration: 1

@@ -26,8 +26,15 @@ APP_LIST        ?= api appstore core frontend middleware product
 BRANDS          := braini cat heal restartr scidas eduhelx argus
 MANAGE	        := ${PYTHON} appstore/manage.py
 SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
-ARTILLERY_ENV   := ${ARTILLERY_ENVIRONMENT}
-ARTILLERY_TARGET:= ${ARTILLERY_TARGET}
+
+# smoke|test
+ARTILLERY_ENV          := ${ARTILLERY_ENVIRONMENT}
+# URL pointing to appstore base path, e.g. http://localhost:8000
+ARTILLERY_TARGET       := ${ARTILLERY_TARGET}
+# Duration in seconds that an Artillery load test lasts.
+ARTILLERY_DURATION     := ${ARTILLERY_DURATION}
+# Amount of users to instantiate per second during an Artillery load test.
+ARTILLERY_ARRIVAL_RATE := ${ARTILLERY_ARRIVAL_RATE}
 
 ifdef GUNICORN_WORKERS
 NO_OF_GUNICORN_WORKERS := $(GUNICORN_WORKERS)
@@ -103,6 +110,14 @@ ifndef ARTILLERY_ENV
 endif
 ifndef ARTILLERY_TARGET
 	$(error ARTILLERY_TARGET not set (should point to the base URL of appstore, e.g. "http://localhost:8000"))
+endif
+ifeq "${ARTILLERY_ENV}" "load"
+ifndef ARTILLERY_DURATION
+	$(error ARTILLERY_DURATION not set when ARTILLERY_ENVIRONMENT=load (seconds that a load test lasts))
+endif
+ifndef ARTILLERY_ARRIVAL_RATE
+	$(error ARTILLERY_ARRIVAL_RATE not set when ARTILLERY_ENVIRONMENT=load (users instantiated per second))
+endif
 endif
 	cd artillery-tests; \
 	ls -1 tests | xargs -L1 -I%TEST_NAME% npx artillery run tests/%TEST_NAME% --environment ${ARTILLERY_ENV} --target ${ARTILLERY_TARGET}
