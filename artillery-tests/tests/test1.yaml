@@ -140,6 +140,7 @@ scenarios:
       #########################
       # Delete `spawned_app`. #
       #########################
+      - sleep: 15
       - log: "Deleting new app"
       - delete:
           url: "/api/v1/instances/{{ spawned_app.sid }}/"
