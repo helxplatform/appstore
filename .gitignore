@@ -160,3 +160,7 @@ appstore/schema.yml
 # transient static directories 
 appstore/appstore/static
 appstore/static/
+
+# NPM
+node_modules/
+package-lock.json

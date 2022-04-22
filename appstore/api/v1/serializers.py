@@ -64,6 +64,7 @@ class ResourceSerializer(serializers.Serializer):
 class InstanceSpecSerializer(serializers.Serializer):
     username = serializers.CharField()
     app_id = serializers.CharField()
+    sid = serializers.CharField()
     name = serializers.CharField()
     host = serializers.CharField()
     resources = serializers.DictField()

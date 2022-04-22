@@ -108,6 +108,7 @@ class InstanceSpec:
     svc_id: InitVar[str]
     sys_id: InitVar[str]
     url: str = field(init=False)
+    sid: str = field(init=False)
     protocol: str = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
 
     def __post_init__(self, ip, port, svc_id, sys_id):
@@ -125,6 +126,7 @@ class InstanceSpec:
                 f"{self.protocol}://{self.host}/private/{self.app_id}/"
                 f"{self.username}/{svc_id}/"
             )
+        self.sid = sys_id
         logger.debug(f"-- app-networking constructed url: {self.url}")
 
 
