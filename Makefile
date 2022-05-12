@@ -104,6 +104,10 @@ build:
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}-${COMMIT_HASH}
 
+#build-kaniko: Build the container image with Kaniko
+build-kaniko:
+	
+
 #build.test: Test the Docker image (requires docker compose)
 build.test:
 	docker-compose -f docker-compose.test.yml up --build --exit-code-from appstore

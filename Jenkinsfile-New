@@ -1,0 +1,30 @@
+#!groovy
+pipeline {
+    agent {
+        label 'kaniko-agent'
+    }
+    stages {
+        stage('Checkout') {
+            checkout scm
+        }
+        stage('Install') {
+            steps {
+                sh 'make install'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'make test'
+            }
+        }
+        stage('Deploy') {
+            environment {
+                DOCKERHUB_CREDS = credentials("${env.REGISTRY_CREDS_ID_STR}")
+                DOCKER_REGISTRY = "${env.DOCKER_REGISTRY}"
+            }
+            steps {
+                sh 'make publish'
+            }
+        }
+    }
+}
