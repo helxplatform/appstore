@@ -58,9 +58,6 @@ spec:
                     sh '''#!/busybox/sh
                         VERSION_FILE="appstore/appstore/_version.py"
                         VERSION=$(cut -d " " -f 3 "${VERSION_FILE}" | tr -d '"')
-                        #DOCKER_IMAGE1="${DOCKER_OWNER}"
-                        #DOCKER_IMAGE2="${DOCKER_APP}"
-                        #DOCKER_IMAGE3="${VERSION}"
                         IMAGE_NAME=${DOCKER_OWNER}/${DOCKER_APP}:$VERSION
 			echo "$IMAGE_NAME"
                         /kaniko/executor --dockerfile ./Dockerfile \
