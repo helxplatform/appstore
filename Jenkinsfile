@@ -56,7 +56,7 @@ spec:
             steps {
                 container(name: 'kaniko', shell: '/busybox/sh') {
                     sh '''#!/busybox/sh
-                        VERSION_FILE="./src/dug/_version.py"
+                        VERSION_FILE="appstore/appstore/_version.py"
                         VERSION=$(cut -d " " -f 3 "${VERSION_FILE}" | tr -d '"')
                         #DOCKER_IMAGE1="${DOCKER_OWNER}"
                         #DOCKER_IMAGE2="${DOCKER_APP}"
