@@ -50,7 +50,7 @@ spec:
                 DOCKER_REGISTRY="${env.DOCKER_REGISTRY}"
                 DOCKER_REPO="docker.io"
                 DOCKER_OWNER="helxplatform"
-                DOCKER_APP="dug"
+                DOCKER_APP="appstore"
 
             }
             steps {
