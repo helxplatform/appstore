@@ -1,5 +1,5 @@
 # use the ui container to pull in webpack artifacts
-FROM helxplatform/helx-ui:2.0.0-dev.10 as builder
+FROM helxplatform/helx-ui:2.0.0-dev.13 as builder
 
 FROM python:3.9.0-slim
 
@@ -19,14 +19,20 @@ RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && 
 
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
-	apt-get install -y build-essential git xmlsec1
+	apt-get install -y build-essential git xmlsec1 curl
+
+# Specifically install node v14.x, since otherwise apt-get will install a much more outdated version.
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash
+RUN apt-get install -y nodejs
    
 WORKDIR $APP_HOME
 COPY . .
 COPY --from=builder /usr/share/nginx/html/index.html ./appstore/frontend/templates/frontend
 COPY --from=builder /usr/share/nginx/static/ ./appstore/frontend/static
 
-RUN make install
+RUN export SET_BUILD_ENV_FROM_FILE=false \
+    && make install \
+    && unset SET_BUILD_ENV_FROM_FILE
 
 RUN chown -R 1000:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
