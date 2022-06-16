@@ -104,7 +104,7 @@ spec:
                     crane push image.tar $IMAGE_NAME:$TAG2
                     if [ $BRANCH_NAME == "develop" ]; then
                         crane push image.tar $IMAGE_NAME:$TAG3
-                    elif [ $BRANCH_NAME == "master"]; then
+                    elif [ $BRANCH_NAME == "master" ]; then
                         crane push image.tar $IMAGE_NAME:$TAG3
                         git tag $VERSION
                         git push origin --tags
