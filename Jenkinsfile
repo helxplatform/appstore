@@ -51,16 +51,17 @@ spec:
     environment {
         PATH = "/busybox:/kaniko:/ko-app/:$PATH"
         DOCKERHUB_CREDS = credentials("${env.REGISTRY_CREDS_ID_STR}")
-        REGISTRY = "${env.DOCKER_REGISTRY}"
+        REGISTRY = "${env.REGISTRY}"
         REG_OWNER="helxplatform"
         REG_APP="appstore"
         COMMIT_HASH="${sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()}"
         VERSION_FILE="appstore/appstore/_version.py"
         VERSION="${sh(script:'awk \'{ print $3 }\' appstore/appstore/_version.py | xargs', returnStdout: true).trim()}"
-        IMAGE_NAME="${REG_OWNER}/${REG_APP}"
+        IMAGE_NAME="${REGISTRY}/${REG_OWNER}/${REG_APP}"
         TAG1="$BRANCH_NAME"
         TAG2="$COMMIT_HASH"
         TAG3="$VERSION"
+        TAG4="latest"
     }
 
     stages {
@@ -74,6 +75,8 @@ spec:
                                          --no-push \
                                          --destination $IMAGE_NAME:$TAG1 \
                                          --destination $IMAGE_NAME:$TAG2 \
+                                         --destination $IMAGE_NAME:$TAG3 \
+                                         --destination $IMAGE_NAME:$TAG4 \
                                          --tarPath image.tar
                         '''
                 }
@@ -99,6 +102,14 @@ spec:
                     echo "$DOCKERHUB_CREDS_PSW" | crane auth login -u $DOCKERHUB_CREDS_USR --password-stdin $REGISTRY
                     crane push image.tar $IMAGE_NAME:$TAG1
                     crane push image.tar $IMAGE_NAME:$TAG2
+                    if [ $BRANCH_NAME == "develop" ]; then
+                        crane push image.tar $IMAGE_NAME:$TAG3
+                    elif [ $BRANCH_NAME == "master"]; then
+                        crane push image.tar $IMAGE_NAME:$TAG3
+                        git tag $VERSION
+                        git push origin --tags
+                        crane push image.tar $IMAGE_NAME:$TAG4
+                    fi
                     '''
                 }
             }
