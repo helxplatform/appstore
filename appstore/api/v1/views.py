@@ -339,7 +339,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
             system.services[0].identifier,
             system.identifier,
         )
-
         # TODO: better status capture from Tycho on submission
         if s:
             serializer = InstanceSpecSerializer(data=asdict(s))

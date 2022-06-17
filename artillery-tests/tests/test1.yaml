@@ -1,0 +1,174 @@
+config:
+  http:
+    timeout: 5000
+  processor: "../helpers.js"
+  payload:
+    # Load login (csv) data for smoke/load environments.
+    # Login data was generated with random data.
+    # User records should be created in the DB prior to running tests.
+    # path: "../payloads/{{ $environment }}/test-users/users.txt"
+    path: "../payloads/test-users/users.txt"
+    fields:
+      - "username"
+      - "password"
+      - "email"
+    # Select a new user row each time a virtual user logs in.
+    order: random
+  environments:
+    load:
+      phases:
+        - duration: "{{ $processEnvironment.ARTILLERY_DURATION }}"
+          arrivalRate: "{{ $processEnvironment.ARTILLERY_ARRIVAL_RATE }}"
+    smoke:
+      phases:
+        - duration: 1
+          arrivalRate: 1
+  plugins:
+    expect: {}
+    ensure: {}
+  ensure:
+    conditions:
+      - expression: errors.ETIMEDOUT == undefined
+      - expression: errors.ECONNREFUSED == undefined
+      - expression: vusers.failed == 0
+
+scenarios:
+  - beforeRequest:
+      # This will run the setXCSRF hook before every request in the scenario.
+      # This hook will only modify requests that require additional CSRF processing.
+      - setXCSRF
+    
+    # Enable for manual session management of cookies and csrf tokens. Not necessary anymore.
+    # beforeRequest:
+    #   - setCookies
+    # afterResponse:
+    #  - updateSession
+    flow:
+      ##############################
+      # Retrieve session id cookie #
+      ##############################
+      - log: "Logging in and retrieving CSRF"
+      - get:
+          # Get a session id (and possibly a CSRF token) created for the session.
+          url: "/"
+          expect:
+            - statusCode: 200
+      ##############################################
+      # Make sure server sets the csrftoken cookie #
+      ##############################################
+      - get:
+          url: "/admin/login/"
+          # Unclear why, but sometimes a CSRF won't set by nagivating to the root. However, it will always set at this endpoint,
+          # so navigate here just in case it wasn't already set.
+      #########
+      # Login #
+      #########
+      - post:
+          url: "/accounts/login/"
+          formData:
+            login: "{{ username }}"
+            password: "{{ password }}"
+          expect:
+            - statusCode: 302
+            - hasHeader: set-cookie
+          # For some strange reason, artillery completely breaks down if it tries to follow the redirect sent by logging in
+          # causing all the following tests to stall out and fail.
+          followRedirect: false
+      #################################################################################
+      # Get the currently running apps on the account and set the context var `apps`. #
+      #################################################################################
+      - log: "Loading initial app count"
+      - get:
+          url: "/api/v1/instances/"
+          expect:
+            - statusCode: 200
+          afterResponse:
+            - parseInitialApps
+      ########################################################################
+      # Get dict of available apps and set the context var `available_apps`. #
+      ########################################################################
+      - log: "Getting available apps"
+      - get:
+          url: "/api/v1/apps/"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$"
+              as: available_apps
+          afterResponse:
+            - getRandomApp
+      ####################################################################
+      # Spawn a random app from `available_apps` with minimum resources. #
+      ####################################################################
+      - log: "Spawning a new app"
+      - post:
+          # Create a new app
+          url: "/api/v1/instances/"
+          json:
+            app_id: "{{ random_app.app_id }}"
+            cpus: "{{ random_app.minimum_resources.cpus }}"
+            memory: "{{ random_app.minimum_resources.memory }}"
+            gpus: "{{ random_app.minimum_resources.gpus }}"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$"
+              as: spawned_app_metadata
+      ########################################################################################################
+      # Get the list of currently running apps again and set the context var `spawned_app` from the new app. #
+      ########################################################################################################
+      - log: "Confirming new app is created"
+      - get:
+          url: "/api/v1/instances/"
+          expect:
+            - statusCode: 200
+          afterResponse: parseNewApps
+      #################################################################################################################
+      # Make sure the app id of `spawned_app` is the same as the randomly chosen app that was supposed to be created. #
+      #################################################################################################################
+      - get:
+          # Basically only way to parse the apps from the request body is manually using JS in the GET /api/v1/instances/ requests.
+          # This is because JSONPath implementation is useless (it chooses a random element if the request body returns an array, instead of just the request body array as-is).
+          # Since it needs to be parsed in afterResponse, it isn't parsed in time to use expect -> equals in the same request/
+          # Thus, it also requires an extra dummy request to be made just to use the expect plugin's functionality properly.
+          url: "/"
+          expect:
+            - equals:
+              - "{{ spawned_app.aid }}"
+              - "{{ random_app.app_id }}"
+          followRedirect: false
+      #########################
+      # Delete `spawned_app`. #
+      #########################
+      - sleep: 15
+      - log: "Deleting new app"
+      - delete:
+          url: "/api/v1/instances/{{ spawned_app.sid }}/"
+      ################################
+      # Confirm the app was deleted. #
+      ################################
+      - log: "Confirming app is deleted"
+      - get:
+          url: "/api/v1/instances/"
+          afterResponse: confirmAppDeleted
+          # capture:
+          #   - json: "$..[?(@.sid=='{{ spawned_app.sid }}')]"
+          #     as: "app_still_exists"
+          # expect:
+          #   - statusCode: 200
+          #   - equals:
+          #     - "{{ app_still_exists }}"
+          #     - undefined
+      ##########
+      # Logout #
+      ##########
+      - log: "Logging out"
+      - post:
+          url: "/accounts/logout/"
+          # Sometimes it returns a 200 when you logout, sometimes a 302. Not really sure why.
+          expect:
+            - statusCode: 302
+          followRedirect: false
+      #########################################################################################
+      # Make sure that a protected endpoint (requiring login) is forbidden after logging out. #
+      #########################################################################################

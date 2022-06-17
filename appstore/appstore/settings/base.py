@@ -5,7 +5,10 @@ For product specific settings see <product>_settings.py
 """
 
 import os
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 APPSTORE_NESTED_SETTINGS_DIR = Path(__file__).parent.resolve(strict=True)
 APPSTORE_CONFIG_DIR = APPSTORE_NESTED_SETTINGS_DIR.parent
@@ -42,7 +45,7 @@ ALLOW_DJANGO_LOGIN = os.environ.get(
     "ALLOW_DJANGO_LOGIN",
     "True" if DEV_PHASE == "local" or DEV_PHASE == "stub" else "False",
 ).lower()
-ALLOW_SAML_LOGIN = os.environ.get("ALLOW_SAML_LOGIN", "True").lower()
+ALLOW_SAML_LOGIN = os.environ.get("ALLOW_SAML_LOGIN", "False").lower()
 IMAGE_DOWNLOAD_URL = os.environ.get(
     "IMAGE_DOWNLOAD_URL", "https://braini-metalnx.renci.org/metalnx"
 )
@@ -69,8 +72,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "api",
-    "appstore",
     "core",
+    "appstore",
     "frontend",
     "middleware",
     "product",
@@ -219,7 +222,9 @@ DEFAULT_SUPPORT_EMAIL = os.environ.get(
     "APPSTORE_DEFAULT_SUPPORT_EMAIL", EMAIL_HOST_USER
 )
 
-MIN_DJANGO_LEVEL = "INFO"
+# Logging
+MIN_LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG" if DEBUG else os.environ.get("LOG_LEVEL", MIN_LOG_LEVEL)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,  # keep Django's default loggers
@@ -246,10 +251,11 @@ LOGGING = {
             "backupCount": 10,
         },
         "console": {
+            "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
         },
         "djangoLog": {
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOG_DIR / "django_debug.log",
             "formatter": "timestampthread",
@@ -257,7 +263,7 @@ LOGGING = {
             "backupCount": 10,
         },
         "app_store_log": {
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": LOG_DIR / "app_store.log",
             "formatter": "timestampthread",
@@ -269,16 +275,16 @@ LOGGING = {
         "": {
             "handlers": ["app_store_log", "console"],
             "propagate": False,
-            "level": "DEBUG"
+            "level": LOG_LEVEL
         },
         "django": {
             "handlers": ["syslog", "djangoLog", "console"],
-            "level": MIN_DJANGO_LEVEL,
+            "level": LOG_LEVEL,
             "propagate": False,
         },
         "django.template": {
             "handlers": ["syslog", "djangoLog"],
-            "level": "INFO",
+            "level": LOG_LEVEL,
             "propagate": True,
         },
         "django.db.backends": {
@@ -288,15 +294,15 @@ LOGGING = {
         },
         "admin": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
         "tycho.client": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
         "tycho.kube": {
             "handlers": ["console"],
-            "level": "DEBUG",
+            "level": LOG_LEVEL,
         },
     },
 }
@@ -333,8 +339,6 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     MIDDLEWARE[1:1] = DEBUG_MIDDLEWARE
 
 SAML2_AUTH = {
-    # Metadata is required, choose either remote url or local file path
-    "METADATA_AUTO_CONF_URL": "https://sso.unc.edu/metadata/unc",
     # Optional settings below
     "DEFAULT_NEXT_URL": "/helx/",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
     "CREATE_USER": "TRUE",  # Create a new Django user when a new user logs in. Defaults to True.
@@ -355,3 +359,16 @@ SAML2_AUTH = {
         "SAML2_AUTH_ENTITY_ID"
     ),  # Populates the Issuer element in authn request
 }
+
+# Metadata is required, either remote url or local file path, check the environment
+# determine the type based on the form of the value.  Default to UNC if there's nothing
+
+metadata_source = os.environ.get("SAML_METADATA_SOURCE")
+if metadata_source != None and type(metadata_source) is str and len(metadata_source) != 0: 
+    metadata_source_components = metadata_source.split(':')
+    if len(metadata_source_components) > 1:
+        metadata_source_scheme = metadata_source_components[0]
+        if metadata_source_scheme == "http" or metadata_source_scheme == "https":
+           SAML2_AUTH["METADATA_AUTO_CONF_URL"] = metadata_source
+        else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
+    else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source

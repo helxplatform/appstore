@@ -19,7 +19,11 @@ RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && 
 
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
-	apt-get install -y build-essential git xmlsec1
+	apt-get install -y build-essential git xmlsec1 curl
+
+# Specifically install node v14.x, since otherwise apt-get will install a much more outdated version.
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash
+RUN apt-get install -y nodejs
    
 WORKDIR $APP_HOME
 COPY . .
