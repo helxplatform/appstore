@@ -25,6 +25,16 @@ SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
 BRANDS          := braini cat heal restartr scidas eduhelx argus
 MANAGE	        := ${PYTHON} appstore/manage.py
+SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
+
+# smoke|test
+ARTILLERY_ENV          := ${ARTILLERY_ENVIRONMENT}
+# URL pointing to appstore base path, e.g. http://localhost:8000
+ARTILLERY_TARGET       := ${ARTILLERY_TARGET}
+# Duration in seconds that an Artillery load test lasts.
+ARTILLERY_DURATION     := ${ARTILLERY_DURATION}
+# Amount of users to instantiate per second during an Artillery load test.
+ARTILLERY_ARRIVAL_RATE := ${ARTILLERY_ARRIVAL_RATE}
 
 ifdef GUNICORN_WORKERS
 NO_OF_GUNICORN_WORKERS := $(GUNICORN_WORKERS)
@@ -34,6 +44,10 @@ endif
 
 # Use only when working locally
 ENV_FILE := $(PWD)/.env
+ifeq ("$(wildcard $(ENV_FILE))","")
+_ := $(shell cp -v .env.default .env)
+endif
+
 ifdef SET_BUILD_ENV_FROM_FILE
 ENVS_FROM_FILE := ${SET_BUILD_ENV_FROM_FILE}
 else
@@ -76,13 +90,38 @@ clean:
 	${PYTHON} -m pip uninstall -y -r requirements.txt
 
 #install: Install application along with required development packages
-install:
+install: install.artillery
 	${PYTHON} -m pip install --upgrade pip
 	${PYTHON} -m pip install -r requirements.txt
 
 #test: Run all tests
 test:
 	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings ${MANAGE} test $(APP_LIST);)
+
+#install.artillery: Install required packages for artillery testing
+install.artillery:
+	cd artillery-tests; \
+	npm install
+
+#test.artillery: Run artillery testing
+test.artillery:
+ifndef ARTILLERY_ENV
+	$(error ARTILLERY_ENVIRONMENT not set (smoke|load))
+endif
+ifndef ARTILLERY_TARGET
+	$(error ARTILLERY_TARGET not set (should point to the base URL of appstore, e.g. "http://localhost:8000"))
+endif
+ifeq "${ARTILLERY_ENV}" "load"
+ifndef ARTILLERY_DURATION
+	$(error ARTILLERY_DURATION not set when ARTILLERY_ENVIRONMENT=load (seconds that a load test lasts))
+endif
+ifndef ARTILLERY_ARRIVAL_RATE
+	$(error ARTILLERY_ARRIVAL_RATE not set when ARTILLERY_ENVIRONMENT=load (users instantiated per second))
+endif
+endif
+	cd artillery-tests; \
+	ls -1 tests | xargs -L1 -I%TEST_NAME% npx artillery run tests/%TEST_NAME% --environment ${ARTILLERY_ENV} --target ${ARTILLERY_TARGET}
+	
 
 #start: Run the gunicorn server
 start:	build.postgresql.local

@@ -17,7 +17,8 @@ the root `Makefile`.
 Automated testing uses the Python standard `unittest` and Django testing frameworks.
 Tests should be fast enough to run conveniently, and maximize coverage. For example,
 the Django testing framework allows for testing URL routes, middleware and other
-use interface elements in addition to the logic of components.
+use interface elements in addition to the logic of components. Smoke and load
+testing of the live server/API is implemented using the `artillery` npm package. 
 
 ## Packaging
 
@@ -186,6 +187,34 @@ With appstore running, make the necessary changes (including Tycho if necessary)
 Tycho package to PyPI (Python Package Index). Jump to 
 [Publishing the Tycho package](#coordination-of-development-for-tycho-and-appstore) for details.
 
+#### Local testing with Artillery
+To run Artillery tests locally, a few things need to be set up beforehand.
+
+- Create test users in the DB (while starting the server). Once the test users have been created, they will persist until the database is wiped.
+```bash
+...
+export CREATE_TEST_USERS=true
+export TEST_USERS_PATH=artillery-tests/payloads
+make start
+```
+- Configure environment variables for determining how the tests should run.
+```bash
+# The base URL of appstore, probably "http://localhost:8000" if running locally
+export ARTILLERY_TARGET=<appstore_url>
+# The type of tests to run. Smoke tests = 1 user; load tests = sustained load of many users 
+export ARTILLERY_ENVIRONMENT=<smoke|load>
+# * If running load tests, the following are also required. *
+# The amount of users that "arrive" at the site per second during a load test.
+export ARTILLERY_ARRIVAL_RATE=<users_per_second>
+# The amount of seconds to run load testing for.
+# Note: the total number of users created during a load test is ARTILLERY_ARRIVAL_RATE * ARTILLERY_DURATION
+export ARTILLERY_DURATION=<seconds_to_run>
+```
+- Running the tests.
+```bash
+# The script will alert you if any required environment variables are missing.
+make test.artillery
+```
 
 ### Development environment with Kubernetes
 
@@ -237,6 +266,21 @@ helm install release-name $HELXPLATFORM_HOME/devops/helx --values basic-values.y
 
 You now have appstore and tycho running in a kubernetes environment ready for
 testing. You can monitor pods/service status via `kubectl`.
+
+### Artillery testing in Kubernetes
+After helm installing Appstore, Artillery tests can be run using `helm test`.
+The following chart values should be configured:
+- Configure the `appstore` object according to the desired tests.
+- Set `django.CREATE_TEST_USERS` to `true`.
+
+If running load tests that last for extended durations (>5 minutes), tests should be run with a longer timeout condition e.g.:
+```bash
+helm test --timeout 30m
+```
+Since tests may run for extended periods of time, they can be monitored through the testing pod, e.g.:
+```bash
+kubectl logs appstore-artillery-test -f
+```
 
 ### Manual OAuth provider setup
 

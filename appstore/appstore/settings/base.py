@@ -5,7 +5,10 @@ For product specific settings see <product>_settings.py
 """
 
 import os
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 APPSTORE_NESTED_SETTINGS_DIR = Path(__file__).parent.resolve(strict=True)
 APPSTORE_CONFIG_DIR = APPSTORE_NESTED_SETTINGS_DIR.parent
@@ -42,7 +45,7 @@ ALLOW_DJANGO_LOGIN = os.environ.get(
     "ALLOW_DJANGO_LOGIN",
     "True" if DEV_PHASE == "local" or DEV_PHASE == "stub" else "False",
 ).lower()
-ALLOW_SAML_LOGIN = os.environ.get("ALLOW_SAML_LOGIN", "True").lower()
+ALLOW_SAML_LOGIN = os.environ.get("ALLOW_SAML_LOGIN", "False").lower()
 IMAGE_DOWNLOAD_URL = os.environ.get(
     "IMAGE_DOWNLOAD_URL", "https://braini-metalnx.renci.org/metalnx"
 )
@@ -69,8 +72,8 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "api",
-    "appstore",
     "core",
+    "appstore",
     "frontend",
     "middleware",
     "product",
@@ -336,8 +339,6 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     MIDDLEWARE[1:1] = DEBUG_MIDDLEWARE
 
 SAML2_AUTH = {
-    # Metadata is required, choose either remote url or local file path
-    "METADATA_AUTO_CONF_URL": "https://sso.unc.edu/metadata/unc",
     # Optional settings below
     "DEFAULT_NEXT_URL": "/helx/",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
     "CREATE_USER": "TRUE",  # Create a new Django user when a new user logs in. Defaults to True.
@@ -358,3 +359,16 @@ SAML2_AUTH = {
         "SAML2_AUTH_ENTITY_ID"
     ),  # Populates the Issuer element in authn request
 }
+
+# Metadata is required, either remote url or local file path, check the environment
+# determine the type based on the form of the value.  Default to UNC if there's nothing
+
+metadata_source = os.environ.get("SAML_METADATA_SOURCE")
+if metadata_source != None and type(metadata_source) is str and len(metadata_source) != 0: 
+    metadata_source_components = metadata_source.split(':')
+    if len(metadata_source_components) > 1:
+        metadata_source_scheme = metadata_source_components[0]
+        if metadata_source_scheme == "http" or metadata_source_scheme == "https":
+           SAML2_AUTH["METADATA_AUTO_CONF_URL"] = metadata_source
+        else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
+    else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
