@@ -36,6 +36,13 @@ spec:
     command:
     - /busybox/cat
     tty: true
+  - name: git
+    workingDir: /tmp/jenkins
+    image: bitnami/git
+    imagePullPolicy: Always
+    command:
+    - /busybox/cat
+    tty: true
   volumes:
   - name: jenkins-docker-cfg
     projected:
@@ -106,9 +113,15 @@ spec:
                         crane push image.tar $IMAGE_NAME:$TAG3
                     elif [ $BRANCH_NAME == "master" ]; then
                         crane push image.tar $IMAGE_NAME:$TAG3
-                        git tag $VERSION
-                        git push origin --tags
                         crane push image.tar $IMAGE_NAME:$TAG4
+                    fi
+                    '''
+                }
+                container(name: 'git', shell: '/bin/bash') {
+                    sh'''
+                    if [ $BRANCH_NAME == "jenkins-test" ]; then
+                        git tag jenkins-test-$VERSION
+                        git push origin --tags
                     fi
                     '''
                 }
