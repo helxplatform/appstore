@@ -120,7 +120,7 @@ spec:
                 container(name: 'git', shell: '/bin/bash') {
                     sh'''
                     if [ $BRANCH_NAME == "jenkins-test" ]; then
-                        git tag jenkins-test-$VERSION
+                        git tag jenkins-test-${VERSION}
                         git push origin --tags
                     fi
                     '''
