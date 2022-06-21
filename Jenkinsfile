@@ -41,7 +41,7 @@ spec:
     image: bitnami/git
     imagePullPolicy: Always
     command:
-    - /busybox/cat
+    - /bin/cat
     tty: true
   volumes:
   - name: jenkins-docker-cfg
