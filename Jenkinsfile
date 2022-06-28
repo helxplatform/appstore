@@ -106,9 +106,22 @@ spec:
                         crane push image.tar $IMAGE_NAME:$TAG3
                     elif [ $BRANCH_NAME == "master" ]; then
                         crane push image.tar $IMAGE_NAME:$TAG3
-                        git tag $VERSION
-                        git push origin --tags
                         crane push image.tar $IMAGE_NAME:$TAG4
+                        if [ $(git tag -l "$VERSION") ]; then
+                            echo "ERROR: Tag with version $VERSION already exists! Exiting."
+                        else
+                            # Recover some things we've lost:
+                            git config --global user.email "helx-dev@lists"
+                            git config --global user.name "rencibuild rencibuild"
+                            grep url .git/config
+                            git checkout $BRANCH_NAME
+
+                            # Set the tag
+                            SHA=$(git log --oneline | head -1 | awk '{print $1}')
+                            git tag $VERSION "$SHA"
+                            git remote set-url origin https://$GITHUB_CREDS_PSW@github.com/helxplatform/appstore.git
+                            git push origin --tags
+                        fi
                     fi
                     '''
                 }
