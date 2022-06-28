@@ -36,13 +36,6 @@ spec:
     command:
     - /busybox/cat
     tty: true
-  - name: git
-    workingDir: /tmp/jenkins
-    image: bitnami/git
-    imagePullPolicy: Always
-    command:
-    - /bin/cat
-    tty: true
   volumes:
   - name: jenkins-docker-cfg
     projected:
