@@ -1,9 +1,8 @@
-library 'pipeline-utils@master'
+library 'pipeline-utils@slash-to-dash'
 
 pipeline {
   agent {
     kubernetes {
-        label 'kaniko-build-agent'
         yaml """
 kind: Pod
 metadata:
