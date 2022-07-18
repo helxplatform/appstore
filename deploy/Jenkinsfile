@@ -1,0 +1,66 @@
+def secrets = [
+    [
+        path: 'helx/dev/sterling/helx-dev/appstore', 
+        engineVersion: 2, 
+        secretValues: [
+            [envVar: 'HELM_VALUES', vaultKey: 'values.yaml']
+        ]
+    ],
+]
+    
+def configuration = [
+    vaultUrl: 'https://vault.apps.renci.org',
+    vaultCredentialId: '$VAULT_APP_ROLE', 
+    engineVersion: 2
+]
+
+pipeline {
+    agent {
+        kubernetes {
+            cloud 'kubernetes'
+            yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: alpine
+    workingDir: /home/jenkins/agent
+    image: alpine/helm:3.1.1
+    imagePullPolicy: Always
+    resources:
+      requests:
+        cpu: "512m"
+        memory: "1024Mi"
+        ephemeral-storage: "4Gi"
+      limits:
+        cpu: "1024m"
+        memory: "2048Mi"
+        ephemeral-storage: "8Gi"
+    command:
+    - /busybox/cat
+    tty: true
+'''
+        }
+    }
+    
+    stages {
+        stage('Deploy') {
+            steps {
+                container('alpine') {
+                    withVault([configuration: configuration, vaultSecrets: secrets]) {
+                        sh '''
+                            # 1. pull values file from vault
+                            echo $HELM_VALUES
+                            $HELM_VALUES > values.yaml
+
+                            # 2. run helm install command using values file
+                            # helm repo add helx-charts https://helxplatform.github.io/helm-charts/
+                            # helm repo update
+                            # helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
