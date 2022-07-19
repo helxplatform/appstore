@@ -48,9 +48,7 @@ spec:
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
                         sh '''
                             # 1. pull values file from vault
-                            echo $
-                            echo $HELM_VALUES
-                            $HELM_VALUES > values.yaml
+                            printf '%s\n' "$HELM_VALUES" > values.yaml
                             echo ${env.IMAGE_NAME}
 
                             # 2. run helm install command using values file
