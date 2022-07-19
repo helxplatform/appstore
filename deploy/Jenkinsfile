@@ -7,10 +7,10 @@ def secrets = [
         ]
     ],
 ]
-    
+
 def configuration = [
     vaultUrl: 'https://vault.apps.renci.org',
-    vaultCredentialId: '$VAULT_APP_ROLE', 
+    vaultCredentialId: "$VAULT_APP_ROLE", 
     engineVersion: 2
 ]
 
@@ -48,16 +48,16 @@ spec:
             steps {
                 container(name: 'alpine', shell: '/bin/ash') {
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
-                        sh '''
+                        sh """
                             # 1. pull values file from vault
-                            printf '%s\n' "$HELM_VALUES" > values.yaml
+                            printf '%s\n' "\$HELM_VALUES" > values.yaml
                             echo ${env.IMAGE_NAME}
 
                             # 2. run helm install command using values file
                             # helm repo add helx-charts https://helxplatform.github.io/helm-charts/
                             # helm repo update
                             # helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
-                        '''
+                        """
                     }
                 }
             }
