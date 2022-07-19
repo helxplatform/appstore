@@ -1,7 +1,6 @@
 def secrets = [
     [
         path: 'helx/dev/sterling/helx-dev/appstore', 
-        engineVersion: 2, 
         secretValues: [
             [envVar: 'HELM_VALUES', vaultKey: 'values.yaml']
         ]
@@ -10,8 +9,7 @@ def secrets = [
 
 def configuration = [
     vaultUrl: 'https://vault.apps.renci.org',
-    vaultCredentialId: "vault-approle", 
-    engineVersion: 2
+    vaultCredentialId: "$VAULT_APP_ROLE"
 ]
 
 pipeline {
