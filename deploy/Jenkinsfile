@@ -38,7 +38,7 @@ spec:
         ephemeral-storage: "8Gi"
     tty: true
     command:
-    - /busybox/cat
+    - cat
 '''
         }
     }
