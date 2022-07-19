@@ -10,7 +10,7 @@ def secrets = [
 
 def configuration = [
     vaultUrl: 'https://vault.apps.renci.org',
-    vaultCredentialId: "$VAULT_APP_ROLE", 
+    vaultCredentialId: "vault-approle", 
     engineVersion: 2
 ]
 
