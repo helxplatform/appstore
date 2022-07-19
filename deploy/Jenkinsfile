@@ -44,7 +44,7 @@ spec:
     stages {
         stage('Deploy') {
             steps {
-                container('alpine', shell: '/bin/ash') {
+                container(name: 'alpine', shell: '/bin/ash') {
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
                         sh '''
                             # 1. pull values file from vault
