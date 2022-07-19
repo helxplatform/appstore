@@ -36,8 +36,6 @@ spec:
         cpu: "1024m"
         memory: "2048Mi"
         ephemeral-storage: "8Gi"
-    command:
-    - /busybox/cat
     tty: true
 '''
         }
