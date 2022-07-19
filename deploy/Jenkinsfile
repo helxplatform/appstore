@@ -37,6 +37,8 @@ spec:
         memory: "2048Mi"
         ephemeral-storage: "8Gi"
     tty: true
+    command:
+    - /busybox/cat
 '''
         }
     }
