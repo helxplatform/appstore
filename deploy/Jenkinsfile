@@ -49,14 +49,18 @@ spec:
                 container(name: 'alpine', shell: '/bin/ash') {
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
                         sh '''
-                            set +x  # turns off additional logging
+                            # 1. turn off additional logging
+                            set +x
 
-                            # 1. pull values file from vault
+                            # 2. pull values file from vault
                             printf '%s' "$HELM_VALUES" > values.yaml
 
-                            # 2. run helm install command using values file
-                            # helm repo add helx-charts https://helxplatform.github.io/helm-charts/
-                            # helm repo update
+                            # 3. turn back on additional logging
+                            set -x
+
+                            # 4. run helm install command using values file
+                            helm repo add helx-charts https://helxplatform.github.io/helm-charts/
+                            helm repo update
                             # helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
                         '''
                     }
