@@ -1,4 +1,4 @@
-library 'pipeline-utils@slash-to-dash'
+library 'pipeline-utils@master'
 
 pipeline {
   agent {
