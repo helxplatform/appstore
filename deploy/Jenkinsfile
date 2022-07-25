@@ -45,6 +45,9 @@ spec:
     
     stages {
         stage('Deploy') {
+            environment {
+                KUBECONFIG = credentials('helx-dev_kubecfg')
+            }
             steps {
                 container(name: 'alpine', shell: '/bin/ash') {
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
@@ -55,10 +58,13 @@ spec:
                             # 2. pull values file from vault
                             printf '%s' "$HELM_VALUES" > values.yaml
 
-                            # 3. turn back on additional logging
+                            # 3. configure kubectl
+                            helm init --kube-context default-context --upgrade
+
+                            # 4. turn back on additional logging
                             set -x
 
-                            # 4. run helm install command using values file
+                            # 5. run helm install command using values file
                             helm repo add helx-charts https://helxplatform.github.io/helm-charts/
                             helm repo update
                             # helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
