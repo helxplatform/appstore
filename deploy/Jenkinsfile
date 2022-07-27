@@ -47,7 +47,7 @@ spec:
         stage('Deploy') {
             environment {
                 KUBECONFIG = credentials('helx-dev_kubecfg')
-                IMAGE_TAG = "${env.IMAGE_TAG}"
+                IMAGE_TAG = "${params.IMAGE_TAG}"
             }
             steps {
                 container(name: 'alpine', shell: '/bin/ash') {
