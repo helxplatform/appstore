@@ -61,15 +61,16 @@ spec:
                             EOL
 
                             cat values.yaml
+                            ls -l values.yaml
 
                             # 2. turn off additional logging
-                            set +x
+                            #set +x
 
                             # 3. pull values file from vault
-                            printf '%s' "$HELM_VALUES" >> values.yaml
+                            #printf '%s' "$HELM_VALUES" >> values.yaml
 
                             # 4. turn back on additional logging
-                            set -x
+                            #set -x
 
                             # 5. configure kubectl
                             helm init --kube-context default-context
@@ -77,7 +78,7 @@ spec:
                             # 6. run helm install command using values file
                             helm repo add helx-charts https://helxplatform.github.io/helm-charts/
                             helm repo update
-                            helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
+                            #helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
                         '''
                     }
                 }
