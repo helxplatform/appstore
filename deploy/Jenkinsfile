@@ -57,13 +57,11 @@ spec:
                             echo "image:" > values.yaml
                             echo "  repository: containers.renci.org/helxplatform/appstore" >> values.yaml
                             echo "  tag: $IMAGE_TAG" >> values.yaml
-                            cat values.yaml
-                            ls -l values.yaml
 
                             # 2. turn off additional logging
                             set +x
 
-                            # 3. pull values file from vault
+                            # 3. pull values from vault
                             printf '%s' "$HELM_VALUES" >> values.yaml
 
                             # 4. turn back on additional logging
@@ -75,7 +73,7 @@ spec:
                             # 6. run helm install command using values file
                             helm repo add helx-charts https://helxplatform.github.io/helm-charts/
                             helm repo update
-                            #helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
+                            helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
                         '''
                     }
                 }
