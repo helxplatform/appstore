@@ -63,7 +63,7 @@ spec:
                             cat >> values.yaml <<EOL
                             image:
                               repository: containers.renci.org/helxplatform/appstore
-                              tag: "$IMAGE_TAG"
+                              tag: $IMAGE_TAG
                             EOL
 
                             # 4. turn back on additional logging
