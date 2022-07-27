@@ -59,13 +59,6 @@ spec:
                             # 2. pull values file from vault
                             printf '%s' "$HELM_VALUES" > values.yaml
 
-                            # 3. add image tag to values file
-                            cat >> values.yaml <<EOL
-                            image:
-                              repository: helxplatform/appstore
-                              tag: $IMAGE_TAG
-                            EOL
-
                             # 4. turn back on additional logging
                             set -x
 
