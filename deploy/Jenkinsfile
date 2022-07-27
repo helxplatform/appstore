@@ -53,26 +53,28 @@ spec:
                 container(name: 'alpine', shell: '/bin/ash') {
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
                         sh '''
-                            # 1. add image tag to values file
+                            echo "Deploying image tag $IMAGE_TAG"
+
+                            # 1. turn off additional logging
+                            set +x
+                            
+                            # 2. add image tag to values file
                             echo "image:" > values.yaml
                             echo "  repository: containers.renci.org/helxplatform/appstore" >> values.yaml
                             echo "  tag: $IMAGE_TAG" >> values.yaml
 
-                            # 2. turn off additional logging
-                            set +x
-
                             # 3. pull values from vault
                             printf '%s' "$HELM_VALUES" >> values.yaml
 
-                            # 4. turn back on additional logging
-                            set -x
-
-                            # 5. configure kubectl
+                            # 4. configure kubectl
                             helm init --kube-context default-context
-
-                            # 6. run helm install command using values file
                             helm repo add helx-charts https://helxplatform.github.io/helm-charts/
                             helm repo update
+
+                            # 5. turn back on additional logging
+                            set -x
+
+                            # 6. run helm install command using values file
                             helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
                         '''
                     }
