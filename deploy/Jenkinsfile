@@ -47,6 +47,7 @@ spec:
         stage('Deploy') {
             environment {
                 KUBECONFIG = credentials('helx-dev_kubecfg')
+                IMAGE_TAG = "${env.IMAGE_TAG}"
             }
             steps {
                 container(name: 'alpine', shell: '/bin/ash') {
@@ -58,13 +59,20 @@ spec:
                             # 2. pull values file from vault
                             printf '%s' "$HELM_VALUES" > values.yaml
 
-                            # 3. turn back on additional logging
+                            # 3. add image tag to values file
+                            cat >> values.yaml <<EOL
+                            image:
+                              repository: helxplatform/appstore
+                              tag: $IMAGE_TAG
+                            EOL
+
+                            # 4. turn back on additional logging
                             set -x
 
-                            # 4. configure kubectl
+                            # 5. configure kubectl
                             helm init --kube-context default-context
 
-                            # 5. run helm install command using values file
+                            # 6. run helm install command using values file
                             helm repo add helx-charts https://helxplatform.github.io/helm-charts/
                             helm repo update
                             helm -n helx-dev upgrade --install appstore helx-charts/appstore --values values.yaml
