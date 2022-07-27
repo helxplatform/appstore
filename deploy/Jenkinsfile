@@ -54,23 +54,20 @@ spec:
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
                         sh '''
                             # 1. add image tag to values file
-                            cat > values.yaml <<EOL
-                            image:
-                              repository: containers.renci.org/helxplatform/appstore
-                              tag: $IMAGE_TAG
-                            EOL
-
+                            echo "image:" > values.yaml
+                            echo "  repository: containers.renci.org/helxplatform/appstore" >> values.yaml
+                            echo "  tag: $IMAGE_TAG" >> values.yaml
                             cat values.yaml
                             ls -l values.yaml
 
                             # 2. turn off additional logging
-                            #set +x
+                            set +x
 
                             # 3. pull values file from vault
-                            #printf '%s' "$HELM_VALUES" >> values.yaml
+                            printf '%s' "$HELM_VALUES" >> values.yaml
 
                             # 4. turn back on additional logging
-                            #set -x
+                            set -x
 
                             # 5. configure kubectl
                             helm init --kube-context default-context
