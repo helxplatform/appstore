@@ -47,24 +47,26 @@ spec:
         stage('Deploy') {
             environment {
                 KUBECONFIG = credentials('helx-dev_kubecfg')
-                IMAGE_TAG = "${params.IMAGE_TAG}"
+                IMAGE_TAG = "${IMAGE_TAG}"
             }
             steps {
                 container(name: 'alpine', shell: '/bin/ash') {
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
                         sh '''
-                            # 1. turn off additional logging
-                            set +x
-
-                            # 2. pull values file from vault
-                            printf '%s' "$HELM_VALUES" > values.yaml
-
-                            # 3. add image tag to values file
-                            cat >> values.yaml <<EOL
+                            # 1. add image tag to values file
+                            cat > values.yaml <<EOL
                             image:
                               repository: containers.renci.org/helxplatform/appstore
                               tag: $IMAGE_TAG
                             EOL
+
+                            cat values.yaml
+
+                            # 2. turn off additional logging
+                            set +x
+
+                            # 3. pull values file from vault
+                            printf '%s' "$HELM_VALUES" >> values.yaml
 
                             # 4. turn back on additional logging
                             set -x
