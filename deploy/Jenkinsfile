@@ -44,9 +44,6 @@ spec:
 '''
         }
     }
-    triggers {
-        cron('H 20 * * *')
-    }
     
     stages {
         stage('Deploy') {
