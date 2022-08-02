@@ -1,3 +1,5 @@
+def application
+
 def secrets = [
     [
         path: 'helx/dev/sterling/helx-dev/appstore', 
@@ -42,18 +44,20 @@ spec:
 '''
         }
     }
+    triggers {
+        cron('H 20 * * *')
+    }
     
     stages {
         stage('Deploy') {
             environment {
                 KUBECONFIG = credentials('helx-dev_kubecfg')
-                IMAGE_TAG = "${IMAGE_TAG}"
             }
             steps {
                 container(name: 'alpine', shell: '/bin/ash') {
                     withVault([configuration: configuration, vaultSecrets: secrets]) {
                         sh '''
-                            echo "Deploying image tag $IMAGE_TAG"
+                            echo "Deploying..."
 
                             # 1. turn off additional logging
                             set +x
@@ -61,7 +65,7 @@ spec:
                             # 2. add image tag to values file
                             echo "image:" > values.yaml
                             echo "  repository: containers.renci.org/helxplatform/appstore" >> values.yaml
-                            echo "  tag: $IMAGE_TAG" >> values.yaml
+                            echo "  tag: develop" >> values.yaml
 
                             # 3. pull values from vault
                             printf '%s' "$HELM_VALUES" >> values.yaml
