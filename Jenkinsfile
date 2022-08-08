@@ -70,10 +70,20 @@ spec:
     stages {
         stage('Build') {
             steps {
-                script {
-                    container(name: 'kaniko', shell: '/busybox/sh') {
-                        kaniko.build("./Dockerfile", ["$IMAGE_NAME:$TAG1", "$IMAGE_NAME:$TAG2", "$IMAGE_NAME:$TAG3", "$IMAGE_NAME:$TAG4"])
-                    }
+                container(name: 'kaniko', shell: '/busybox/sh') {
+                    sh '''#!/busybox/sh
+                      /kaniko/executor \
+                        --dockerfile `pwd`/Dockerfile \
+                        --context `pwd`/ \
+                        --verbosity debug \
+                        --kaniko-dir /kaniko \
+                        --no-push \
+                        --tarPath image.tar \
+                        --destination $IMAGE_NAME:$TAG1 \
+                        --destination $IMAGE_NAME:$TAG2 \
+                        --destination $IMAGE_NAME:$TAG3 \
+                        --destination $IMAGE_NAME:$TAG4
+                    '''
                 }
             }
             post {
