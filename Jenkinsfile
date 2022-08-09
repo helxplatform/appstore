@@ -14,7 +14,8 @@ spec:
     workingDir: /home/jenkins/agent/
   - name: kaniko
     workingDir: /home/jenkins/agent/
-    image: containers.renci.org/acis/kaniko/executor:debug
+    image: gcr.io/kaniko-project/executor:debug
+    # image: containers.renci.org/acis/kaniko/executor:debug
     imagePullPolicy: Always
     resources:
       requests:
