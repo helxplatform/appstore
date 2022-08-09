@@ -14,8 +14,7 @@ spec:
     workingDir: /home/jenkins/agent/
   - name: kaniko
     workingDir: /home/jenkins/agent/
-    image: gcr.io/kaniko-project/executor:debug
-    # image: containers.renci.org/acis/kaniko/executor:debug
+    image: containers.renci.org/acis/kaniko/executor:debug
     imagePullPolicy: Always
     resources:
       requests:
@@ -71,6 +70,7 @@ spec:
         TAG2="$COMMIT_HASH"
         TAG3="$VERSION"
         TAG4="latest"
+        KANIKO_DIR="/kaniko"
     }
 
     stages {
