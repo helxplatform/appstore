@@ -29,6 +29,8 @@ spec:
     - /busybox/cat
     tty: true
     volumeMounts:
+    - name: kaniko
+      mountPath: /kaniko
     - name: jenkins-docker-cfg
       mountPath: /kaniko/.docker
   - name: crane
@@ -47,6 +49,9 @@ spec:
           items:
             - key: .dockerconfigjson
               path: config.json
+  - name: kaniko
+    persistentVolumeClaim:
+      claimName: kaniko-pvc
 """
         }
     }
