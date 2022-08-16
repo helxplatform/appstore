@@ -29,8 +29,8 @@ spec:
     - /busybox/cat
     tty: true
     volumeMounts:
-    # - name: kaniko
-    #   mountPath: /kaniko-data
+    - name: kaniko
+      mountPath: /kaniko-data
     - name: jenkins-docker-cfg
       mountPath: /kaniko/.docker
   - name: crane
