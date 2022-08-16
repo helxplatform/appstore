@@ -20,17 +20,19 @@ spec:
       requests:
         cpu: "512m"
         memory: "1024Mi"
+        # works with 2816Mi
         ephemeral-storage: "1Gi"
       limits:
         cpu: "1024m"
         memory: "2048Mi"
-        ephemeral-storage: "1Gi"
+        # works with 3Gi
+        ephemeral-storage: "2Gi"
     command:
     - /busybox/cat
     tty: true
     volumeMounts:
-    - name: kaniko
-      mountPath: /kaniko-data
+    # - name: kaniko
+    #   mountPath: /kaniko-data
     - name: jenkins-docker-cfg
       mountPath: /kaniko/.docker
   - name: crane
