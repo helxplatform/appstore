@@ -30,9 +30,9 @@ spec:
     tty: true
     volumeMounts:
     - name: kaniko
-      mountPath: /kaniko
+      mountPath: /kaniko-data
     - name: jenkins-docker-cfg
-      mountPath: /kaniko/.docker
+      mountPath: /kaniko-data/.docker
   - name: crane
     workingDir: /tmp/jenkins
     image: gcr.io/go-containerregistry/crane:debug
@@ -70,7 +70,7 @@ spec:
         TAG2="$COMMIT_HASH"
         TAG3="$VERSION"
         TAG4="latest"
-        KANIKO_DIR="/kaniko"
+        KANIKO_DIR="/kaniko-data"
     }
 
     stages {
@@ -82,7 +82,7 @@ spec:
                         --dockerfile `pwd`/Dockerfile \
                         --context `pwd`/ \
                         --verbosity debug \
-                        --kaniko-dir /kaniko \
+                        --kaniko-dir /kaniko-data \
                         --no-push \
                         --tarPath image.tar \
                         --destination $IMAGE_NAME:$TAG1 \
