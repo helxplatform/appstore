@@ -32,7 +32,7 @@ spec:
     - name: kaniko
       mountPath: /kaniko-data
     - name: jenkins-docker-cfg
-      mountPath: /kaniko-data/.docker
+      mountPath: /kaniko/.docker
   - name: crane
     workingDir: /tmp/jenkins
     image: gcr.io/go-containerregistry/crane:debug
