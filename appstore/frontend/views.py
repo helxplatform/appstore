@@ -114,7 +114,7 @@ class HelxSpaLoaderView(TemplateView):
 
     template_name = "frontend/index.html"
 
-    @method_decorator(login_required(login_url=reverse_lazy("helx_login")))
+    # @method_decorator(login_required(login_url=reverse_lazy("helx_login")))
     def dispatch(self, *args, **kwargs):
         return super(HelxSpaLoaderView, self).dispatch(*args, **kwargs)
 
