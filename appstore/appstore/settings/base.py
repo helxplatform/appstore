@@ -324,6 +324,9 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
         "http://127.0.0.1:3000",
     ]
 
+    # We don't want to create security vulnerabilities through CORS policy. Only allow on dev deployments where the UI may be running on another origin.
+    CORS_ALLOW_CREDENTIALS = True
+
     CSRF_TRUSTED_ORIGINS = [
         "localhost",
         "127.0.0.1",
