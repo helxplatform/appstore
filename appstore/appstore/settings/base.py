@@ -121,7 +121,7 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
 ACCOUNT_LOGOUT_REDIRECT_URL = "/helx"
-LOGIN_REDIRECT_URL = "/helx"
+LOGIN_REDIRECT_URL = "/helx/workspaces/login/success"
 LOGIN_URL = "/accounts/login"
 LOGIN_WHITELIST_URL = "/login_whitelist/"
 OIDC_SESSION_MANAGEMENT_ENABLE = True
@@ -343,7 +343,7 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
 
 SAML2_AUTH = {
     # Optional settings below
-    "DEFAULT_NEXT_URL": "/helx/",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
+    "DEFAULT_NEXT_URL": "/helx/workspaces/login/success",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
     "CREATE_USER": "TRUE",  # Create a new Django user when a new user logs in. Defaults to True.
     "NEW_USER_PROFILE": {
         "USER_GROUPS": [],  # The default group name when a new user logs in
