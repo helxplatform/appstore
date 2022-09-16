@@ -10,7 +10,7 @@ ENV PYTHONUNBUFFERED 1
 ENV USER appstore
 ENV APP_HOME /usr/src/inst-mgmt
 ENV HOME /home/$USER
-ENV UID 1000
+ENV UID 30000
 
 RUN mkdir $APP_HOME
 
@@ -34,7 +34,7 @@ RUN export SET_BUILD_ENV_FROM_FILE=false \
     && make install \
     && unset SET_BUILD_ENV_FROM_FILE
 
-RUN chown -R 1000:0 /usr/src/inst-mgmt
+RUN chown -R $UID:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
 EXPOSE 8000
 CMD ["make","start"]
