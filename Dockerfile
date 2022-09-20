@@ -36,5 +36,6 @@ RUN export SET_BUILD_ENV_FROM_FILE=false \
 
 RUN chown -R $UID:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
+COPY pod-wo-chown-chmod.yaml /usr/local/lib/python3.9/site-packages/tycho/template/pod.yaml
 EXPOSE 8000
 CMD ["make","start"]
