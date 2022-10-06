@@ -333,7 +333,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
             principal.username,
             app_id,
             tycho.apps[app_id]["name"],
-            get_host(request),
+            host,
             resource_request.resources,
             system.services[0].ip_address,
             system.services[0].port,
