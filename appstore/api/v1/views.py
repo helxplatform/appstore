@@ -326,7 +326,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
         principal = Principal(*tokens)
 
         app_id = serializer.data["app_id"]
-        system = tycho.start(principal, app_id, resource_request.resources)
+        host = get_host(request)
+        system = tycho.start(principal, app_id, resource_request.resources, host)
 
         s = InstanceSpec(
             principal.username,
