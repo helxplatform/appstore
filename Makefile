@@ -23,7 +23,7 @@ DOCKER_TAG      := ${VERSION}
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
-BRANDS          := braini cat heal restartr scidas eduhelx argus
+BRANDS          := braini cat heal restartr scidas eduhelx argus tracs
 MANAGE	        := ${PYTHON} appstore/manage.py
 SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
 
