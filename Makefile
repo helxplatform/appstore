@@ -79,6 +79,9 @@ endif
 help:
 	@grep -E '^#[a-zA-Z\.\-]+:.*$$' $(MAKEFILE_LIST) | tr -d '#' | awk 'BEGIN {FS = ": "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+init:
+	git config --local core.hooksPath .githooks/
+
 #version: Show current version of appstore
 version:
 	echo ${VERSION}
