@@ -67,7 +67,7 @@ spec:
         REG_OWNER="helxplatform"
         REPO_NAME="appstore"
         COMMIT_HASH="${sh(script:"git rev-parse --short HEAD", returnStdout: true).trim()}"
-        IMAGE_NAME="${REGISTRY}/${REG_OWNER}/${REG_APP}"
+        IMAGE_NAME="${REGISTRY}/${REG_OWNER}/${REPO_NAME}"
     }
 
     stages {
