@@ -101,6 +101,8 @@ etc).
 
 ### Local Development 
 
+NOTE: You must run `make init` once you've cloned the repo to enable the commit-msg git hook so that conventional commits will apply automatically
+
 #### With Tycho (default)
 
 For local development you should have Python 3, a python virtual environment dedicated

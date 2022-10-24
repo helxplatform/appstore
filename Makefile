@@ -1,8 +1,8 @@
-PYTHON          := /usr/bin/env python3
-VERSION_FILE    := ./appstore/appstore/_version.py
-VERSION         := $(shell grep __version__ ${VERSION_FILE} | cut -d " " -f 3 ${VERSION_FILE} | tr -d '"')
-COMMIT_HASH     := $(shell git rev-parse --short HEAD)
-SHELL           := /bin/bash
+PYTHON           := /usr/bin/env python3
+BRANCH_NAME	 	 := $(shell git branch --show-current | sed -r 's/[/]+/_/g')
+override VERSION := ${BRANCH_NAME}-${VER}
+COMMIT_HASH      := $(shell git rev-parse --short HEAD)
+SHELL            := /bin/bash
 
 # If env defines a registry, use it, else use the default
 DEFAULT_REGISTRY := docker.io
@@ -17,13 +17,12 @@ DOCKER_REGISTRY := ${DEFAULT_REGISTRY}
 endif
 
 DOCKER_OWNER    := helxplatform
-
 DOCKER_APP      := appstore
 DOCKER_TAG      := ${VERSION}
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
-BRANDS          := braini cat heal restartr scidas eduhelx argus
+BRANDS          := braini cat heal restartr scidas eduhelx argus tracs
 MANAGE	        := ${PYTHON} appstore/manage.py
 SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
 
@@ -79,6 +78,11 @@ endif
 #help: List available tasks on this project
 help:
 	@grep -E '^#[a-zA-Z\.\-]+:.*$$' $(MAKEFILE_LIST) | tr -d '#' | awk 'BEGIN {FS = ": "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+
+init:
+	git --version
+	echo "Please make sure your git version is greater than 2.9.0. If it's not, this command will fail."
+	git config --local core.hooksPath .githooks/
 
 #version: Show current version of appstore
 version:
@@ -139,6 +143,7 @@ start:	build.postgresql.local
 
 #build: Build the Docker image
 build:
+	if [ -z "$(VER)" ]; then echo "Please provide a value for the VER variable like this:"; echo "make VER=4 build"; false; fi;
 	docker build --no-cache --pull -t ${DOCKER_IMAGE} -f Dockerfile .
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}-${COMMIT_HASH}
