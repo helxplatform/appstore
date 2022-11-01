@@ -8,6 +8,7 @@
 ##
 #########################################################################################################
 import os
+import re
 
 from core.models import AuthorizedUser
 
@@ -15,7 +16,7 @@ AUTH_USERS = os.environ.get('AUTHORIZED_USERS', '').strip()
 REMOVE_AUTH_USERS = os.environ.get('REMOVE_AUTHORIZED_USERS', '').strip()
 
 if AUTH_USERS:
-    users = AUTH_USERS.split(',')
+    users = re.split(r'[\s,]+',AUTH_USERS)
     for user in users:
         if AuthorizedUser.objects.filter(email=user):
             print(f"User already in Authorized Users list ----> add skipping")
@@ -25,7 +26,7 @@ if AUTH_USERS:
             print(f"Added {user} to the Authorized Users list ----> add success")
 
 if REMOVE_AUTH_USERS:
-    users = REMOVE_AUTH_USERS.split(',')
+    users = re.split(r'[\s,]+',REMOVE_AUTH_USERS)
     for user in users:
         a_user = AuthorizedUser.objects.filter(email=user)
         if a_user:
