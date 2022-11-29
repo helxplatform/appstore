@@ -25,6 +25,10 @@ testing of the live server/API is implemented using the `artillery` npm package.
 Appstore is packaged as a Docker image. It is a non-root container, meaning the
 user is not a superuser. It packages a frontend copied from [helx-ui](https://hub.docker.com/repository/docker/helxplatform/helx-ui).
 
+### Releases
+
+Following Semver, (major, minor, patch); containers will be tagged accordingly.
+
 ## Deployment
 
 Appstore is deployed to Kubernetes in production using Helm. The main deployment
