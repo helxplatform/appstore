@@ -12,9 +12,11 @@ search_url="${REACT_APP_HELX_SEARCH_URL}"
 brand_name="${REACT_APP_UI_BRAND_NAME}"
 tranql_enabled="${REACT_APP_TRANQL_ENABLED:-false}"
 tranql_url="${REACT_APP_TRANQL_URL:-\/tranql}"
-analytics="${REACT_APP_ANALYTICS}"
+analytics="${REACT_APP_ANALYTICS:-}"
 hidden_support_sections="${REACT_APP_HIDDEN_SUPPORT_SECTIONS}"
 deployment_namespace="${REACT_APP_DEPLOYMENT_NAMESPACE}"
+dockstore_branch="${REACT_APP_DOCKSTORE_BRANCH}"
+appstore_asset_branch="${REACT_APP_APPSTORE_ASSET_BRANCH}"
 
 
 template='{
@@ -33,7 +35,9 @@ template='{
       "ga_property": ""
       }
     },
-    "hidden_support_sections": "%HIDDEN_SUPPORT_SECTIONS%"
+    "hidden_support_sections": "%HIDDEN_SUPPORT_SECTIONS%",
+    "dockstore_branch": "%DOCKSTORE_BRANCH%",
+    "appstore_asset_branch": "%APPSTORE_ASSET_BRANCH%"
 }'
 
 echo $template | sed \
@@ -46,4 +50,6 @@ echo $template | sed \
   -e "s+%TRANQL_ENABLED%+$tranql_enabled+" \
   -e "s+%TRANQL_URL%+$tranql_url+" \
   -e "s/%DEPLOYMENT_NAMESPACE%/$deployment_namespace/" \
+  -e "s+%DOCKSTORE_BRANCH%+$dockstore_branch+" \
+  -e "s+%APPSTORE_ASSET_BRANCH%+$appstore_asset_branch+" \
   > $1

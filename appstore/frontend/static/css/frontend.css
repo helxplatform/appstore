@@ -763,9 +763,14 @@ img#img-brand-logo {
     object-fit: scale-down;
     max-width: 5em;
     padding: 2px;
+    padding-left: 16px;
     margin: 0;
     position: absolute;
     top: 50%;
     -ms-transform: translateY(-50%);
     transform: translateY(-50%);
+}
+.navbar-brand-tracs {
+  width: auto !important;
+  max-width: none !important;
 }

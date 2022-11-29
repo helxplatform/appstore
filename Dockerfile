@@ -1,5 +1,5 @@
 # use the ui container to pull in webpack artifacts
-FROM helxplatform/helx-ui:2.1.0 as builder
+FROM containers.renci.org/helxplatform/helx-ui:v2.2.0 as builder
 
 FROM python:3.9.0-slim
 
@@ -30,6 +30,7 @@ COPY . .
 COPY --from=builder /usr/share/nginx/html/index.html ./appstore/frontend/templates/frontend
 COPY --from=builder /usr/share/nginx/static/ ./appstore/frontend/static
 
+RUN if [ -d whl -a "$(ls -A whl/*.whl)" ]; then pip install whl/*.whl; fi
 RUN export SET_BUILD_ENV_FROM_FILE=false \
     && make install \
     && unset SET_BUILD_ENV_FROM_FILE
