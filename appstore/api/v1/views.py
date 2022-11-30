@@ -18,7 +18,7 @@ from rest_framework import status
 from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
-
+from core.models import IrodAuthorizedUser
 from .exceptions import AuthorizationTokenUnavailable
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
@@ -45,6 +45,13 @@ Manages application metadata, discovers and invokes TychoClient, etc.
 tycho = ContextFactory.get(
     context_type=settings.TYCHO_MODE, product=settings.PRODUCT_SETTINGS.brand
 )
+
+def get_nfs_uid(username):
+    irod_auth_user = IrodAuthorizedUser.objects.get(user=username)
+    if irod_auth_user is not None:
+        return (irod_auth_user.uid)
+    return (None)
+
 
 
 def get_host(request):
@@ -323,6 +330,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
+        #Need to set an environment variable for the IRODS UID
+        nfs_id = get_nfs_uid(request.user)
+        os.environ[str(request.user)+"_NFSRODS_UID"] = str(nfs_id)
+
         principal = Principal(*tokens)
 
         app_id = serializer.data["app_id"]
