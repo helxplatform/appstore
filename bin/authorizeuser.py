@@ -12,6 +12,7 @@ import requests
 from irods.session import iRODSSession
 from irods.exception import NoResultFound,UserDoesNotExist
 from core.models import AuthorizedUser, IrodAuthorizedUser
+import re
 
 
 
@@ -41,7 +42,7 @@ def irods_user_create(username):
         u.save()
 
 if AUTH_USERS:
-    users = AUTH_USERS.split(',')
+    users = re.split(r'[\s,]+',AUTH_USERS)
     for user in users:
         if AuthorizedUser.objects.filter(email=user):
             print(f"User already in Authorized Users list ----> add skipping")
@@ -63,7 +64,7 @@ if IROD_AUTH_USERS:
 
 
 if REMOVE_AUTH_USERS:
-    users = REMOVE_AUTH_USERS.split(',')
+    users = re.split(r'[\s,]+',REMOVE_AUTH_USERS)
     for user in users:
         a_user = AuthorizedUser.objects.filter(email=user)
         if a_user:

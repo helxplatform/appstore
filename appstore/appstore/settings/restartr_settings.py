@@ -6,7 +6,7 @@ APPLICATION_BRAND = "restartr"
 PRODUCT_SETTINGS = ProductSettings(
     brand="restartr",
     title="Restarting Research",
-    logo_url="/static/images/restartr/restartingresearch.png",
+    logo_url="/static/images/restartr/logo.png",
     color_scheme=ProductColorScheme("#ff6320", "#ffd220"),
     links=None,
 )

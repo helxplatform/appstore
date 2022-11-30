@@ -8,7 +8,7 @@ APPLICATION_BRAND = "braini"
 PRODUCT_SETTINGS = ProductSettings(
     brand="braini",
     title="Brain-I",
-    logo_url="/static/images/braini/braini-lg-gray.png",
+    logo_url="/static/images/braini/logo.png",
     color_scheme=ProductColorScheme("#666666", "#e6e6e6"),
     links=[ProductLink("Image Download", IMAGE_DOWNLOAD_URL)],
 )

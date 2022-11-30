@@ -36,15 +36,15 @@ def get_brand_details(brand):
     Sure would cut down on unproductive complexity here.
     """
     return {
-        "braini": {"name": "BRAIN-I", "logo": "braini-lg-gray.png"},
-        "scidas": {"name": "SciDAS", "logo": "scidas-logo-sm.png"},
-        "catalyst": {"name": "BioData Catalyst", "logo": "bdc-logo.svg"},
+        "braini": {"name": "BRAIN-I", "logo": "logo.png"},
+        "scidas": {"name": "SciDAS", "logo": "logo.png"},
+        "bdc": {"name": "BioData Catalyst", "logo": "logo.svg"},
         "restartr": {
             "name": "UNC Restarting Research",
-            "logo": "restartingresearch.png",
+            "logo": "logo.png",
         },
         "heal": {"name": "NIH Heal Initiative", "logo": "logo.png"},
-        "argus": {"name": "Argus Array", "logo": "argus-array-256.png"},
+        "argus": {"name": "Argus Array", "logo": "logo.png"},
         "eduhelx": {"name": "EduHelx", "logo": "logo.png"},
     }[brand]
 

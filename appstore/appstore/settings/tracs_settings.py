@@ -1,12 +1,12 @@
 from .base import *
 from product.configuration import ProductSettings, ProductColorScheme
 
-APPLICATION_BRAND = "scidas"
+APPLICATION_BRAND = "tracs"
 
 PRODUCT_SETTINGS = ProductSettings(
-    brand="scidas",
-    title="SciDAS",
-    logo_url="/static/images/scidas/logo.png",
+    brand="tracs",
+    title="TraCS",
+    logo_url="/static/images/tracs/logo.png",
     color_scheme=ProductColorScheme("#191348", "#0079bc"),
     links=None,
 )
