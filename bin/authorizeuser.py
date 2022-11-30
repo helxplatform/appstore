@@ -18,6 +18,7 @@ from core.models import AuthorizedUser, IrodAuthorizedUser
 AUTH_USERS = os.environ.get('AUTHORIZED_USERS', '').strip()
 REMOVE_AUTH_USERS = os.environ.get('REMOVE_AUTHORIZED_USERS', '').strip()
 IROD_AUTH_USERS = os.environ.get('IROD_APPROVED_USERS','').strip()
+IROD_ZONE = os.environ.get('IROD_ZONE','').strip()
 IROD_ADMIN_USN = os.environ.get('RODS_USERNAME','').strip()
 IROD_ADMIN_PASS = os.environ.get('RODS_PASSWORD','').strip()
 IROD_BASE_URL = os.environ.get('BRAINI_RODS','').strip()
@@ -27,7 +28,7 @@ def irods_user_create(username):
     if IrodAuthorizedUser.objects.filter(user=username):
         print("Irods user already found in postgres")
         return
-    with iRODSSession(host=IROD_BASE_URL, port=1247, user=IROD_ADMIN_USN, password=IROD_ADMIN_PASS, zone='tempZone') as session:
+    with iRODSSession(host=IROD_BASE_URL, port=1247, user=IROD_ADMIN_USN, password=IROD_ADMIN_PASS, zone=IROD_ZONE) as session:
         #Check for user already existing in IRODS itself. If so, Save the user in the local database and continue
         try:
             session.users.get(username)
