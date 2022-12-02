@@ -19,3 +19,4 @@ webdriver-manager==3.2.1
 sqlparse==0.4.2
 asgiref==3.4.1
 psycopg2-binary
+python-irodsclient==1.1.5
