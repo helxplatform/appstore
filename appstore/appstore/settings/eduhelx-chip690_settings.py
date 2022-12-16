@@ -6,7 +6,7 @@ from product.configuration import ProductSettings, ProductColorScheme, ProductLi
 APPLICATION_BRAND = "eduhelx-chip690"
 
 PRODUCT_SETTINGS = ProductSettings(
-  brand="chip690",
+  brand="eduhelx-chip690",
   title="EduHeLx CHIP690",
   logo_url="/static/images/eduhelx/logo.png",
   color_scheme=ProductColorScheme("#666666", "#e6e6e6"), #TBD
