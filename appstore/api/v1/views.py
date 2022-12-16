@@ -170,7 +170,6 @@ class AppViewSet(viewsets.GenericViewSet):
                 # #capabilities
                 # https://github.com/helxplatform/tycho/search?q=gpu
                 gpu = search_for_gpu_reservation(reservations)
-
                 spec = App(
                     app_data["name"],
                     app_id,
@@ -193,7 +192,7 @@ class AppViewSet(viewsets.GenericViewSet):
 
                 apps[app_id] = asdict(spec)
             except Exception as e:
-                logger.error(f"Could not parse {app_id}...continuing.")
+                logger.error(f"Could not parse {app_id}...continuing. {e}")
                 continue
 
         apps = {key: value for key, value in sorted(apps.items())}
