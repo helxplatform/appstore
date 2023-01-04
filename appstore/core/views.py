@@ -19,18 +19,18 @@ Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
 if settings.TYCHO_APP_REGISTRY_REPO == "":
+    logger.debug (f"-- appstore.appstore.core.views.py: TYCHO_APP_REGISTRY_REPO is empty string, using Tycho built-in app registry file")
     tycho = ContextFactory.get(
             context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
     )
 else:
+    logger.debug (f"-- appstore.appstore.core.views.py: TYCHO_APP_REGISTRY_REPO is {settings.TYCHO_APP_REGISTRY_REPO}, TYCHO_APP_REGISTRY_BRANCH is {settings.TYCHO_APP_REGISTRY_BRANCH}, using external app registry file")
+    # urljoin might not work as planned if the first part doesn't end with a slash.
     tycho_config_url = urljoin(settings.TYCHO_APP_REGISTRY_REPO, settings.TYCHO_APP_REGISTRY_BRANCH)
+    logger.debug (f"tycho_config_url: {tycho_config_url}")
     tycho = ContextFactory.get(
             context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url=tycho_config_url
     )
-
-# tycho = ContextFactory.get(
-#         context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url="" if settings.TYCHO_APP_REGISTRY_REPO == "" else urljoin(settings.TYCHO_APP_REGISTRY_REPO, settings.TYCHO_APP_REGISTRY_BRANCH)
-# )
 
 
 @receiver(pre_social_login)
