@@ -48,6 +48,7 @@ def get_brand_details(brand):
     Sure would cut down on unproductive complexity here.
     """
     return {
+        "helx": {"name": "HeLx", "logo": "logo.png"},
         "braini": {"name": "BRAIN-I", "logo": "logo.png"},
         "scidas": {"name": "SciDAS", "logo": "logo.png"},
         "bdc": {"name": "BioData Catalyst", "logo": "logo.svg"},
