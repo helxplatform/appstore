@@ -18,19 +18,19 @@ logger = logging.getLogger(__name__)
 Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
-# if settings.TYCHO_APP_REGISTRY_REPO == "":
-#     tycho = ContextFactory.get(
-#             context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
-#     )
-# else:
-#     tycho_config_url = urljoin(settings.TYCHO_APP_REGISTRY_REPO, settings.TYCHO_APP_REGISTRY_BRANCH)
-#     tycho = ContextFactory.get(
-#             context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url=tycho_config_url
-#     )
+if settings.TYCHO_APP_REGISTRY_REPO == "":
+    tycho = ContextFactory.get(
+            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
+    )
+else:
+    tycho_config_url = urljoin(settings.TYCHO_APP_REGISTRY_REPO, settings.TYCHO_APP_REGISTRY_BRANCH)
+    tycho = ContextFactory.get(
+            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url=tycho_config_url
+    )
 
-tycho = ContextFactory.get(
-        context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url="" if settings.TYCHO_APP_REGISTRY_REPO == "" else urljoin(settings.TYCHO_APP_REGISTRY_REPO, settings.TYCHO_APP_REGISTRY_BRANCH)
-)
+# tycho = ContextFactory.get(
+#         context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url="" if settings.TYCHO_APP_REGISTRY_REPO == "" else urljoin(settings.TYCHO_APP_REGISTRY_REPO, settings.TYCHO_APP_REGISTRY_BRANCH)
+# )
 
 
 @receiver(pre_social_login)

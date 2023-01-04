@@ -40,8 +40,8 @@ DEBUG = bool(os.environ.get("DEBUG", ""))
 # stub, local, dev, val, prod.
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
-TCYHO_APP_REGISTRY_REPO = os.environ.get("TYCHO_APP_REGISTRY_REPO", "") # "https://github.com/helxplatform/helx-apps/raw"
-TCYHO_APP_REGISTRY_BRANCH = os.environ.get("TCYHO_APP_REGISTRY_BRANCH", "master")
+TYCHO_APP_REGISTRY_REPO = os.environ.get("TYCHO_APP_REGISTRY_REPO", "") # "https://github.com/helxplatform/helx-apps/raw"
+TYCHO_APP_REGISTRY_BRANCH = os.environ.get("TCYHO_APP_REGISTRY_BRANCH", "master")
 # DJANGO and SAML login toggle flags, lower cased for ease of comparison
 ALLOW_DJANGO_LOGIN = os.environ.get(
     "ALLOW_DJANGO_LOGIN",
