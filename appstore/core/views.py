@@ -18,9 +18,10 @@ logger = logging.getLogger(__name__)
 Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
+contextFactory = ContextFactory()
 if settings.TYCHO_APP_REGISTRY_REPO == "":
     logger.debug (f"-- appstore.appstore.core.views.py: TYCHO_APP_REGISTRY_REPO is empty string, using Tycho built-in app registry file")
-    tycho = ContextFactory.get(
+    tycho = contextFactory.get(
             context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
     )
 else:
@@ -28,7 +29,7 @@ else:
     # urljoin might not work as planned if the first part doesn't end with a slash.
     tycho_config_url = urljoin(settings.TYCHO_APP_REGISTRY_REPO, settings.TYCHO_APP_REGISTRY_BRANCH)
     logger.debug (f"tycho_config_url: {tycho_config_url}")
-    tycho = ContextFactory.get(
+    tycho = contextFactory.get(
             context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url=tycho_config_url
     )
 
