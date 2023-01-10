@@ -15,9 +15,8 @@ tranql_url="${REACT_APP_TRANQL_URL:-\/tranql}"
 analytics="${REACT_APP_ANALYTICS:-}"
 hidden_support_sections="${REACT_APP_HIDDEN_SUPPORT_SECTIONS}"
 deployment_namespace="${REACT_APP_DEPLOYMENT_NAMESPACE}"
-dockstore_app_specs_dir_url="${TYCHO_APP_REGISTRY_REPO}/${TYCHO_APP_REGISTRY_BRANCH}/${TYCHO_APP_REGISTRY_APP_SPECS_DIR}"
+dockstore_app_specs_dir_url="${DOCKSTORE_APP_SPECS_DIR_URL}"
 appstore_asset_branch="${REACT_APP_APPSTORE_ASSET_BRANCH}"
-
 
 template='{
     "brand": "%BRAND%",

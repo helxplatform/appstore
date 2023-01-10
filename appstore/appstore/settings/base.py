@@ -46,12 +46,13 @@ TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "li
 # "https://github.com/helxplatform/helx-apps/raw" and remove any other similar
 # variable.  Maybe don't set and raise a fatal error if not set (still remove
 # other similar variables).
-TYCHO_APP_REGISTRY_REPO = os.environ.get("TYCHO_APP_REGISTRY_REPO", "")
+EXTERNAL_TYCHO_APP_REGISTRY_ENABLED = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_ENABLED", "false").lower()
+EXTERNAL_TYCHO_APP_REGISTRY_REPO = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_REPO", "")
 # Make sure TYCHO_APP_REGISTRY_REPO ends with "/" or suffix is removed by urljoin.
-if TYCHO_APP_REGISTRY_REPO != "":
-    TYCHO_APP_REGISTRY_REPO += "/" if not TYCHO_APP_REGISTRY_REPO.endswith("/") else ""
-TYCHO_APP_REGISTRY_BRANCH = os.environ.get("TYCHO_APP_REGISTRY_BRANCH", "master")
-TYCHO_APP_REGISTRY_APP_SPECS_DIR = os.environ.get("TYCHO_APP_REGISTRY_APP_SPECS_DIR", "app-specs")
+if EXTERNAL_TYCHO_APP_REGISTRY_REPO != "":
+    EXTERNAL_TYCHO_APP_REGISTRY_REPO += "/" if not EXTERNAL_TYCHO_APP_REGISTRY_REPO.endswith("/") else ""
+EXTERNAL_TYCHO_APP_REGISTRY_BRANCH = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_BRANCH", "master")
+EXTERNAL_TYCHO_APP_REGISTRY_APP_SPECS_DIR = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_APP_SPECS_DIR", "app-specs")
 
 # DJANGO and SAML login toggle flags, lower cased for ease of comparison
 ALLOW_DJANGO_LOGIN = os.environ.get(
