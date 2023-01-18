@@ -253,6 +253,7 @@ LOGGING = {
         "console": {
             "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
+            "formatter": "simple",
         },
         "djangoLog": {
             "level": LOG_LEVEL,
@@ -273,22 +274,22 @@ LOGGING = {
     },
     "loggers": {
         "": {
-            "handlers": ["app_store_log", "console"],
+            "handlers": ["console"],
             "propagate": False,
             "level": LOG_LEVEL
         },
         "django": {
-            "handlers": ["syslog", "djangoLog", "console"],
+            "handlers": ["console"],
             "level": LOG_LEVEL,
             "propagate": False,
         },
         "django.template": {
-            "handlers": ["syslog", "djangoLog"],
+            "handlers": ["console"],
             "level": LOG_LEVEL,
             "propagate": True,
         },
         "django.db.backends": {
-            "handlers": ["syslog"],
+            "handlers": ["console"],
             "level": "WARNING",
             "propagate": False,
         },
