@@ -23,7 +23,7 @@ IROD_ZONE = os.environ.get('IROD_ZONE','').strip()
 IROD_ADMIN_USN = os.environ.get('RODS_USERNAME','').strip()
 IROD_ADMIN_PASS = os.environ.get('RODS_PASSWORD','').strip()
 IROD_BASE_URL = os.environ.get('IROD_HOST','').strip()
-IROD_PORT = int(os.environ.get('IROD_PORT','').strip())
+IROD_PORT = int(os.environ.get('IROD_PORT','0').strip())
 
 def irods_user_create(username,uid):
     #Check if user was already created
