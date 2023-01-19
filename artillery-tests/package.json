@@ -10,8 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "artillery": "^2.0.0-11",
-    "artillery-plugin-expect": "^2.0.0-3",
-    "artillery-plugin-ensure": "^1.1.1"
+    "artillery": "2.0.0-11",
+    "artillery-plugin-expect": "2.0.0-3",
+    "artillery-plugin-ensure": "1.1.1"
   }
 }
