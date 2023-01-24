@@ -36,7 +36,10 @@ USE_TZ = True
 SECRET_KEY = os.environ["SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 # Empty quotes equates to false in kubernetes env.
-DEBUG = bool(os.environ.get("DEBUG", ""))
+DEBUG_STRING = os.environ.get("DEBUG", "")
+if DEBUG_STRING.lower() == "false":
+    DEBUG_STRING = ""
+DEBUG = bool(DEBUG_STRING)
 # stub, local, dev, val, prod.
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
