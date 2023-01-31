@@ -524,7 +524,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         Check for SSO defined in appstore settings.
         """
 
-        if settings.PRODUCT_SETTINGS.brand in ("braini", "restarts"):
+        if settings.ALLOW_SAML_LOGIN:
             # TODO can we get the provider name from metadata so that if
             # we support something beyond UNC we dont need another func
             # or clause? What happens if we have multiple SAML SSO providers
