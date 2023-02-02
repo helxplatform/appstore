@@ -36,7 +36,10 @@ USE_TZ = True
 SECRET_KEY = os.environ["SECRET_KEY"]
 # SECURITY WARNING: don't run with debug turned on in production!
 # Empty quotes equates to false in kubernetes env.
-DEBUG = bool(os.environ.get("DEBUG", ""))
+DEBUG_STRING = os.environ.get("DEBUG", "")
+if DEBUG_STRING.lower() == "false":
+    DEBUG_STRING = ""
+DEBUG = bool(DEBUG_STRING)
 # stub, local, dev, val, prod.
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
@@ -135,7 +138,7 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
 ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
 ACCOUNT_LOGOUT_REDIRECT_URL = "/helx"
-LOGIN_REDIRECT_URL = "/helx"
+LOGIN_REDIRECT_URL = "/helx/workspaces/login/success"
 LOGIN_URL = "/accounts/login"
 LOGIN_WHITELIST_URL = "/login_whitelist/"
 OIDC_SESSION_MANAGEMENT_ENABLE = True
@@ -339,6 +342,9 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
         "http://127.0.0.1:3000",
     ]
 
+    # We don't want to create security vulnerabilities through CORS policy. Only allow on dev deployments where the UI may be running on another origin.
+    CORS_ALLOW_CREDENTIALS = True
+
     CSRF_TRUSTED_ORIGINS = [
         "localhost",
         "127.0.0.1",
@@ -355,7 +361,7 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
 
 SAML2_AUTH = {
     # Optional settings below
-    "DEFAULT_NEXT_URL": "/helx/",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
+    "DEFAULT_NEXT_URL": "/helx/workspaces/login/success",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
     "CREATE_USER": "TRUE",  # Create a new Django user when a new user logs in. Defaults to True.
     "NEW_USER_PROFILE": {
         "USER_GROUPS": [],  # The default group name when a new user logs in
