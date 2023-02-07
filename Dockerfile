@@ -37,5 +37,9 @@ RUN export SET_BUILD_ENV_FROM_FILE=false \
 
 RUN chown -R 1000:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
+
+# Add this workaround for misplaced favicon file
+RUN ln -s /usr/src/inst-mgmt/appstore/static/favicon.ico /usr/src/inst-mgmt/appstore/static/images/favicon.ico
+
 EXPOSE 8000
 CMD ["make","start"]
