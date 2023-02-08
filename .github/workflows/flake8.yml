@@ -23,5 +23,5 @@ jobs:
       run: |
         pip install flake8
         flake8 --ignore=E,W .
-      # We continue on error here until the code is cleaned up
+      # We continue on error here until the code is cleaned up 
       continue-on-error: true
