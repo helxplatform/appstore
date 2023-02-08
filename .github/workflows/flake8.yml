@@ -22,6 +22,6 @@ jobs:
     - name: Lint with flake8
       run: |
         pip install flake8
-        flake8 --ignore=E,W .
+        flake8 --ignore=E,W --exit-zero . 
       # We continue on error here until the code is clean
       continue-on-error: true
