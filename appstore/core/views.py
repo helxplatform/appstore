@@ -60,6 +60,7 @@ def get_brand_details(brand):
         "heal": {"name": "NIH Heal Initiative", "logo": "logo.png"},
         "argus": {"name": "Argus Array", "logo": "logo.png"},
         "eduhelx": {"name": "EduHelx", "logo": "logo.png"},
+        "testing": {"name": "Testing", "logo": "logo.png"},
     }[brand]
 
 

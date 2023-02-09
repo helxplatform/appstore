@@ -2,7 +2,7 @@
 # FROM containers.renci.org/helxplatform/helx-ui:v2.2.0 as builder
 
 # For this image to work Tycho must be updated.
-FROM containers.renci.org/helxplatform/helx-ui:pjl-202302022328 as builder
+FROM containers.renci.org/helxplatform/helx-ui:pjl-202302081916 as builder
 
 FROM python:3.9.0-slim
 
