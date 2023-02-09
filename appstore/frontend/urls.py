@@ -1,6 +1,6 @@
-from django.urls import path, re_path
+from django.urls import re_path
 
-from .views import HelxLoginView, HelxSpaRedirectView, HelxSpaLoaderView, LoginWhitelistView
+from .views import HelxSpaRedirectView, HelxSpaLoaderView, LoginWhitelistView
 
 urlpatterns = [
     re_path(r"^$", HelxSpaRedirectView),

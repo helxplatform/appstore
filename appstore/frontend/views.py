@@ -4,17 +4,11 @@ from allauth.account.views import LoginView
 
 from api.v1.views import AppContextViewSet
 
-from django.http import HttpRequest
+
 from django.urls import reverse_lazy
 from django.shortcuts import redirect
 from django.views.generic.base import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-
 from rest_framework.test import APIRequestFactory
-
-import requests
 
 """
 #######
@@ -103,7 +97,7 @@ class HelxLoginView(LoginView):
     def get(self, request, *args, **kwargs):
         request.session["helx_frontend"] = "react"
         if request.user.is_authenticated:
-            return redirect(success_url)
+            return redirect(self.success_url)
         return super(LoginView, self).get(request, *args, **kwargs)
 
 
