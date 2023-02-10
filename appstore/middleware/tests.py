@@ -1,9 +1,7 @@
-from contextlib import contextmanager
-
 from django.conf import settings
 from django.contrib.auth.models import User, Group
-from django.http import HttpResponseRedirect, HttpResponseForbidden
-from django.test import TestCase, Client
+from django.http import HttpResponseRedirect 
+from django.test import TestCase
 
 from mock import Mock
 
@@ -57,6 +55,7 @@ class AllowWhiteListedUserOnlyTests(TestCase):
         self.request.user = user
         self.request.session = self.client.session
         response = self.middleware.process_request(self.request)
+        self.assertTrue(isinstance(response, HttpResponseRedirect))
         self.assertEqual(
             list(self.request.user.groups.values_list("name", flat=True))[0],
             self.groups.name,
