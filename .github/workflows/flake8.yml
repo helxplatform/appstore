@@ -2,12 +2,16 @@ name: flake8
 
 on:
   push:
-
+    branches:
+      - "feat/*"
+      - "test/*"
+      - "fix/*"
+      - "doc/*"
   pull_request:
     branches: [ master, develop ]
 
 jobs:
-  build:
+  flak8e-check:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
