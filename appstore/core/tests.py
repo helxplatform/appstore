@@ -1,6 +1,6 @@
 import logging
 
-from core.admin_tests import *
+from core.admin_tests import *   # noqa: F403
 from django.http import HttpResponse, HttpResponseRedirect
 
 logger = logging.getLogger(__name__)
