@@ -1,5 +1,5 @@
 from .base import *
-from product.configuration import ProductSettings, ProductColorScheme, ProductLink
+from product.configuration import ProductSettings, ProductColorScheme
 
 # TODO remove Application brand once the new frontend is complete and
 # the django templates in core are removed.
