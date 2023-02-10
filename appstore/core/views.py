@@ -5,7 +5,7 @@ from allauth.socialaccount.signals import pre_social_login
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.dispatch import receiver
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+from django.http import  HttpResponse, JsonResponse
 from django.shortcuts import render
 
 from tycho.context import ContextFactory
@@ -26,7 +26,7 @@ def pre_login(sender, request, sociallogin, **kwargs):
     if sociallogin.token:
         access_token = sociallogin.token
         request.session["Authorization"] = f"Bearer {access_token}"
-        logger.debug(f"----------> Adding Bearer token to the user session")
+        logger.debug(f'{"----------> Adding Bearer token to the user session"}')
 
 
 def get_brand_details(brand):
@@ -56,7 +56,7 @@ def get_access_token(request):
         if auth_string and ("Bearer" in auth_string):
             access_token = auth_string.split(" ")[1]
     except Exception as e:
-        logger.debug("----------> Failed getting access token. ")
+        logger.debug(f"----------> Exception: Failed getting access token. {e.__class__.__name__} ")
         pass
     return access_token
 
@@ -79,7 +79,8 @@ def auth(request):
             response = HttpResponse(content_type="application/json", status=403)
             response["REMOTE_USER"] = request.user
             logger.debug(
-                f"----------> exception with the remote user ----- {request.user}"
+                f"----------> exception {e.__class__.__name__} \
+                with the remote user ----- {request.user} "
             )
     else:
         response = HttpResponse(content_type="application/json", status=403)
