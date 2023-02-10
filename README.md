@@ -17,8 +17,18 @@ the root `Makefile`.
 Automated testing uses the Python standard `unittest` and Django testing frameworks.
 Tests should be fast enough to run conveniently, and maximize coverage. For example,
 the Django testing framework allows for testing URL routes, middleware and other
-use interface elements in addition to the logic of components. Smoke and load
+user interface elements in addition to the logic of components. Smoke and load
 testing of the live server/API is implemented using the `artillery` npm package. 
+
+## CI/CD
+
+Github Actions are employed to lint, test, and build this project.
+
+Linting Action:
+
+Inline comments within the code such as `#noqa: F401` are necessary items that instruct the linter to bypass or perform a special action for specific sections of code. 
+***DO NOT DELETE these inline comments.
+
 
 ## Packaging
 
