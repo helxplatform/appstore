@@ -1,5 +1,5 @@
 # use the ui container to pull in webpack artifacts
-FROM containers.renci.org/helxplatform/helx-ui:v2.2.0 as builder
+FROM containers.renci.org/helxplatform/helx-ui:v3.0.0 as builder
 
 FROM python:3.9.0-slim
 
@@ -37,5 +37,6 @@ RUN export SET_BUILD_ENV_FROM_FILE=false \
 
 RUN chown -R 1000:0 /usr/src/inst-mgmt
 RUN chmod -R g+w /usr/src/inst-mgmt
+
 EXPOSE 8000
 CMD ["make","start"]
