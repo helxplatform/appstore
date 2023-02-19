@@ -56,7 +56,7 @@ def get_access_token(request):
         if auth_string and ("Bearer" in auth_string):
             access_token = auth_string.split(" ")[1]
     except Exception as e:
-        logger.debug(f"----------> Exception: Failed getting access token. {e.__class__.__name__} ")
+        logger.debug(f"----------> {e.__class__.__name__}: Failed getting access token.")
         pass
     return access_token
 
