@@ -15,7 +15,7 @@ python3-openid==3.1.0
 requests==2.27.1
 requests-oauthlib==1.3.1
 selenium==3.141.0
-tycho-api==1.12.0.dev20230221143044
+tycho-api==1.12.0
 webdriver-manager==3.2.1
 sqlparse==0.4.2
 asgiref==3.4.1
