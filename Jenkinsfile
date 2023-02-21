@@ -5,7 +5,6 @@ CCV = ""
 pipeline {
   agent {
     kubernetes {
-        label 'kaniko-build-agent'
         yaml """
 kind: Pod
 metadata:
