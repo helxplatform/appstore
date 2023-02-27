@@ -9,7 +9,6 @@
 # The build-push-dev-image and build-push-release workflows 
 # handle the develop and release image storage respectively.
 # CI/CD Maintainer: Joshua Seals 🦭
-#            Email: jseals@renci.org
 #
 #
 # TODO: 
@@ -109,5 +108,5 @@ jobs:
       with:
         context: .
         push: false
-        cache-from: type=registry,ref=${{ secrets.CONTAINERHUB_USERNAME }}/appstore-testing:buildcache
-        cache-to: type=registry,ref=${{ secrets.CONTAINERHUB_USERNAME }}/appstore-testing:buildcache,mode=max
+        cache-from: type=registry,ref=${{ github.repository }}:buildcache
+        cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max

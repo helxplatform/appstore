@@ -2,7 +2,6 @@
 # development release processes.
 #  
 # CI/CD Maintainer: Joshua Seals 🦭
-#            Email: jseals@renci.org
 #
 
 name: Build-Push-Dev-Image
@@ -90,6 +89,6 @@ jobs:
         context: .
         push: true
         tags: 
-          ${{ secrets.CONTAINERHUB_USERNAME }}/appstore-testing:v${{ steps.version.outputs.version }}, ${{ secrets.CONTAINERHUB_USERNAME }}/appstore-testing:develop, ${{ secrets.CONTAINERHUB_USERNAME }}/appstore-testing:${{ steps.vars.outputs.short_sha }}
-        cache-from: type=registry,ref=${{ secrets.CONTAINERHUB_USERNAME }}/appstore-testing:buildcache
-        cache-to: type=registry,ref=${{ secrets.CONTAINERHUB_USERNAME }}/appstore-testing:buildcache,mode=max
+          ${{ github.repository }}:v${{ steps.version.outputs.version }}, ${{ github.repository }}:develop, ${{ github.repository }}:${{ steps.vars.outputs.short_sha }}
+        cache-from: type=registry,ref=${{ github.repository }}:buildcache
+        cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
