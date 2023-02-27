@@ -89,6 +89,6 @@ jobs:
         context: .
         push: true
         tags: 
-          ${{ github.repository }}:v${{ steps.version.outputs.version }}, ${{ github.repository }}:develop, ${{ github.repository }}:${{ steps.vars.outputs.short_sha }}
-        cache-from: type=registry,ref=${{ github.repository }}:buildcache
-        cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
+          ${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:v${{ steps.version.outputs.version }}, ${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:develop, ${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:${{ steps.vars.outputs.short_sha }}
+        cache-from: type=registry,ref=${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:buildcache
+        cache-to: type=registry,ref=${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:buildcache,mode=max
