@@ -101,6 +101,13 @@ jobs:
         password: ${{ secrets.CONTAINERHUB_TOKEN }}
         logout: true
 
+    - name: Sanitize repo slug
+      uses: actions/github-script@v6
+      id: repo_slug
+      with:
+        result-encoding: string
+        script: return '${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}'.toLowerCase()
+
     # Notes on Cache: 
     # https://docs.docker.com/build/ci/github-actions/examples/#inline-cache
     - name: Build Container
@@ -108,5 +115,5 @@ jobs:
       with:
         context: .
         push: false
-        cache-from: type=registry,ref=${{ secrets.CONTAINERHUB_URL }}${{ github.repository }}:buildcache
-        cache-to: type=registry,ref=${{ secrets.CONTAINERHUB_URL }}${{ github.repository }}:buildcache,mode=max
+        cache-from: type=registry,ref=${{ steps.repo_slug.outputs.result }}:buildcache
+        cache-to: type=registry,ref=${{ steps.repo_slug.outputs.result }}:buildcache,mode=max
