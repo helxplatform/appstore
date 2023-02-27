@@ -1,0 +1,26 @@
+# This file serves as a release template and is used in
+# the build-push-release workflow.
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+      - ignore
+  categories:
+    - title: Breaking Changes
+      labels:
+        - breaking-change
+        - breaking
+    - title: New Features
+      labels:
+        - enhancement
+        - features
+        - feature
+        - feat
+    - title: Bug Fixes
+      labels:
+        - bug-fix
+        - fix
+        - patch
+    - title: Other Changes
+      labels:
+        - "*"
