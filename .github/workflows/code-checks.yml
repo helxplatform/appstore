@@ -115,5 +115,5 @@ jobs:
       with:
         context: .
         push: false
-        cache-from: type=registry,ref=${{ github.repository }}:buildcache
-        cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
+        cache-from: type=registry,ref=containers.renci.org/helxplatform/appstore:buildcache
+        cache-to: type=registry,ref=containers.renci.org/helxplatform/appstore:buildcache,mode=max
