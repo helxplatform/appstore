@@ -88,6 +88,14 @@ jobs:
         password: ${{ secrets.CONTAINERHUB_TOKEN }}
         logout: true
 
+    - name: Sanitize repo slug
+      uses: actions/github-script@v6
+      id: repo_slug
+      with:
+        result-encoding: string
+        script: return '${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}'.toLowerCase()
+
+
     # Notes on Cache: 
     # https://docs.docker.com/build/ci/github-actions/examples/#inline-cache
     - name: Build Push Container
@@ -98,11 +106,11 @@ jobs:
         # Push to renci-registry and dockerhub here.
         # cache comes from dockerhub.
         tags: |
-          ${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:v${{ steps.version.outputs.version }}
-          ${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:develop
-          ${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}:${{ steps.vars.outputs.short_sha }}
           ${{ github.repository }}:v${{ steps.version.outputs.version }}
           ${{ github.repository }}:develop
           ${{ github.repository }}:${{ steps.vars.outputs.short_sha }}
+          ${{ steps.repo_slug.outputs.result }}:v${{ steps.version.outputs.version }}
+          ${{ steps.repo_slug.outputs.result }}:develop
+          ${{ steps.repo_slug.outputs.result }}:${{ steps.vars.outputs.short_sha }}
         cache-from: type=registry,ref=${{ github.repository }}:buildcache-dev
         cache-to: type=registry,ref=${{ github.repository }}:buildcache-dev,mode=max

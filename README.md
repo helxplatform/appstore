@@ -1,3 +1,7 @@
+[![Code-Checks](https://github.com/helxplatform/appstore/actions/workflows/code-checks.yml/badge.svg)](https://github.com/helxplatform/appstore/actions/workflows/code-checks.yml)
+
+
+
 # AppStore Overview
 
 ## Introduction
