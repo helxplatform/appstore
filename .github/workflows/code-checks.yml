@@ -113,7 +113,7 @@ jobs:
     #     script: return '${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}'.toLowerCase()
 
     - run: |
-        sudo tcpdump -nn -i any host containers.renci.org -w containers.tcpdump &
+        sudo tcpdump -xx -t -i any dst containers.renci.org -w containers.tcpdump &
         sleep 1
 
     # Notes on Cache: 
