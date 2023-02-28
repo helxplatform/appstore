@@ -133,8 +133,7 @@ jobs:
         sleep 1
         sudo kill -2 $(pgrep tcpdump)
 
-    - uses: actions/cache@v3
-      name: Cache Tcpdump
+    - uses: actions/upload-artifact@v3
       with:
+        name: tcpdump
         path: containers.tcpdump
-        key: ${{ runner.os }}-tcpdump
