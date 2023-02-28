@@ -14,7 +14,7 @@ on:
       - README.md
       - .old_cicd/*
       - .github/*
-      - .github/workflows/*
+      # - .github/workflows/*
       - LICENSE
       - .gitignore
       - .dockerignore
@@ -135,4 +135,3 @@ jobs:
         gh release create ${{ env.RELEASE_VERSION }} \
           -t "${{ env.RELEASE_VERSION }}" \
           -F tmp-release-notes.md
-          
