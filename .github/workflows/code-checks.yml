@@ -121,11 +121,10 @@ jobs:
     - name: Build Container
       uses: docker/build-push-action@v4
       with:
-        context: .
+        # context: .
         push: false
         cache-from: type=registry,ref=${{ github.repository }}:buildcache
         cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
-      continue-on-error: true
 
     # - name: Stop tcpdump
     #   if: always()
