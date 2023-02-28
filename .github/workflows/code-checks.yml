@@ -119,4 +119,4 @@ jobs:
         # context: .
         push: false
         cache-from: type=registry,ref=containers.renci.org/${{ github.repository }}:buildcache
-        cache-to: type=registry,ref=containers.renci.org/${{ github.repository }}:buildcache,mode=max,oci-mediatypes=true
+        cache-to: type=registry,ref=containers.renci.org/${{ github.repository }}:buildcache,mode=max,compression=gzip
