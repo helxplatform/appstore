@@ -1,6 +1,7 @@
 from functools import lru_cache
 
 from allauth.account.views import LoginView
+from django.http import HttpResponsePermanentRedirect
 
 from api.v1.views import AppContextViewSet
 
@@ -74,6 +75,7 @@ class HelxLoginView(LoginView):
     Provides the login landing page data based on allauth, customized for HeLx.
     """
 
+    """
     template_name = "frontend/landing.html"
     success_url = reverse_lazy("helx")
     redirect_field_name = "next"
@@ -99,6 +101,10 @@ class HelxLoginView(LoginView):
         if request.user.is_authenticated:
             return redirect(self.success_url)
         return super(LoginView, self).get(request, *args, **kwargs)
+    """
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponsePermanentRedirect(url="/helx/workspaces/login/")
 
 
 def HelxSpaRedirectView(request):
