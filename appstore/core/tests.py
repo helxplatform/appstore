@@ -1,6 +1,6 @@
 import logging
 
-from core.admin_tests import *
+from core.admin_tests import *   # noqa: F403
 from django.http import HttpResponse, HttpResponseRedirect
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class AppTests(TestCase):
 
     def test_auth_loggedin_admin_user(self):
         """Test the auth endpoint for a logged in User"""
-        logger.info(f"-- testing auth endpoint for logged in admin user")
+        logger.info(f'{"-- testing auth endpoint for logged in admin user"}')
         credentials = {'username': 'admin', 'password': 'admin'}
         self.client.login(**credentials)
         response = self.client.get("/auth/")
@@ -36,7 +36,7 @@ class AppTests(TestCase):
         self.assertEqual(remote_user, "admin")
 
     def test_auth_nonloggedin_user(self):
-        logger.info(f"-- testing auth endpoint for non logged in user")
+        logger.info(f'{"-- testing auth endpoint for non logged in user"}')
         response = self.client.get("/auth/")
         self.assertEqual(response.status_code, 302)
         self.assertTrue(isinstance(response, HttpResponseRedirect))

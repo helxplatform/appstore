@@ -20,7 +20,7 @@ the root `Makefile`.
 Automated testing uses the Python standard `unittest` and Django testing frameworks.
 Tests should be fast enough to run conveniently, and maximize coverage. For example,
 the Django testing framework allows for testing URL routes, middleware and other
-use interface elements in addition to the logic of components. Smoke and load
+user interface elements in addition to the logic of components. Smoke and load
 testing of the live server/API is implemented using the `artillery` npm package. 
 
 ## CI/CD
@@ -39,7 +39,6 @@ These published images can be found [here](https://hub.docker.com/r/helxplatform
 - appstore:`develop`
 - appstore:`(short-commit-sha)`
 - appstore:`vX.X.X-prerelease{X}` 
-
 
 Prerelease version is the expected next release version based on current commits and the "prerelease{X}" number is the amount of commits on that version.
 #### master-branch
