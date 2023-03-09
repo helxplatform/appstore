@@ -8,7 +8,6 @@
 #
 # The build-push-dev-image and build-push-release workflows 
 # handle the develop and release image storage respectively.
-# CI/CD Maintainer: Joshua Seals 🦭
 #
 #
 

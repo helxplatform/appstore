@@ -1,7 +1,5 @@
 # Workflow responsible for the 
 # major release processes.
-#  
-# CI/CD Maintainer: Joshua Seals 🦭
 #
 
 name: Build-Push-Release
