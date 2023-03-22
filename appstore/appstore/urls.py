@@ -18,12 +18,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("saml2_auth/", include("django_saml2_auth.urls")),
     path("accounts/saml/", saml2_auth_views.signin),
-    # path(r"accounts/login/", HelxLoginView.as_view(), name="helx_login"),
-    path(
-        r"accounts/login/",
-        RedirectView.as_view(url="/helx/workspaces/login/", permanent=True),
-        name="helx_login"
-    ),
+    path(r"accounts/login/", HelxLoginView.as_view(), name="helx_login"),
     path("accounts/", include("allauth.urls")),
 ]
 

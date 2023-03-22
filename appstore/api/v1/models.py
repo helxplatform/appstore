@@ -112,7 +112,7 @@ class InstanceSpec:
     protocol: str = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
 
     def __post_init__(self, ip, port, svc_id, sys_id):
-        logger.debug(f"Finishing spec construction.")
+        logger.debug(f'{"Finishing spec construction."}')
 
         if ip:
             self.url = f"http://{ip}:{port}"

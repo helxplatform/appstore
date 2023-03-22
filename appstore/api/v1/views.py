@@ -6,11 +6,11 @@ import os
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth import get_user_model, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+
 
 from rest_framework import status as drf_status, viewsets, serializers
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -19,7 +19,7 @@ from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
 from core.models import IrodAuthorizedUser
-from .exceptions import AuthorizationTokenUnavailable
+
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
     InstanceSerializer,
@@ -539,7 +539,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         Check for SSO defined in appstore settings.
         """
 
-        if settings.ALLOW_SAML_LOGIN:
+        if settings.ALLOW_SAML_LOGIN == "true":
             # TODO can we get the provider name from metadata so that if
             # we support something beyond UNC we dont need another func
             # or clause? What happens if we have multiple SAML SSO providers

@@ -1,3 +1,6 @@
+[![Code-Checks](https://github.com/helxplatform/appstore/actions/workflows/code-checks.yml/badge.svg)](https://github.com/helxplatform/appstore/actions/workflows/code-checks.yml)
+
+
 # AppStore Overview
 
 ## Introduction
@@ -17,17 +20,43 @@ the root `Makefile`.
 Automated testing uses the Python standard `unittest` and Django testing frameworks.
 Tests should be fast enough to run conveniently, and maximize coverage. For example,
 the Django testing framework allows for testing URL routes, middleware and other
-use interface elements in addition to the logic of components. Smoke and load
+user interface elements in addition to the logic of components. Smoke and load
 testing of the live server/API is implemented using the `artillery` npm package. 
 
-## Packaging
+## CI/CD
 
-Appstore is packaged as a Docker image. It is a non-root container, meaning the
-user is not a superuser. It packages a frontend copied from [helx-ui](https://hub.docker.com/repository/docker/helxplatform/helx-ui).
+Github Actions are employed to lint, test, build and publish this project.
+
+### Packaging
+
+Appstore is packaged as a Docker image in a non-root container and embeds a copy of the [helx-ui](https://hub.docker.com/r/helxplatform/helx-ui) front end within the Dockerfile image specificaton itself. 
+
+The docker image is built and published automatically when merging to `develop` or `master` branches. 
+
+These published images can be found [here](https://hub.docker.com/r/helxplatform/appstore) and are tagged thusly:
+
+#### develop-branch
+- appstore:`develop`
+- appstore:`(short-commit-sha)`
+- appstore:`vX.X.X-prerelease{X}` 
+
+Prerelease version is the expected next release version based on current commits and the "prerelease{X}" number is the amount of commits on that version.
+#### master-branch
+- appstore:`latest`
+- appstore:`(short-commit-sha)`
+- appstore:`vX.X.X`
 
 ### Releases
 
-Following Semver, (major, minor, patch); containers will be tagged accordingly.
+[Releases](https://github.com/helxplatform/appstore/releases) are also automated following the semver specification ('major', 'minor','patch') for the project when merging `develop` branch to `master`. 
+
+During a new release workflow, a new tag solidifying the semver version of the new release is first added to the master branch, then a github release object is created with release notes highlighting major, minor, patch changes and contributors for each release.
+
+The template for the release notes may be found [here](https://github.com/helxplatform/appstore/blob/develop/.github/release.yml)
+
+#### CI/CD HouseKeeping
+
+Inline comments within the code such as `#noqa: F401` are necessary items that instruct the linter to bypass or perform a special action for specific sections of code. ***PLEASE DO NOT DELETE these inline comments.
 
 ## Deployment
 
