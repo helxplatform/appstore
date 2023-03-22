@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 from dataclasses import dataclass, InitVar, field
 
 logger = logging.getLogger(__name__)
@@ -140,5 +141,11 @@ class LoginProvider:
 @dataclass
 class User:
     REMOTE_USER: str
+    FIRST_NAME: str
+    LAST_NAME: str
+    EMAIL: str
+    DATE_JOINED: datetime
+    IS_SUPERUSER: bool
+    IS_STAFF: bool
     ACCESS_TOKEN: str
     SESSION_TIMEOUT: int

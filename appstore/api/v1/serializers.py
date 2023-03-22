@@ -1,5 +1,5 @@
 import logging
-
+from datetime import timezone
 from rest_framework import serializers
 from .models import ResourceRequest
 from .validators import memory_format_validator
@@ -78,6 +78,12 @@ class InstanceIdentifierSerializer(serializers.Serializer):
 
 class UserSerializer(serializers.Serializer):
     REMOTE_USER = serializers.CharField()
+    FIRST_NAME = serializers.CharField(allow_blank=True)
+    LAST_NAME = serializers.CharField(allow_blank=True)
+    EMAIL = serializers.CharField(allow_blank=True)
+    DATE_JOINED = serializers.DateTimeField()
+    IS_SUPERUSER = serializers.BooleanField()
+    IS_STAFF = serializers.BooleanField()
     ACCESS_TOKEN = serializers.CharField(required=False, allow_null=True)
     SESSION_TIMEOUT = serializers.IntegerField()
 

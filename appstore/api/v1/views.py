@@ -483,7 +483,17 @@ class UsersViewSet(viewsets.GenericViewSet):
         Supports the use case where a reverse proxy like nginx is being used to
         test authentication of a principal before proxying a request upstream.
         """
-        user = User(request.user.username, self._get_access_token(request), settings.SESSION_IDLE_TIMEOUT)
+        user = User(
+            REMOTE_USER=request.user.username,
+            FIRST_NAME=request.user.first_name,
+            LAST_NAME=request.user.last_name,
+            EMAIL=request.user.email,
+            DATE_JOINED=request.user.date_joined,
+            IS_SUPERUSER=request.user.is_superuser,
+            IS_STAFF=request.user.is_staff,
+            ACCESS_TOKEN=self._get_access_token(request),
+            SESSION_TIMEOUT=settings.SESSION_IDLE_TIMEOUT
+        )
         serializer = self.get_serializer(data=asdict(user))
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
