@@ -17,7 +17,7 @@ import re
 
 AUTH_USERS = os.environ.get('AUTHORIZED_USERS', '').strip()
 REMOVE_AUTH_USERS = os.environ.get('REMOVE_AUTHORIZED_USERS', '').strip()
-IROD_AUTH_USERS = os.environ.get('IROD_ZONE','').strip()
+IROD_AUTH_USERS = os.environ.get('IROD_HOST','').strip()
 IROD_ZONE = os.environ.get('IROD_ZONE','').strip()
 IROD_ADMIN_USN = os.environ.get('RODS_USERNAME','').strip()
 IROD_ADMIN_PASS = os.environ.get('RODS_PASSWORD','').strip()
