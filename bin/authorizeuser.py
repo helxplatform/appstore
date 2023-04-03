@@ -17,18 +17,19 @@ import re
 
 AUTH_USERS = os.environ.get('AUTHORIZED_USERS', '').strip()
 REMOVE_AUTH_USERS = os.environ.get('REMOVE_AUTHORIZED_USERS', '').strip()
-IROD_AUTH_USERS = os.environ.get('IROD_APPROVED_USERS','').strip()
+IROD_AUTH_USERS = os.environ.get('IROD_ZONE','').strip()
 IROD_ZONE = os.environ.get('IROD_ZONE','').strip()
 IROD_ADMIN_USN = os.environ.get('RODS_USERNAME','').strip()
 IROD_ADMIN_PASS = os.environ.get('RODS_PASSWORD','').strip()
-IROD_BASE_URL = os.environ.get('BRAINI_RODS','').strip()
+IROD_BASE_URL = os.environ.get('IROD_HOST','').strip()
+IROD_PORT = int(os.environ.get('IROD_PORT','0').strip())
 
-def irods_user_create(username):
+def irods_user_create(username,uid):
     #Check if user was already created
     if IrodAuthorizedUser.objects.filter(user=username):
         print("Irods user already found in postgres")
         return
-    with iRODSSession(host=IROD_BASE_URL, port=1247, user=IROD_ADMIN_USN, password=IROD_ADMIN_PASS, zone=IROD_ZONE) as session:
+    with iRODSSession(host=IROD_BASE_URL, port=IROD_PORT, user=IROD_ADMIN_USN, password=IROD_ADMIN_PASS, zone=IROD_ZONE) as session:
         #Check for user already existing in IRODS itself. If so, Save the user in the local database and continue
         try:
             session.users.get(username)
@@ -36,8 +37,7 @@ def irods_user_create(username):
             result = session.users.create(username,'rodsuser')
         else:
             print("User already exists")
-        user_id = session.users.get(username)
-        u = IrodAuthorizedUser(user=username,uid=user_id.id)
+        u = IrodAuthorizedUser(user=username,uid=uid)
         u.save()
 
 if AUTH_USERS:
@@ -52,12 +52,10 @@ if AUTH_USERS:
 
 if IROD_AUTH_USERS:
     print("IRODS USERS ENABLED")
-    irods_users = IROD_AUTH_USERS.split(',')
-    print(irods_users)
-    for user_data in irods_users:
-        irods_user_create(user_data)
-        print(f"Added {user_data} to Irods authorized Users")
-        
+    with open('/etc/iroduserdata/iroduserdata','r') as f:
+        for line in f:
+            user,uid = line.split("::")
+            irods_user_create(user,uid)
         
 
 

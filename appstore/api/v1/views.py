@@ -347,7 +347,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         #Need to set an environment variable for the IRODS UID
         if irods_enabled != '':
             nfs_id = get_nfs_uid(request.user)
-            os.environ[str(request.user)+"_NFSRODS_UID"] = str(nfs_id)
+            os.environ["NFSRODS_UID"] = str(nfs_id)
 
         principal = Principal(*tokens)
 
