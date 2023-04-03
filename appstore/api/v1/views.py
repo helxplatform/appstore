@@ -341,7 +341,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         resource_request = serializer.create(serializer.validated_data)
-        irods_enabled = os.environ.get("IROD_ZONE",'').strip()
+        irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
         #Need to set an environment variable for the IRODS UID
