@@ -105,19 +105,6 @@ def auth(request):
         )
     return response
 
-
-def custom404(request, exception):
-    """
-    For most routes serve the standard 404 page.
-
-    Private routes indicate a route to a user instantiated app. If a 404 is
-    raised on one of these routes it means the app has stopped/is no longer
-    available. We want to notify the user and let them return to the app page.
-    """
-
-    if "private" in request.path:
-        template_name = "private404.html"
-    else:
-        template_name = "404.html"
-    context = {"req_path": request.path}
-    return render(request, template_name, context=context, status=404)
+def index(request):
+    # Any additional logic to prepare data for the template can be added here
+    return render(request,'index.html')
