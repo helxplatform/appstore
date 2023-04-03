@@ -8,7 +8,6 @@
 ##
 #########################################################################################################
 import os
-import requests
 from irods.session import iRODSSession
 from irods.exception import NoResultFound,UserDoesNotExist
 from core.models import AuthorizedUser, IrodAuthorizedUser
@@ -34,7 +33,7 @@ def irods_user_create(username,uid):
         #Check for user already existing in IRODS itself. If so, Save the user in the local database and continue
         try:
             session.users.get(username)
-        except (NoResultFound,UserDoesNotExist) as e:
+        except (NoResultFound,UserDoesNotExist):
             result = session.users.create(username,'rodsuser')
         else:
             print("User already exists")
@@ -45,7 +44,7 @@ if AUTH_USERS:
     users = re.split(r'[\s,]+',AUTH_USERS)
     for user in users:
         if AuthorizedUser.objects.filter(email=user):
-            print(f"User already in Authorized Users list ----> add skipping")
+            print(f'{"User already in Authorized Users list ----> add skipping"}')
         else:
             u = AuthorizedUser(email=user)
             u.save()

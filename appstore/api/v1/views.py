@@ -6,11 +6,11 @@ import os
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth import get_user_model, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+
 
 from rest_framework import status as drf_status, viewsets, serializers
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -19,7 +19,7 @@ from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
 from core.models import IrodAuthorizedUser
-from .exceptions import AuthorizationTokenUnavailable
+
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
     InstanceSerializer,
@@ -35,16 +35,31 @@ from .serializers import (
     EmptySerializer,
 )
 
+from urllib.parse import urljoin
+
 # TODO: Structured Logging
 logger = logging.getLogger(__name__)
+
 
 """
 Tycho context for application management.
 Manages application metadata, discovers and invokes TychoClient, etc.
 """
-tycho = ContextFactory.get(
-    context_type=settings.TYCHO_MODE, product=settings.PRODUCT_SETTINGS.brand
-)
+contextFactory = ContextFactory()
+if settings.EXTERNAL_TYCHO_APP_REGISTRY_ENABLED == "false":
+    logger.debug (f"-- appstore.appstore.core.views.py: EXTERNAL_TYCHO_APP_REGISTRY_ENABLED is 'false', using Tycho built-in app registry file")
+    tycho = contextFactory.get(
+            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
+    )
+else:
+    logger.debug (f"-- appstore.appstore.core.views.py: EXTERNAL_TYCHO_APP_REGISTRY_REPO is {settings.EXTERNAL_TYCHO_APP_REGISTRY_REPO}, EXTERNAL_TYCHO_APP_REGISTRY_BRANCH is {settings.EXTERNAL_TYCHO_APP_REGISTRY_BRANCH}, using external app registry file")
+    # urljoin might not work as planned if the first part doesn't end with a slash.
+    tycho_config_url = urljoin(settings.EXTERNAL_TYCHO_APP_REGISTRY_REPO, settings.EXTERNAL_TYCHO_APP_REGISTRY_BRANCH)
+    logger.debug (f"tycho_config_url: {tycho_config_url}")
+    tycho = contextFactory.get(
+            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url=tycho_config_url
+    )
+
 
 def get_nfs_uid(username):
     irod_auth_user = IrodAuthorizedUser.objects.get(user=username)
@@ -524,7 +539,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         Check for SSO defined in appstore settings.
         """
 
-        if settings.PRODUCT_SETTINGS.brand in ("braini", "restarts"):
+        if settings.ALLOW_SAML_LOGIN == "true":
             # TODO can we get the provider name from metadata so that if
             # we support something beyond UNC we dont need another func
             # or clause? What happens if we have multiple SAML SSO providers
