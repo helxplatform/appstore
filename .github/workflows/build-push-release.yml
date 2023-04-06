@@ -114,22 +114,13 @@ jobs:
         https://api.github.com/repos/${{ github.repository }}/git/refs \
         -d '{"ref":"refs/tags/v${{ steps.version.outputs.version }}","sha":"${{ github.sha }}"}'
 
-    - name: Generate Release Notes
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        RELEASE_VERSION: ${{ steps.version.outputs.version }}
-      run: |
-        gh api -X POST 'repos/${{ github.repository }}/releases/generate-notes' \
-          -F commitish=${{ env.RELEASE_VERSION }} \
-          -F tag_name=${{ env.RELEASE_VERSION }} \
-          > tmp-release-notes.json
-
+#   https://cli.github.com/manual/gh_release_create
     - name: Create Release
       env:
         RELEASE_VERSION: ${{ steps.version.outputs.version }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        jq -r .body tmp-release-notes.json > tmp-release-notes.md
         gh release create ${{ env.RELEASE_VERSION }} \
           -t "${{ env.RELEASE_VERSION }}" \
-          -F tmp-release-notes.md
+          --generate-notes \
+          --latest
