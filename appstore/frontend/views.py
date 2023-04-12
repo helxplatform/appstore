@@ -104,11 +104,11 @@ class HelxLoginView(LoginView):
     """
 
     def get(self, request, *args, **kwargs):
-        return HttpResponsePermanentRedirect(url="/helx/workspaces/login/")
+        return HttpResponsePermanentRedirect(redirect_to="/helx/workspaces/login/")
 
 
 def HelxSpaRedirectView(request):
-    return redirect(reverse_lazy("helx"))
+    return HttpResponsePermanentRedirect(redirect_to="/helx")
 
 
 class HelxSpaLoaderView(TemplateView):
