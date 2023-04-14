@@ -592,6 +592,8 @@ class AppContextViewSet(viewsets.GenericViewSet):
     def list(self, request):
         settings = self.get_queryset()
         data = asdict(settings.PRODUCT_SETTINGS)
+        data['dockstore_app_specs_dir_url'] = settings.DOCKSTORE_APP_SPECS_DIR_URL
+
         data['env'] = {}
         for k,v in sorted(os.environ.items()): 
             if k in settings.EXPORTABLE_ENV: data['env'][k] = v

@@ -94,6 +94,7 @@ class AppContextSerializer(serializers.Serializer):
     color_scheme = serializers.DictField()
     links = serializers.ListField(required=False, allow_null=True)
     capabilities = serializers.ListField()
+    dockstore_app_specs_dir_url = serializers.CharField(allow_null=True)
     env = serializers.DictField()
 
 
