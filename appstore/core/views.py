@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.dispatch import receiver
 from django.http import  HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 from tycho.context import ContextFactory
 
@@ -107,4 +107,20 @@ def auth(request):
 
 def index(request):
     # Any additional logic to prepare data for the template can be added here
-    return render(request,'index.html')
+    # return render(request,'index.html')
+    return redirect(to="/helx", permanent=True)
+
+def custom404(request, exception):
+    """
+    For most routes serve the standard 404 page.
+    Private routes indicate a route to a user instantiated app. If a 404 is
+    raised on one of these routes it means the app has stopped/is no longer
+    available. We want to notify the user and let them return to the app page.
+    """
+
+    if "private" in request.path:
+        template_name = "private404.html"
+    else:
+        template_name = "404.html"
+    context = {"req_path": request.path}
+    return render(request, template_name, context=context, status=404)
