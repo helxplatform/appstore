@@ -397,6 +397,8 @@ If changes need to happen to the frontend artifacts (react components, etc) thos
 changes will need to be done in the `helx-ui` repo which has instructions for
 developing the frontend and testing appstore integration.
 
+>NOTE: helx-ui is now deployed with it's own Helm chart and runs in it's own
+>container separate from appstore.
 
 ## Coordination of Development for Tycho and Appstore
 
