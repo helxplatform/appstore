@@ -22,7 +22,7 @@ DOCKER_TAG      := ${VERSION}
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
 SECRET_KEY      := $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
-BRANDS          := braini bdc heal restartr scidas eduhelx argus tracs eduhelx-sandbox
+BRANDS          := braini bdc heal restartr scidas eduhelx argus tracs eduhelx-sandbox eduhelx-dev
 MANAGE	        := ${PYTHON} appstore/manage.py
 SETTINGS_MODULE := ${DJANGO_SETTINGS_MODULE}
 
@@ -138,8 +138,6 @@ start:	build.postgresql.local
 	if [ "${CREATE_TEST_USERS}" = "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
-	if [[ "${DEV_PHASE}" != "local" ]]; then bash bin/populate_env.sh ./appstore/static/frontend/env.json; fi
-	ln -s /usr/src/inst-mgmt/appstore/static/favicon.ico /usr/src/inst-mgmt/appstore/static/images/favicon.ico
 	gunicorn --bind 0.0.0.0:8000 --log-level=${LOG_LEVEL} --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
 
 #build: Build the Docker image

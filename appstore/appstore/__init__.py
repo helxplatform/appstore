@@ -1,1 +1,2 @@
-from ._version import __version__
+# flake8: noqa
+from ._version import __version__ 

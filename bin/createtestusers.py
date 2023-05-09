@@ -1,5 +1,5 @@
 import os
-from pathlib import Path
+
 
 from django.contrib.auth import get_user_model
 from core.models import AuthorizedUser
@@ -16,7 +16,7 @@ with open(f"{USERS_PATH}/test-users/users.txt", "r") as users:
             django_user.set_password(password)
             django_user.save()
             if AuthorizedUser.objects.filter(email=email):
-                print(f"User already in Authorized Users list ----> add skipping")
+                print(f'{"User already in Authorized Users list ----> add skipping"}')
             else:
                 u = AuthorizedUser(email=email)
                 u.save()

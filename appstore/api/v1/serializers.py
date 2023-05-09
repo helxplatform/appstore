@@ -1,7 +1,7 @@
 import logging
 
 from rest_framework import serializers
-from .models import Instance, App, ResourceRequest, InstanceSpec
+from .models import ResourceRequest
 from .validators import memory_format_validator
 
 logger = logging.getLogger(__name__)
@@ -94,6 +94,7 @@ class AppContextSerializer(serializers.Serializer):
     color_scheme = serializers.DictField()
     links = serializers.ListField(required=False, allow_null=True)
     capabilities = serializers.ListField()
+    dockstore_app_specs_dir_url = serializers.CharField(allow_null=True)
     env = serializers.DictField()
 
 

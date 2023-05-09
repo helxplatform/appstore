@@ -6,11 +6,11 @@ import os
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth import get_user_model, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import logout
+
 
 from rest_framework import status as drf_status, viewsets, serializers
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework import status
@@ -19,7 +19,7 @@ from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
 from core.models import IrodAuthorizedUser
-from .exceptions import AuthorizationTokenUnavailable
+
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
     InstanceSerializer,
@@ -341,13 +341,13 @@ class InstanceViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         resource_request = serializer.create(serializer.validated_data)
-        irods_enabled = os.environ.get("IROD_ZONE",'').strip()
+        irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
         #Need to set an environment variable for the IRODS UID
         if irods_enabled != '':
             nfs_id = get_nfs_uid(request.user)
-            os.environ[str(request.user)+"_NFSRODS_UID"] = str(nfs_id)
+            os.environ["NFSRODS_UID"] = str(nfs_id)
 
         principal = Principal(*tokens)
 
@@ -539,7 +539,7 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         Check for SSO defined in appstore settings.
         """
 
-        if settings.ALLOW_SAML_LOGIN:
+        if settings.ALLOW_SAML_LOGIN == "true":
             # TODO can we get the provider name from metadata so that if
             # we support something beyond UNC we dont need another func
             # or clause? What happens if we have multiple SAML SSO providers
@@ -592,6 +592,8 @@ class AppContextViewSet(viewsets.GenericViewSet):
     def list(self, request):
         settings = self.get_queryset()
         data = asdict(settings.PRODUCT_SETTINGS)
+        data['dockstore_app_specs_dir_url'] = settings.DOCKSTORE_APP_SPECS_DIR_URL
+
         data['env'] = {}
         for k,v in sorted(os.environ.items()): 
             if k in settings.EXPORTABLE_ENV: data['env'][k] = v

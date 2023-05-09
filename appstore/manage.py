@@ -12,7 +12,8 @@ if __name__ == "__main__":
         # issue is really that Django is missing to avoid masking other
         # exceptions.
         try:
-            import django
+            # noqa line tells flake8 to ignore imported but unused below.
+            import django # noqa: F401
         except ImportError:
             raise ImportError(
                 "Couldn't import Django. Are you sure it's installed and "
