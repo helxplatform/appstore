@@ -81,6 +81,7 @@ class UserSerializer(serializers.Serializer):
     FIRST_NAME = serializers.CharField(allow_blank=True)
     LAST_NAME = serializers.CharField(allow_blank=True)
     EMAIL = serializers.CharField(allow_blank=True)
+    PASSWORD_IS_SET = serializers.BooleanField()
     DATE_JOINED = serializers.DateTimeField()
     IS_SUPERUSER = serializers.BooleanField()
     IS_STAFF = serializers.BooleanField()

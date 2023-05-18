@@ -488,6 +488,7 @@ class UsersViewSet(viewsets.GenericViewSet):
             FIRST_NAME=request.user.first_name,
             LAST_NAME=request.user.last_name,
             EMAIL=request.user.email,
+            PASSWORD_IS_SET=request.user.has_usable_password(),
             DATE_JOINED=request.user.date_joined,
             IS_SUPERUSER=request.user.is_superuser,
             IS_STAFF=request.user.is_staff,

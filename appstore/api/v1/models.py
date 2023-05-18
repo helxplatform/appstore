@@ -144,6 +144,7 @@ class User:
     FIRST_NAME: str
     LAST_NAME: str
     EMAIL: str
+    PASSWORD_IS_SET: bool
     DATE_JOINED: datetime
     IS_SUPERUSER: bool
     IS_STAFF: bool
