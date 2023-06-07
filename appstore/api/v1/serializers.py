@@ -31,6 +31,7 @@ class InstanceSerializer(serializers.Serializer):
     gpus = serializers.IntegerField(default=0)
     # TODO switch to Float potentially, or validator
     memory = serializers.CharField()
+    ephemeralStorage = serializers.CharField()
     url = serializers.CharField()
     status = serializers.CharField()
 
@@ -56,6 +57,7 @@ class ResourceSerializer(serializers.Serializer):
     cpus = serializers.FloatField()
     gpus = serializers.IntegerField(default=0)
     memory = serializers.CharField(validators=[memory_format_validator])
+    # ephemeralStorage = serializers.CharField(validators=[memory_format_validator])
 
     def create(self, validated_data):
         return ResourceRequest(**validated_data)

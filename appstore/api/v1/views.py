@@ -199,13 +199,16 @@ class AppViewSet(viewsets.GenericViewSet):
                             reservations.get("cpus", 0),
                             gpu_reservations,
                             reservations.get("memory", 0),
+                            reservations.get("ephemeralStorage", 0),
                         )
                     ),
                     asdict(
                         Resources(
                             limits.get("cpus", 0),
                             gpu_limits,
-                            limits.get("memory", 0))
+                            limits.get("memory", 0),
+                            limits.get("ephemeralStorage", 0),
+                        )
                     ),
                 )
 
@@ -249,7 +252,8 @@ class AppViewSet(viewsets.GenericViewSet):
                 Resources(
                     reservations.get("cpus", 0),
                     gpu_reservations,
-                    reservations.get("memory", 0)
+                    reservations.get("memory", 0),
+                    reservations.get("ephemeralStorage", 0)
                 )
             ),
             asdict(
@@ -257,6 +261,7 @@ class AppViewSet(viewsets.GenericViewSet):
                     limits.get("cpus", 0),
                     gpu_limits,
                     limits.get("memory", 0))),
+                    limits.get("ephemeralStorage", 0)
         )
         logging.debug(f"app:\n${app}")
 
@@ -334,6 +339,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         instance.total_util["cpu"],
                         instance.total_util["gpu"],
                         instance.total_util["memory"],
+                        instance.total_util["ephemeralStorage"],
                         host,
                         username,
                     )
@@ -422,6 +428,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                     instance.total_util["cpu"],
                     instance.total_util["gpu"],
                     instance.total_util["memory"],
+                    instance.total_util["ephemeralStorage"],
                     app.get("app_id"),
                     host,
                     username,
