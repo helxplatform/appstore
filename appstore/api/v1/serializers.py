@@ -57,6 +57,8 @@ class ResourceSerializer(serializers.Serializer):
     cpus = serializers.FloatField()
     gpus = serializers.IntegerField(default=0)
     memory = serializers.CharField(validators=[memory_format_validator])
+    # Can something like this if we add an ephemeral storage selector
+    # in the web UI.
     # ephemeralStorage = serializers.CharField(validators=[memory_format_validator])
 
     def create(self, validated_data):
