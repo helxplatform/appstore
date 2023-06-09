@@ -358,8 +358,11 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
 
         serializer = self.get_serializer(data=request.data)
+        logging.debug("checking if request is valid")
         serializer.is_valid(raise_exception=True)
+        logging.debug("creating resource_request")
         resource_request = serializer.create(serializer.validated_data)
+        logging.debug(f"resource_request: {resource_request}")
         irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
