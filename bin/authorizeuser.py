@@ -14,7 +14,7 @@ from core.models import AuthorizedUser, IrodAuthorizedUser
 import re
 
 
-# Constant Variables
+
 AUTH_USERS = os.environ.get('AUTHORIZED_USERS', '').strip()
 REMOVE_AUTH_USERS = os.environ.get('REMOVE_AUTHORIZED_USERS', '').strip()
 IROD_AUTH_USERS = os.environ.get('IROD_HOST','').strip()
