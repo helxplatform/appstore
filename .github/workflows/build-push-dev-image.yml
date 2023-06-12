@@ -63,6 +63,7 @@ jobs:
         # version_format: "${major}.${minor}.${patch}-prerelease${increment}"
         version_format: "${major}.${minor}.${patch}-prerelease${increment}"
         search_commit_body: false
+        # Note: Only commits that include code files are checked with these regexes.
 
     # Docker Buildx is important to caching in the Build And Push Container
     # step
