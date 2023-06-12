@@ -50,6 +50,8 @@ Prerelease version is the expected next release version based on current commits
 
 [Releases](https://github.com/helxplatform/appstore/releases) are also automated following the semver specification ('major', 'minor','patch') for the project when merging `develop` branch to `master`. 
 
+For an automatic increase of the major version add a comment with "breaking|major" in it.  For an increase in the minor version add "feat|feature|minor" in a comment.
+
 During a new release workflow, a new tag solidifying the semver version of the new release is first added to the master branch, then a github release object is created with release notes highlighting major, minor, patch changes and contributors for each release.
 
 The template for the release notes may be found [here](https://github.com/helxplatform/appstore/blob/develop/.github/release.yml)
