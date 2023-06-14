@@ -43,9 +43,12 @@ jobs:
     - name: Confirm git commit SHA output
       run: echo ${{ steps.vars.outputs.short_sha }}
 
-    - name: Tag Checks 
+    - name: Tag Check
       run: | 
         git for-each-ref --sort=-v:*refname --format='%(refname:short)' --merged=HEAD 'refs/tags/v*[0-9].*[0-9].*[0-9]' | head -n 5
+
+    - name: Tag Check 2
+      run: |
         git for-each-ref --sort=-v:*refname --format='%(refname:short)' 'refs/tags/v*[0-9].*[0-9].*[0-9]' | head -n 5
 
     # https://github.com/marketplace/actions/git-semantic-version
