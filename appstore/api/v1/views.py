@@ -111,8 +111,8 @@ def search_for_gpu_reservation(reservations):
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#capabilities
     for more details.
     """
-    for d in reservations.get("devices", {}).items():
-        if d.get("capabilities") == "gpu":
+    for d in reservations.get("devices", {}):
+        if "gpu" in d.get("capabilities"):
             # Returning 0 for now if a device id is specified, gpu spec needs to be
             # further defined for app-prototypes and tycho.
             # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
@@ -184,7 +184,8 @@ class AppViewSet(viewsets.GenericViewSet):
                 # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
                 # #capabilities
                 # https://github.com/helxplatform/tycho/search?q=gpu
-                gpu = search_for_gpu_reservation(reservations)
+                gpu_reservations = search_for_gpu_reservation(reservations)
+                gpu_limits = search_for_gpu_reservation(limits)
                 spec = App(
                     app_data["name"],
                     app_id,
@@ -196,12 +197,18 @@ class AppViewSet(viewsets.GenericViewSet):
                     asdict(
                         Resources(
                             reservations.get("cpus", 0),
-                            gpu,
+                            gpu_reservations,
                             reservations.get("memory", 0),
+                            reservations.get("ephemeralStorage", 0),
                         )
                     ),
                     asdict(
-                        Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))
+                        Resources(
+                            limits.get("cpus", 0),
+                            gpu_limits,
+                            limits.get("memory", 0),
+                            limits.get("ephemeralStorage", 0),
+                        )
                     ),
                 )
 
@@ -211,6 +218,7 @@ class AppViewSet(viewsets.GenericViewSet):
                 continue
 
         apps = {key: value for key, value in sorted(apps.items())}
+        logging.debug(f"apps:\n${apps}")
         serializer = self.get_serializer(data=apps)
         serializer.is_valid()
         if serializer.errors:
@@ -229,7 +237,8 @@ class AppViewSet(viewsets.GenericViewSet):
         spec = tycho.get_definition(app_id)
         limits, reservations = parse_spec_resources(app_id, spec, app_data)
 
-        gpu = search_for_gpu_reservation(reservations)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
 
         app = App(
             app_data["name"],
@@ -241,11 +250,20 @@ class AppViewSet(viewsets.GenericViewSet):
             app_data["count"],
             asdict(
                 Resources(
-                    reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                    reservations.get("cpus", 0),
+                    gpu_reservations,
+                    reservations.get("memory", 0),
+                    reservations.get("ephemeralStorage", 0)
                 )
             ),
-            asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
+            asdict(
+                Resources(
+                    limits.get("cpus", 0),
+                    gpu_limits,
+                    limits.get("memory", 0))),
+                    limits.get("ephemeralStorage", 0)
         )
+        logging.debug(f"app:\n${app}")
 
         serializer = self.get_serializer(data=asdict(app))
         serializer.is_valid()
@@ -321,6 +339,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         instance.total_util["cpu"],
                         instance.total_util["gpu"],
                         instance.total_util["memory"],
+                        instance.total_util["ephemeralStorage"],
                         host,
                         username,
                     )
@@ -339,8 +358,11 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
 
         serializer = self.get_serializer(data=request.data)
+        logging.debug("checking if request is valid")
         serializer.is_valid(raise_exception=True)
+        logging.debug("creating resource_request")
         resource_request = serializer.create(serializer.validated_data)
+        logging.debug(f"resource_request: {resource_request}")
         irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
@@ -409,6 +431,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                     instance.total_util["cpu"],
                     instance.total_util["gpu"],
                     instance.total_util["memory"],
+                    instance.total_util["ephemeralStorage"],
                     app.get("app_id"),
                     host,
                     username,

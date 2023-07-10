@@ -10,6 +10,7 @@ class Resources:
     cpus: float
     gpus: int
     memory: str
+    ephemeralStorage: str
 
 
 @dataclass
@@ -41,6 +42,7 @@ class Instance:
     cpus: float
     gpus: int
     memory: float
+    ephemeralStorage: str
     host: InitVar[str]
     username: InitVar[str]
     url: str = field(init=False)
@@ -73,6 +75,7 @@ class ResourceRequest:
     cpus: float
     gpus: int
     memory: str
+    ephemeralStorage: str = ""
     resources: dict = None
 
     def __post_init__(self):
@@ -83,11 +86,13 @@ class ResourceRequest:
                         "cpus": self.cpus,
                         "memory": self.memory,
                         "gpus": self.gpus,
+                        "ephemeralStorage": self.ephemeralStorage,
                     },
                     "reservations": {
                         "cpus": self.cpus,
                         "memory": self.memory,
                         "gpus": self.gpus,
+                        "ephemeralStorage": self.ephemeralStorage,
                     },
                 }
             }
