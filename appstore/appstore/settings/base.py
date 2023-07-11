@@ -251,6 +251,10 @@ LOGGING = {
             "format": "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
         },
+        "verbose2": {
+            "format": "[%(asctime)s %(levelname)s %(filename)s->%(funcName)s():%(lineno)s]: %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
         "simple": {
             "format": "[%(asctime)s] %(levelname)s %(message)s",
             "datefmt": "%d/%b/%Y %H:%M:%S",
@@ -271,7 +275,7 @@ LOGGING = {
         "console": {
             "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "verbose2",
         },
         "djangoLog": {
             "level": LOG_LEVEL,

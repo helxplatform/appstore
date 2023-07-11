@@ -105,6 +105,11 @@ def auth(request):
         )
     return response
 
+def HandlePrivateURL404s(request):
+    response = HttpResponse("App service not ready.", content_type="text/plain", status=404)
+    logger.debug(f"Ambassador app resource may not be mapped to the app service yet. Redirection to app UI happens when it is ready.")
+    return response
+
 def index(request):
     # Any additional logic to prepare data for the template can be added here
     # return render(request,'index.html')
