@@ -39,7 +39,7 @@ jobs:
 ############################## flake8-linter ##############################
   flake8-linter:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
     - uses: actions/checkout@v3
           
@@ -74,7 +74,7 @@ jobs:
   test-image-build:
     needs: flake8-linter
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
     - uses: actions/checkout@v3
 
@@ -97,12 +97,7 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         logout: true
 
-    # - name: Sanitize repo slug
-    #   uses: actions/github-script@v6
-    #   id: repo_slug
-    #   with:
-    #     result-encoding: string
-    #     script: return '${{ secrets.CONTAINERHUB_URL }}/${{ github.repository }}'.toLowerCase()
+
 
     # Notes on Cache: 
     # https://docs.docker.com/build/ci/github-actions/examples/#inline-cache
@@ -110,6 +105,10 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        push: false
+        push: true
+        # Push to renci-registry and dockerhub here.
+        # cache comes from dockerhub.
+        tags: |
+          ${{ github.repository }}:test_image
         cache-from: type=registry,ref=${{ github.repository }}:buildcache
         cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
