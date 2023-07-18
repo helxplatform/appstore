@@ -109,6 +109,6 @@ jobs:
         # Push to renci-registry and dockerhub here.
         # cache comes from dockerhub.
         tags: |
-          ${{ github.repository }}:test_image
+          ${{ github.repository }}:test_image_${{ github.ref_name }}
         cache-from: type=registry,ref=${{ github.repository }}:buildcache
         cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
