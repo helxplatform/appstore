@@ -1,6 +1,4 @@
-FROM python:3.11.4
-#FROM python:3.9.17-slim-bullseye
-#FROM python:3.9.17-slim-bookworm
+FROM python:3.9.17-slim-bullseye
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
