@@ -110,6 +110,8 @@ jobs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        push: false
+        push: true
+        tags: |
+          ${{ github.repository }}:test_image_${{ github.ref_name }}
         cache-from: type=registry,ref=${{ github.repository }}:buildcache
         cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
