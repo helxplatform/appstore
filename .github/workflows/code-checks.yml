@@ -72,7 +72,6 @@ jobs:
 
 ############################## test-image-build ##############################
   test-image-build:
-    needs: flake8-linter
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
