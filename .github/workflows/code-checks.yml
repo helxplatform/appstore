@@ -21,8 +21,8 @@ on:
     paths-ignore:
       - README.md
       - .old_cicd/*
-      - .github/*
-      - .github/workflows/*
+      # - .github/*
+      # - .github/workflows/*
       - LICENSE
       - .gitignore
       - .dockerignore
@@ -39,7 +39,7 @@ jobs:
 ############################## flake8-linter ##############################
   flake8-linter:
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'dependabot[bot]' }}
+    # if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
     - uses: actions/checkout@v3
           
@@ -72,9 +72,8 @@ jobs:
 
 ############################## test-image-build ##############################
   test-image-build:
-    needs: flake8-linter
     runs-on: ubuntu-latest
-    if: ${{ github.actor == 'dependabot[bot]' }}
+    # if: ${{ github.actor == 'dependabot[bot]' }}
     steps:
     - uses: actions/checkout@v3
 
@@ -106,8 +105,6 @@ jobs:
       with:
         context: .
         push: true
-        # Push to renci-registry and dockerhub here.
-        # cache comes from dockerhub.
         tags: |
           ${{ github.repository }}:test_image_${{ github.ref_name }}
         cache-from: type=registry,ref=${{ github.repository }}:buildcache
