@@ -1,0 +1,22 @@
+version: 2
+updates:
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "joshua-seals"
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    reviewers:
+      - "joshua-seals"
+      - "Hoid"
+      - "waTeim"
+      - "pj-linebaugh"
+      - "ptlharit2"
+      - "frostyfan109"
+      - "cnbennett3"
