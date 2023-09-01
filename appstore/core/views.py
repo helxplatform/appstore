@@ -53,14 +53,12 @@ def get_brand_details(brand):
         "braini": {"name": "BRAIN-I", "logo": "logo.png"},
         "scidas": {"name": "SciDAS", "logo": "logo.png"},
         "bdc": {"name": "BioData Catalyst", "logo": "logo.svg"},
-        "restartr": {
-            "name": "UNC Restarting Research",
-            "logo": "logo.png",
-        },
+        "restartr": { "name": "UNC Restarting Research", "logo": "logo.png", },
         "heal": {"name": "NIH Heal Initiative", "logo": "logo.png"},
         "argus": {"name": "Argus Array", "logo": "logo.png"},
         "eduhelx": {"name": "EduHelx", "logo": "logo.png"},
         "testing": {"name": "Testing", "logo": "logo.png"},
+        "ordrd": {"name": "Ordr D", "logo": "logo.png"},
     }[brand]
 
 
