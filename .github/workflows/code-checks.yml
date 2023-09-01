@@ -4,7 +4,7 @@
 #     - image-build-test
 #    
 # This workflow will build a test image for everything but develop
-# and main branches.
+# and main branches. The tag will be test_{your_branch_name}
 #
 # The build-push-dev-image and build-push-release workflows 
 # handle the develop and release image storage respectively.
@@ -21,8 +21,8 @@ on:
     paths-ignore:
       - README.md
       - .old_cicd/*
-      # - .github/*
-      # - .github/workflows/*
+      - .github/*
+      - .github/workflows/*
       - LICENSE
       - .gitignore
       - .dockerignore
@@ -111,6 +111,6 @@ jobs:
         context: .
         push: true
         tags: |
-          ${{ github.repository }}:test_image_${{ steps.branch.outputs.GHR }}
+          ${{ github.repository }}:test_${{ steps.branch.outputs.GHR }}
         cache-from: type=registry,ref=${{ github.repository }}:buildcache
         cache-to: type=registry,ref=${{ github.repository }}:buildcache,mode=max
