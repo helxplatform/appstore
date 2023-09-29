@@ -44,6 +44,10 @@ DEBUG = bool(DEBUG_STRING)
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
 
+AUTO_WHITELIST_PATTERNS = [
+    r'^[A-Za-z0-9._%+-]+@renci\.org$'
+]
+
 # Variables used for an external Tycho app registry.
 # ToDo: Consider setting the default value of TYCHO_APP_REGISTRY_REPO to 
 # "https://github.com/helxplatform/helx-apps/raw" and remove any other similar
