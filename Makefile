@@ -96,7 +96,7 @@ clean:
 #install: Install application along with required development packages
 install: install.artillery
 	${PYTHON} -m pip install --upgrade pip
-	${PYTHON} -m pip install -r requirements.txt
+	${PYTHON} -m pip install --pre -r requirements.txt
 
 #test: Run all tests
 test:
