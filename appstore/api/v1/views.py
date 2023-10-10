@@ -374,9 +374,11 @@ class InstanceViewSet(viewsets.GenericViewSet):
         for instance in active:
             if instance.identifier == sid:
                 app = tycho.apps.get(instance.app_id.rpartition("-")[0], {})
+                app_name = instance.app_id.replace(f"-{instance.identifier}", "")
                 return Instance(
                     app.get("name"),
                     app.get("docs"),
+                    app_name,
                     instance.identifier,
                     instance.app_id,
                     instance.creation_time,
@@ -387,7 +389,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                     app.get("app_id"),
                     host,
                     username,
-                    app.get("is_ready")
+                    instance.is_ready
                 )
         return None
 
@@ -426,7 +428,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         instance.total_util["ephemeralStorage"],
                         host,
                         username,
-                        app.get("is_ready")
+                        instance.is_ready
                     )
                     instances.append(asdict(inst))
         else:
@@ -523,7 +525,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         if sid != None: 
             instance = self.get_instance(sid,username,host)
+            logger.info(f"\ngetting readiness for {sid}")
             if instance != None:
+                logger.info(f"\readiness is {instance.is_ready}")
                 return Response({'is_ready': instance.is_ready})
 
         logger.error(f"\n{sid} not found\n")
