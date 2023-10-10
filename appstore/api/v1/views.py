@@ -525,9 +525,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         if sid != None: 
             instance = self.get_instance(sid,username,host)
-            logger.info(f"\ngetting readiness for {sid}")
             if instance != None:
-                logger.info(f"\readiness is {instance.is_ready}")
                 return Response({'is_ready': instance.is_ready})
 
         logger.error(f"\n{sid} not found\n")
