@@ -153,7 +153,34 @@ def get_social_tokens(username):
 
 class AppViewSet(viewsets.GenericViewSet):
     """
-    Tycho App information.
+    AppViewSet - ViewSet for managing Tycho apps.
+    
+    This ViewSet provides endpoints to list all available apps and retrieve details 
+    about a specific app based on its app_id.
+
+    Endpoints:
+    - List All Apps:
+        - URL: /apps/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Lists all available apps, parses resource specifications, 
+                       and returns them in a structured format. GPU reservations 
+                       and limits are specially handled. Any errors during the 
+                       parsing of an app's data are logged and the app is skipped.
+
+    - Retrieve App Details:
+        - URL: /apps/{app_id}/
+        - HTTP Method: GET
+        - Method: retrieve
+        - Description: Provides detailed information about a specific app based on its 
+                       app_id. Similar to the list method, it parses resource specifications 
+                       and returns them in a structured format. 
+
+    Note:
+    - The app_id is used as a lookup field.
+    - The ViewSet interacts with an external system named 'tycho' to fetch app definitions 
+      and other relevant data. There are also utility functions like 'parse_spec_resources' 
+      and 'search_for_gpu_reservation' that are presumably defined elsewhere in the codebase.
     """
 
     lookup_field = "app_id"
@@ -277,7 +304,41 @@ class AppViewSet(viewsets.GenericViewSet):
 
 class InstanceViewSet(viewsets.GenericViewSet):
     """
-    Active user instances.
+    InstanceViewSet - ViewSet for managing instances.
+
+    Endpoints:
+    - List Endpoint:
+        - URL: /instances/
+        - HTTP Method: GET
+        - Method: list
+
+    - Create Endpoint:
+        - URL: /instances/
+        - HTTP Method: POST
+        - Method: create
+
+    - Retrieve (Detail) Endpoint:
+        - URL: /instances/{sid}/
+        - HTTP Method: GET
+        - Method: retrieve
+        - Note: {sid} is a placeholder for the instance's ID.
+
+    - Destroy (Delete) Endpoint:
+        - URL: /instances/{sid}/
+        - HTTP Method: DELETE
+        - Method: destroy
+
+    - Partial Update Endpoint:
+        - URL: /instances/{sid}/
+        - HTTP Method: PATCH
+        - Method: partial_update
+
+    - Check Instance Readiness:
+        - URL: /instances/{sid}/is_ready/
+        - HTTP Method: GET
+        - Method: is_ready
+        - Description: Checks if a specific user instance, identified by its 'sid', is ready.
+
     """
 
     lookup_field = "sid"
@@ -306,6 +367,31 @@ class InstanceViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         status = tycho.status({"username": self.request.user.username})
         return status.services
+
+    def get_instance(self, sid, username, host):
+        active = self.get_queryset()
+
+        for instance in active:
+            if instance.identifier == sid:
+                app = tycho.apps.get(instance.app_id.rpartition("-")[0], {})
+                app_name = instance.app_id.replace(f"-{instance.identifier}", "")
+                return Instance(
+                    app.get("name"),
+                    app.get("docs"),
+                    app_name,
+                    instance.identifier,
+                    instance.app_id,
+                    instance.creation_time,
+                    instance.total_util["cpu"],
+                    instance.total_util["gpu"],
+                    instance.total_util["memory"],
+                    instance.total_util["ephemeralStorage"],
+                    app.get("app_id"),
+                    host,
+                    username,
+                    instance.is_ready
+                )
+        return None
 
     def list(self, request):
         """
@@ -342,6 +428,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         instance.total_util["ephemeralStorage"],
                         host,
                         username,
+                        instance.is_ready
                     )
                     instances.append(asdict(inst))
         else:
@@ -414,35 +501,36 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Provide active instance details.
         """
-        active = self.get_queryset()
         principal = self.get_principal(request.user)
         username = principal.username
         host = get_host(request)
+        instance = None
 
-        for instance in active:
-            if instance.identifier == sid:
-                app = tycho.apps.get(instance.app_id.rpartition("-")[0], {})
-                inst = Instance(
-                    app.get("name"),
-                    app.get("docs"),
-                    instance.identifier,
-                    instance.app_id,
-                    instance.creation_time,
-                    instance.total_util["cpu"],
-                    instance.total_util["gpu"],
-                    instance.total_util["memory"],
-                    instance.total_util["ephemeralStorage"],
-                    app.get("app_id"),
-                    host,
-                    username,
-                )
-
-                serializer = self.get_serializer(data=asdict(inst))
+        if sid != None: 
+            instance = self.get_instance(sid,username,host)
+            if instance != None:
+                serializer = self.get_serializer(data=asdict(instance))
                 serializer.is_valid(raise_exception=True)
                 return Response(serializer.validated_data)
 
         logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['get'])
+    def is_ready(self, request, sid=None):
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
+        instance = None
+
+        if sid != None: 
+            instance = self.get_instance(sid,username,host)
+            if instance != None:
+                return Response({'is_ready': instance.is_ready})
+
+        logger.error(f"\n{sid} not found\n")
+        return Response(status=drf_status.HTTP_404_NOT_FOUND)
+    
 
     def destroy(self, request, sid=None):
         """
@@ -483,7 +571,32 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
 class UsersViewSet(viewsets.GenericViewSet):
     """
-    User information.
+    UsersViewSet - ViewSet for managing user information.
+
+    This ViewSet provides endpoints to retrieve details of the currently logged-in user 
+    and to handle user logout.
+
+    Endpoints:
+    - List User Details:
+        - URL: /users/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Provides details of the currently logged-in user, including their 
+                       username and access token. This endpoint is designed to support 
+                       scenarios where a reverse proxy (like nginx) performs authentication 
+                       before proxying a request.
+
+    - Logout:
+        - URL: /users/logout/
+        - HTTP Method: POST
+        - Method: logout
+        - Description: Logs out the current user and returns a success message.
+
+    Note:
+    - The ViewSet uses a private method '_get_access_token' to retrieve the user's 
+      access token from the session.
+    - 'EmptySerializer' is used for the 'logout' action, likely to simply validate the 
+      request without any specific data.
     """
 
     def get_serializer_class(self):
@@ -520,7 +633,38 @@ class UsersViewSet(viewsets.GenericViewSet):
 
 class LoginProviderViewSet(viewsets.GenericViewSet):
     """
-    Login provider information.
+    LoginProviderViewSet - ViewSet for retrieving login provider information.
+
+    This ViewSet provides information about the available social login providers 
+    from `allauth`, Django's default login, and any product-specific providers like SSO. 
+    It's designed to list out these available authentication providers and their 
+    respective login URLs.
+
+    Attributes:
+    - permission_classes: Allow any user (authenticated or not) to access this endpoint.
+    - serializer_class: Uses `LoginProviderSerializer` to serialize the data.
+
+    Methods:
+    - get_queryset: Returns the global `settings` object.
+    - _get_social_providers: A private method to retrieve social login providers 
+                             from `allauth`.
+    - _get_django_provider: A private method to check if Django's default login 
+                            is enabled and to get its login URL.
+    - _get_product_providers: A private method to check for any product-specific 
+                              SSO providers and retrieve their details.
+    - _get_login_providers: An aggregation method that combines the results 
+                            from the above three methods to get a comprehensive 
+                            list of login providers.
+    - list: The main endpoint which uses `_get_login_providers` to fetch all 
+            available login providers and returns them after serialization.
+
+    Endpoints:
+    - List Login Providers:
+        - URL: /providers/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Lists all available authentication/login providers 
+                       and their respective login URLs.
     """
 
     permission_classes = [AllowAny]
@@ -603,7 +747,29 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
 class AppContextViewSet(viewsets.GenericViewSet):
     """
-    Brand/Product configuration information.
+    AppContextViewSet - ViewSet for retrieving brand/product configuration information.
+
+    This ViewSet provides information about the brand or product's configuration settings.
+    It fetches the settings from the global `settings` object and serializes them using 
+    the `AppContextSerializer`.
+
+    Attributes:
+    - permission_classes: Allow any user (authenticated or not) to access this endpoint.
+    - serializer_class: Uses `AppContextSerializer` to serialize the data.
+
+    Methods:
+    - get_queryset: Returns the global `settings` object.
+    - list: Fetches specific configuration settings from the `settings` object, 
+            combines them with specific environment variables from `EXPORTABLE_ENV`, 
+            and returns the aggregated data.
+
+    Endpoints:
+    - List Brand/Product Configuration:
+        - URL: /context/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Lists specific configuration settings related to the brand or product 
+                       and certain environment variables specified in `EXPORTABLE_ENV`.
     """
 
     permission_classes = [AllowAny]

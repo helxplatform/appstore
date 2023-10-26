@@ -45,6 +45,7 @@ class Instance:
     ephemeralStorage: str
     host: InitVar[str]
     username: InitVar[str]
+    is_ready: bool
     url: str = field(init=False)
     status: str = field(init=False)
     protocol: InitVar[str] = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
