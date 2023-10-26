@@ -6,6 +6,7 @@ For product specific settings see <product>_settings.py
 
 import os
 import logging
+import json
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,9 @@ DEBUG = bool(DEBUG_STRING)
 # stub, local, dev, val, prod.
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
+
+# Needs to be JSON-encoded since expressions can contain basically any character that would be used as a delimiter. 
+AUTO_WHITELIST_PATTERNS = json.loads(os.environ.get("AUTO_WHITELIST_PATTERNS", "[]"))
 
 # Variables used for an external Tycho app registry.
 # ToDo: Consider setting the default value of TYCHO_APP_REGISTRY_REPO to 
