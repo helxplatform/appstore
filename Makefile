@@ -5,7 +5,7 @@ COMMIT_HASH      := $(shell git rev-parse --short HEAD)
 SHELL            := /bin/bash
 
 # If env defines a registry, use it, else use the default
-DEFAULT_REGISTRY := docker.io
+DEFAULT_REGISTRY := containers.renci.org
 ifdef DOCKER_REGISTRY
 ifeq "$(origin DOCKER_REGISTRY)" "environment"
 DOCKER_REGISTRY := ${DOCKER_REGISTRY}
@@ -143,7 +143,7 @@ start:	build.postgresql.local
 #build: Build the Docker image
 build:
 	if [ -z "$(VER)" ]; then echo "Please provide a value for the VER variable like this:"; echo "make VER=4 build"; false; fi;
-	docker build --no-cache --pull -t ${DOCKER_IMAGE} -f Dockerfile .
+	docker build --no-cache --platform=linux/amd64 --pull -t ${DOCKER_IMAGE} -f Dockerfile .
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}
 	docker tag ${DOCKER_IMAGE} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}-${COMMIT_HASH}
 

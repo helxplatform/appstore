@@ -92,6 +92,9 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
 ]
 
+##  Setting to allow for a seamless login that was breaking at django-allauth 0.47.
+SOCIALACCOUNT_LOGIN_ON_GET=True
+
 LOCAL_APPS = [
     "api",
     "core",

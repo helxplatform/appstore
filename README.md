@@ -177,7 +177,7 @@ make install
 #### With Tycho cloned locally
 
 > NOTE: To work with Tycho and appstore locally comment
-> `tycho-api` in requirements.txt and setup.cfg.
+> `tycho-api` in requirements.txt.
 
 Clone Tycho repo locally outside the appstore project.
 
@@ -448,8 +448,7 @@ python setup.py publish
 
 #### Updating Appstore
  
-1. Go to appstore code base and update tycho version in following files `requirements.txt`
-and `setup.cfg` created in the publishing step
+1. Go to appstore code base and update tycho version in following files `requirements.txt` created in the publishing step
 
 2. Build and publish appstore
 
