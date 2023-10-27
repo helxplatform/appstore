@@ -1,4 +1,5 @@
 import logging
+import re
 
 from django.conf import settings
 from django.contrib.auth.models import Group
@@ -60,11 +61,23 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         if user.groups.filter(name="whitelisted").exists():
             return True
         return False
+    
+    @staticmethod
+    def is_auto_whitelisted_email(user):
+        email = user.email
+        for pattern in settings.AUTO_WHITELIST_PATTERNS:
+            if re.match(pattern, email) is not None:
+                return True
+        return False
 
     @staticmethod
     def is_authorized(user):
         if AuthorizedUser.objects.filter(email=user.email).exists():
             logger.debug(f"found user email {user.email} in AuthorizedUser")
+            return True
+        if AllowWhiteListedUserOnly.is_auto_whitelisted_email(user):
+            # authorize the user automatically, and allow them through.
+            AuthorizedUser.objects.create(email=user.email)
             return True
         logger.debug(f"user email {user.email} not found in AuthorizedUser")
         return False
