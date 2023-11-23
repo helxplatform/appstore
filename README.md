@@ -60,6 +60,10 @@ The template for the release notes may be found [here](https://github.com/helxpl
 
 Inline comments within the code such as `#noqa: F401` are necessary items that instruct the linter to bypass or perform a special action for specific sections of code. ***PLEASE DO NOT DELETE these inline comments.
 
+#### Fail on Vulnerability Detection
+
+During PR's several vulnerability scanners are run. If there are vulnerabilities detected, the pr checks will fail and a report will be sent to Github Security Dashboard for viewing. Please ensure the vulnerability is mitigated prior to continuing the merge to protected branches.
+
 ## Deployment
 
 Appstore is deployed to Kubernetes in production using Helm. The main deployment
