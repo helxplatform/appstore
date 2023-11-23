@@ -38,9 +38,7 @@ These published images can be found [here](https://hub.docker.com/r/helxplatform
 #### develop-branch
 - appstore:`develop`
 - appstore:`(short-commit-sha)`
-- appstore:`vX.X.X-prerelease{X}` 
 
-Prerelease version is the expected next release version based on current commits and the "prerelease{X}" number is the amount of commits on that version.
 #### master-branch
 - appstore:`latest`
 - appstore:`(short-commit-sha)`
