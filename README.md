@@ -38,9 +38,7 @@ These published images can be found [here](https://hub.docker.com/r/helxplatform
 #### develop-branch
 - appstore:`develop`
 - appstore:`(short-commit-sha)`
-- appstore:`vX.X.X-prerelease{X}` 
 
-Prerelease version is the expected next release version based on current commits and the "prerelease{X}" number is the amount of commits on that version.
 #### master-branch
 - appstore:`latest`
 - appstore:`(short-commit-sha)`
@@ -59,6 +57,10 @@ The template for the release notes may be found [here](https://github.com/helxpl
 #### CI/CD HouseKeeping
 
 Inline comments within the code such as `#noqa: F401` are necessary items that instruct the linter to bypass or perform a special action for specific sections of code. ***PLEASE DO NOT DELETE these inline comments.
+
+#### Fail on Vulnerability Detection
+
+During PR's several vulnerability scanners are run. If there are vulnerabilities detected, the pr checks will fail and a report will be sent to Github Security Dashboard for viewing. Please ensure the vulnerability is mitigated prior to continuing the merge to protected branches.
 
 ## Deployment
 
