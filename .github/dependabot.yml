@@ -5,6 +5,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    target-branch: "develop"
     reviewers:
       - "joshua-seals"
 
@@ -12,6 +13,7 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    target-branch: "develop"
     reviewers:
       - "joshua-seals"
       - "Hoid"
