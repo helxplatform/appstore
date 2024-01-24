@@ -3,6 +3,7 @@ import logging
 from dataclasses import asdict
 import time
 import os
+import re
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -124,6 +125,53 @@ def search_for_gpu_reservation(reservations):
     # We may not find a GPU in the spec, in fact right now no specs have a GPU, but
     # we are providing minimum reservations to the front end from the spec.
     return 0
+
+
+def to_bytes(memory):
+    """
+    Convert memory string into bytes
+    - b
+    - k/kb, ki
+    - m/mb, mi
+    - g/gb, gi,
+    - t/tb, ti
+    
+    Ex: to_bytes("1M") == 1000000
+    """
+    units = {
+        "b": 1,
+
+        "k": 1e3,
+        "kb": 1e3,
+        "ki": 2**10,
+
+        "m": 1e+6,
+        "mb": 1e+6,
+        "mi": 2**20,
+
+        "g": 1e+9,
+        "gb": 1e+9,
+        "gi": 2**30,
+
+        "t": 1e12,
+        "tb": 1e12,
+        "ti": 2**40
+    }
+    
+    if memory == 0: return memory
+
+    memory = memory.replace(" ", "")
+    match = re.match(r"(.*)([A-Za-z]+)", memory)
+    if match is None: return 0
+    
+    try:
+        number = float(match.group(1))
+    except ValueError:
+        return 0
+    unit = match.group(2).lower()
+    conversion = units.get(unit, 0)
+
+    return number * conversion
 
 
 # TODO fetch by user instead of iterating all?
@@ -287,8 +335,10 @@ class AppViewSet(viewsets.GenericViewSet):
                 Resources(
                     limits.get("cpus", 0),
                     gpu_limits,
-                    limits.get("memory", 0))),
+                    limits.get("memory", 0),
                     limits.get("ephemeralStorage", 0)
+                )
+            )
         )
         logging.debug(f"app:\n${app}")
 
@@ -461,8 +511,43 @@ class InstanceViewSet(viewsets.GenericViewSet):
         principal = Principal(*tokens)
 
         app_id = serializer.data["app_id"]
+        app_data = tycho.apps.get(app_id)
+        spec = tycho.get_definition(app_id)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
+
+        minimum_resources = Resources(
+            reservations.get("cpus", 0),
+            gpu_reservations,
+            reservations.get("memory", 0),
+            reservations.get("ephemeralStorage", 0)
+        )
+        maximum_resources = Resources(
+            limits.get("cpus", 0),
+            gpu_limits,
+            limits.get("memory", 0),
+            limits.get("ephemeralStorage", 0)
+        )
+
+        request_cpu = float(resource_request.cpus)
+        request_gpu = float(resource_request.gpus)
+        request_memory = to_bytes(resource_request.memory)
+        request_ephemeral = to_bytes(resource_request.ephemeralStorage)
+
+        if (
+            request_cpu < float(minimum_resources.cpus) or request_cpu > float(maximum_resources.cpus) or
+            request_gpu < float(minimum_resources.gpus) or request_gpu > float(maximum_resources.gpus) or
+            to_bytes(request_memory) < to_bytes(minimum_resources.memory) or to_bytes(request_memory) > to_bytes(maximum_resources.memory) or
+            to_bytes(request_ephemeral) < to_bytes(minimum_resources.ephemeralStorage) or to_bytes(request_ephemeral) > to_bytes(maximum_resources.ephemeralStorage)
+        ):
+            return Response(
+                "Invalid resources requested", status=drf_status.HTTP_400_BAD_REQUEST
+            )
+
         host = get_host(request)
         system = tycho.start(principal, app_id, resource_request.resources, host)
+
 
         s = InstanceSpec(
             principal.username,
