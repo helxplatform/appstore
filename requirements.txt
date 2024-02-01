@@ -14,7 +14,7 @@ pysaml2
 python3-openid==3.1.0
 requests==2.31.0
 requests-oauthlib
-selenium==3.141.0
+selenium==4.17.2
 tycho-api>=1.17
 webdriver-manager==3.2.1
 sqlparse==0.4.2
