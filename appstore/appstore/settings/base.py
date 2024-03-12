@@ -125,6 +125,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.RemoteUserMiddleware",
     "middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly",
     "middleware.session_idle_timeout.SessionIdleTimeout",
+    "allauth.account.middleware.AccountMiddleware"
 ]
 
 SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
@@ -407,3 +408,5 @@ if metadata_source != None and type(metadata_source) is str and len(metadata_sou
            SAML2_AUTH["METADATA_AUTO_CONF_URL"] = metadata_source
         else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
     else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
