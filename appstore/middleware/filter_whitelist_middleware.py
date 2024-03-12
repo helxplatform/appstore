@@ -18,9 +18,16 @@ logging.basicConfig(format=FORMAT)
 
 
 class AllowWhiteListedUserOnly(MiddlewareMixin):
+    def __init__(self, get_response=None):
+        if get_response is not None:
+            self.get_response = get_response
+        else:
+            self.get_response = self._get_response
+
     def process_request(self, request):
         user = request.user
         logger.debug(f"testing user: {user}")
+
         if user.is_authenticated and not user.is_superuser:
             if not any(
                 [
@@ -34,7 +41,6 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                     request.path.startswith("/api/v1/providers"),
                 ]
             ):
-
                 if self.is_authorized(user):
                     logger.debug(f"Adding user {user} to whitelist")
                     whitelist_group = Group.objects.get(name="whitelisted")
@@ -55,6 +61,17 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                         return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
         logger.info(f"accepting user {user}")
         return None
+
+    def _get_response(self, request):
+        """
+        Call the next middleware in the chain to get a response.
+        """
+        # Call the next middleware in the chain to get a response
+        if hasattr(self, 'process_response'):
+            return self.process_response(request)
+        else:
+            # If there's no process_response method, return None
+            return None
 
     @staticmethod
     def is_whitelisted(user):

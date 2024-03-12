@@ -84,6 +84,10 @@ clean:
 	${MANAGE} flush
 	${PYTHON} -m pip uninstall -y -r requirements.txt
 
+#install: Install application along with required development packages
+install:
+	${PYTHON} -m pip install --upgrade pip
+	${PYTHON} -m pip install -r requirements.txt
 
 #test: Run all tests
 test:

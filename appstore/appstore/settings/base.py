@@ -41,6 +41,7 @@ DEBUG_STRING = os.environ.get("DEBUG", "")
 if DEBUG_STRING.lower() == "false":
     DEBUG_STRING = ""
 DEBUG = bool(DEBUG_STRING)
+
 # stub, local, dev, val, prod.
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
@@ -80,6 +81,7 @@ DJANGO_APPS = [
     "django.contrib.auth",
     "django.contrib.messages",
     "django.contrib.sites",
+    "django_saml2_auth",
 ]
 
 THIRD_PARTY_APPS = [
@@ -122,9 +124,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "django.contrib.auth.middleware.RemoteUserMiddleware",
+    "django.contrib.auth.middleware.PersistentRemoteUserMiddleware",
     "middleware.filter_whitelist_middleware.AllowWhiteListedUserOnly",
     "middleware.session_idle_timeout.SessionIdleTimeout",
+    "allauth.account.middleware.AccountMiddleware"
 ]
 
 SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
@@ -143,8 +146,8 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
-ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
+ACCOUNT_RATE_LIMITS= {'login_failed':10}
+#deprecated ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
 ACCOUNT_LOGOUT_REDIRECT_URL = "/helx"
 LOGIN_REDIRECT_URL = "/helx/workspaces/login/success"
 LOGIN_URL = "/accounts/login"
@@ -152,11 +155,13 @@ LOGIN_WHITELIST_URL = "/login_whitelist/"
 OIDC_SESSION_MANAGEMENT_ENABLE = True
 SAML_URL = "/accounts/saml"
 SAML_ACS_URL = "/saml2_auth/acs/"
+#SAML_ACS_URL = "/sso/acs/"
 SOCIALACCOUNT_QUERY_EMAIL = ACCOUNT_EMAIL_REQUIRED
 SOCIALACCOUNT_STORE_TOKENS = True
 SOCIALACCOUNT_PROVIDERS = {
     "google": {"SCOPE": ["profile", "email"], "AUTH_PARAMS": {"access_type": "offline"}}
 }
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
 TEMPLATES = [
     {
@@ -339,6 +344,9 @@ LOGGING = {
     },
 }
 
+csrf_strings = os.environ.get("CSRF_DOMAINS", "")
+CSRF_TRUSTED_ORIGINS = [] if len(csrf_strings) == 0 else csrf_strings.split(',')
+
 # All debug settings
 if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     INSTALLED_APPS += [
@@ -347,6 +355,13 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
 
     INTERNAL_IPS = [
         "127.0.0.1",
+    ]
+
+    CSRF_TRUSTED_ORIGINS += [
+        "https://localhost",
+        "https://127.0.0.1",
+        "http://localhost",
+        "http://127.0.0.1",
     ]
 
     CORS_ALLOWED_ORIGINS = [
@@ -358,11 +373,6 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
 
     # We don't want to create security vulnerabilities through CORS policy. Only allow on dev deployments where the UI may be running on another origin.
     CORS_ALLOW_CREDENTIALS = True
-
-    CSRF_TRUSTED_ORIGINS = [
-        "localhost",
-        "127.0.0.1",
-    ]
 
     DEBUG_MIDDLEWARE = [
         "corsheaders.middleware.CorsMiddleware",
@@ -389,10 +399,18 @@ SAML2_AUTH = {
         "first_name": "givenName",
         "last_name": "sn",
     },
+    "TRIGGER": {
+        "CREATE_USER": "core.models.update_user",
+    },
     "ASSERTION_URL": os.environ.get("SAML2_AUTH_ASSERTION_URL"),
     "ENTITY_ID": os.environ.get(
         "SAML2_AUTH_ENTITY_ID"
     ),  # Populates the Issuer element in authn request
+    "USE_JWT": False,
+    'WANT_ASSERTIONS_SIGNED': True,
+    'AUTHN_REQUESTS_SIGNED': False,
+    'WANT_RESPONSE_SIGNED': False,
+    'TOKEN_REQUIRED': False,
 }
 
 # Metadata is required, either remote url or local file path, check the environment
@@ -407,3 +425,5 @@ if metadata_source != None and type(metadata_source) is str and len(metadata_sou
            SAML2_AUTH["METADATA_AUTO_CONF_URL"] = metadata_source
         else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
     else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
