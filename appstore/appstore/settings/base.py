@@ -144,8 +144,8 @@ ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", 
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_LOGIN_ATTEMPTS_LIMIT = 3
-ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
+ACCOUNT_RATE_LIMITS= {'login_failed':3}
+#deprecated ACCOUNT_LOGIN_ATTEMPTS_TIMEOUT = 86400  # 1 day in seconds
 ACCOUNT_LOGOUT_REDIRECT_URL = "/helx"
 LOGIN_REDIRECT_URL = "/helx/workspaces/login/success"
 LOGIN_URL = "/accounts/login"
@@ -340,6 +340,13 @@ LOGGING = {
     },
 }
 
+CSRF_TRUSTED_ORIGINS = [
+        "https://localhost",
+        "https://127.0.0.1",
+        "https://*.renci.org",
+    ]
+
+
 # All debug settings
 if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     INSTALLED_APPS += [
@@ -359,11 +366,6 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
 
     # We don't want to create security vulnerabilities through CORS policy. Only allow on dev deployments where the UI may be running on another origin.
     CORS_ALLOW_CREDENTIALS = True
-
-    CSRF_TRUSTED_ORIGINS = [
-        "localhost",
-        "127.0.0.1",
-    ]
 
     DEBUG_MIDDLEWARE = [
         "corsheaders.middleware.CorsMiddleware",
