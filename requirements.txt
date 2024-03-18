@@ -1,5 +1,5 @@
 Django==4.2
-django-allauth==0.57.0
+django-allauth==0.61.1
 django-cors-headers==4.3.1
 django-crispy-forms==2.1
 django-debug-toolbar==4.3.0
@@ -19,5 +19,5 @@ tycho-api>=1.17
 webdriver-manager==3.2.1
 sqlparse==0.4.4
 asgiref==3.7.2
-psycopg2-binary
+psycopg[binary]
 python-irodsclient==1.1.5

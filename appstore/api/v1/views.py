@@ -686,7 +686,6 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         ):
             for provider in socialaccount.providers.registry.get_class_list():
                 inst = provider(request, "allauth.socialaccount")
-                print(inst.get_login_url(request))
                 provider_data.append(
                     asdict(
                         LoginProvider(inst.name, inst.get_login_url(request))
