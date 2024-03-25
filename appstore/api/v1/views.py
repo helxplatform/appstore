@@ -628,6 +628,7 @@ class UsersViewSet(viewsets.GenericViewSet):
     def logout(self, request):
         logout(request)
         data = {"success": "Successfully logged out"}
+        print("Logged out successfully??")
         return Response(data=data, status=status.HTTP_200_OK)
 
 
