@@ -11,7 +11,8 @@ class InstanceModifySerializer(serializers.Serializer):
     labels = serializers.DictField(
         child=serializers.CharField(), required=False, allow_empty=False
     )
-    cpu = serializers.CharField(required=False, allow_blank=False)
+    cpu = serializers.FloatField(required=False)
+    gpu = serializers.IntegerField(required=False)
     memory = serializers.CharField(
         validators=[memory_format_validator], required=False, allow_blank=False
     )

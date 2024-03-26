@@ -3,6 +3,7 @@ import logging
 from dataclasses import asdict
 import time
 import os
+import re
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -124,6 +125,102 @@ def search_for_gpu_reservation(reservations):
     # We may not find a GPU in the spec, in fact right now no specs have a GPU, but
     # we are providing minimum reservations to the front end from the spec.
     return 0
+
+def validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources):
+    if request_cpu is not None and request_cpu < float(minimum_resources.cpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {minimum_resources.cpus} cpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_cpu is not None and request_cpu > float(maximum_resources.cpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.cpus} cpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_gpu is not None and request_gpu < int(minimum_resources.gpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.gpus} gpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_gpu is not None and request_gpu > int(maximum_resources.gpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.gpus} gpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_memory is not None and to_bytes(request_memory) < to_bytes(minimum_resources.memory):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.memory} memory.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_memory is not None and to_bytes(request_memory) > to_bytes(maximum_resources.memory):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.memory} memory.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_ephemeral is not None and to_bytes(request_ephemeral) < to_bytes(minimum_resources.ephemeralStorage):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.ephemeralStorage} ephemeral storage.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_ephemeral is not None and to_bytes(request_ephemeral) > to_bytes(maximum_resources.ephemeralStorage):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.ephemeralStorage} ephemeral storage.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+
+def to_bytes(memory):
+    """
+    Convert memory string into bytes
+    - b
+    - k/kb, ki
+    - m/mb, mi
+    - g/gb, gi,
+    - t/tb, ti
+    
+    Ex: to_bytes("1M") == 1000000
+    """
+    units = {
+        "b": 1,
+
+        "k": 1e3,
+        "kb": 1e3,
+        "ki": 2**10,
+
+        "m": 1e+6,
+        "mb": 1e+6,
+        "mi": 2**20,
+
+        "g": 1e+9,
+        "gb": 1e+9,
+        "gi": 2**30,
+
+        "t": 1e12,
+        "tb": 1e12,
+        "ti": 2**40
+    }
+    
+    if isinstance(memory, int) or isinstance(memory, float): return memory
+
+    memory = memory.replace(" ", "")
+    match = re.match(r"(.*)([A-Za-z]+)", memory)
+    if match is None: return 0
+    
+    try:
+        number = float(match.group(1))
+    except ValueError:
+        return 0
+    unit = match.group(2).lower()
+    conversion = units.get(unit, 0)
+
+    return number * conversion
 
 
 # TODO fetch by user instead of iterating all?
@@ -287,8 +384,10 @@ class AppViewSet(viewsets.GenericViewSet):
                 Resources(
                     limits.get("cpus", 0),
                     gpu_limits,
-                    limits.get("memory", 0))),
+                    limits.get("memory", 0),
                     limits.get("ephemeralStorage", 0)
+                )
+            )
         )
         logging.debug(f"app:\n${app}")
 
@@ -461,8 +560,37 @@ class InstanceViewSet(viewsets.GenericViewSet):
         principal = Principal(*tokens)
 
         app_id = serializer.data["app_id"]
+        app_data = tycho.apps.get(app_id)
+        spec = tycho.get_definition(app_id)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
+
+        minimum_resources = Resources(
+            reservations.get("cpus", 0),
+            gpu_reservations,
+            reservations.get("memory", 0),
+            reservations.get("ephemeralStorage", 0)
+        )
+        maximum_resources = Resources(
+            limits.get("cpus", 0),
+            gpu_limits,
+            limits.get("memory", 0),
+            limits.get("ephemeralStorage", 0)
+        )
+
+        request_cpu = float(resource_request.cpus)
+        request_gpu = int(resource_request.gpus)
+        request_memory = to_bytes(resource_request.memory)
+        request_ephemeral = to_bytes(resource_request.ephemeralStorage)
+
+        validation_response = validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources)
+        if validation_response is not None:
+            return validation_response
+
         host = get_host(request)
         system = tycho.start(principal, app_id, resource_request.resources, host)
+
 
         s = InstanceSpec(
             principal.username,
@@ -557,12 +685,45 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Pass labels, cpu and memory to tycho for patching a running deployment.
         """
-
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = InstanceModifySerializer(data=request.data)
+        serializer.is_valid()
 
         data = serializer.validated_data
         data.update({"tycho-guid": sid})
+
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
+        instance = self.get_instance(sid,username,host)
+
+        app_id = instance.aid
+        app_data = tycho.apps.get(app_id)
+        spec = tycho.get_definition(app_id)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
+
+        minimum_resources = Resources(
+            reservations.get("cpus", 0),
+            gpu_reservations,
+            reservations.get("memory", 0),
+            reservations.get("ephemeralStorage", 0)
+        )
+        maximum_resources = Resources(
+            limits.get("cpus", 0),
+            gpu_limits,
+            limits.get("memory", 0),
+            limits.get("ephemeralStorage", 0)
+        )
+        request_cpu = float(data["cpu"]) if "cpu" in data else None
+        request_gpu = float(data["gpu"]) if "gpu" in data else None
+        request_memory = to_bytes(data["memory"]) if "memory" in data else None
+        request_ephemeral = None
+        
+        validation_response = validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources)
+        if validation_response is not None:
+            return validation_response
+
         response = tycho.update(data)
 
         logger.debug(f"Update Response: {response}")
