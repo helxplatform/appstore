@@ -11,8 +11,8 @@ on:
     paths-ignore:
       - README.md
       - .old_cicd/*
-    #   - .github/*
-    #   - .github/workflows/*
+      - .github/*
+      - .github/workflows/*
       - LICENSE
       - .gitignore
       - .dockerignore
@@ -20,6 +20,6 @@ on:
     tags-ignore:
       - 'v[0-9]+.[0-9]+.*'
 jobs:
-    build-push-release:
-        uses: helxplatform/helx-github-actions/.github/workflows/build-push-release.yml@develop
-        secrets: inherit
+  build-push-release:
+    uses: helxplatform/helx-github-actions/.github/workflows/build-push-release.yml@develop
+    secrets: inherit

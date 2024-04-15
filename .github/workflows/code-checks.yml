@@ -14,15 +14,15 @@
 name: Code-Checks-Remote
 on:
     push:
-    #  branches-ignore:
-    #   - master
-    #   - main
-    #   - develop
+     branches-ignore:
+      - master
+      - main
+      - develop
      paths-ignore:
       - README.md
       - .old_cicd/*
-      # - .github/*
-      # - .github/workflows/*
+      - .github/*
+      - .github/workflows/*
       - LICENSE
       - .gitignore
       - .dockerignore

@@ -4,13 +4,13 @@
 name: Build-Push-Dev-Image
 on:
    push:
-    # branches:
-    #   - develop
+    branches:
+      - develop
     paths-ignore:
       - README.md
-    #   - .old_cicd/*
-    #   - .github/*
-    #   - .github/workflows/*
+      - .old_cicd/*
+      - .github/*
+      - .github/workflows/*
       - LICENSE
       - .gitignore
       - .dockerignore
@@ -20,8 +20,7 @@ on:
    pull_request:
      branches-ignore:
        - '*'
-
 jobs:
-        build-push-dev-image:
-            uses: helxplatform/helx-github-actions/.github/workflows/build-push-dev-image.yml@develop
-            secrets: inherit
+   build-push-dev-image:
+    uses: helxplatform/helx-github-actions/.github/workflows/build-push-dev-image.yml@develop
+    secrets: inherit

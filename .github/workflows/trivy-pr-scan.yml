@@ -1,7 +1,6 @@
 
 name: trivy-pr-scan 
 on:
-  push: #remove this after testing
   pull_request:
     branches:
       - develop
@@ -10,9 +9,9 @@ on:
     types: [ opened, synchronize ]
     paths-ignore:
     - README.md
-    # - .old_cicd/*
-    # - .github/*
-    # - .github/workflows/*
+    - .old_cicd/*
+    - .github/*
+    - .github/workflows/*
     - LICENSE
     - .gitignore
     - .dockerignore
