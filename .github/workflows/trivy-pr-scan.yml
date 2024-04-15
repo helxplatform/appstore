@@ -18,6 +18,6 @@ on:
     - .githooks
 
 jobs:
-    trivy-pr-scan:
-        uses: helxplatform/helx-github-actions/.github/workflows/trivy-pr-scan.yml@develop
-        secrets: inherit
+  trivy-pr-scan:
+    uses: helxplatform/helx-github-actions/.github/workflows/trivy-pr-scan.yml@develop
+    secrets: inherit
