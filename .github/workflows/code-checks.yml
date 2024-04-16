@@ -37,5 +37,5 @@ on:
 jobs:
   
   code-checks:
-    uses: helxplatform/helx-github-actions/.github/workflows/code-checks.yml@develop
+    uses: helxplatform/helx-github-actions/.github/workflows/code-checks.yml@main
     secrets: inherit
