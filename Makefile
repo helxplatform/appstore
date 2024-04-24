@@ -94,7 +94,7 @@ clean:
 	${PYTHON} -m pip uninstall -y -r requirements.txt
 
 #install: Install application along with required development packages
-install: install.artillery
+install:
 	${PYTHON} -m pip install --upgrade pip
 	${PYTHON} -m pip install -r requirements.txt
 
@@ -125,7 +125,7 @@ endif
 endif
 	cd artillery-tests; \
 	ls -1 tests | xargs -L1 -I%TEST_NAME% npx artillery run tests/%TEST_NAME% --environment ${ARTILLERY_ENV} --target ${ARTILLERY_TARGET}
-	
+
 
 #start: Run the gunicorn server
 start:	build.postgresql.local
