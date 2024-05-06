@@ -8,5 +8,5 @@ PRODUCT_SETTINGS = ProductSettings(
     title="HeLx",
     logo_url="/static/images/helx/logo.png",
     color_scheme=ProductColorScheme("#8a5a91", "#505057"),
-    links=None,
+    links=[],
 )

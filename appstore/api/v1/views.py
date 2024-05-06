@@ -684,10 +684,11 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
             "allauth.account.auth_backends.AuthenticationBackend"
             in settings.AUTHENTICATION_BACKENDS
         ):
-            for provider in socialaccount.providers.registry.get_list():
+            for provider in socialaccount.providers.registry.get_class_list():
+                inst = provider(request, "allauth.socialaccount")
                 provider_data.append(
                     asdict(
-                        LoginProvider(provider.name, provider.get_login_url(request))
+                        LoginProvider(inst.name, inst.get_login_url(request))
                     )
                 )
 
