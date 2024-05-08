@@ -86,6 +86,11 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
             if re.match(pattern, email) is not None:
                 return True
         return False
+    
+    @staticmethod
+    def is_whitelisted_username(user):
+        username = user.username
+        
 
     @staticmethod
     def is_authorized(user):
@@ -95,6 +100,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         if AllowWhiteListedUserOnly.is_auto_whitelisted_email(user):
             # authorize the user automatically, and allow them through.
             AuthorizedUser.objects.create(email=user.email)
+            return True
+        if AuthorizedUser.objects.filter(username=user.username).exists():
+            logger.debug(f"found user with username {user.username} in AuthorizedUser")
             return True
         logger.debug(f"user email {user.email} not found in AuthorizedUser")
         return False
@@ -115,6 +123,8 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
         msg = (
             "A user "
             + user.email
+            + "/"
+            + user.username
             + " is requesting access to AppStore on "
             + settings.APPLICATION_BRAND
             + " and needs to be reviewed for whitelisting. Upon successful review, kindly add the user to"
