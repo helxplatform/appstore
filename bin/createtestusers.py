@@ -17,8 +17,10 @@ with open(f"{USERS_PATH}/test-users/users.txt", "r") as users:
             django_user.save()
             if AuthorizedUser.objects.filter(email=email):
                 print(f'{"User already in Authorized Users list ----> add skipping"}')
+            elif AuthorizedUser.objects.filter(username=username):
+                print(f'{"User already in Authorized Users list ----> add skipping"}')
             else:
-                u = AuthorizedUser(email=email)
+                u = AuthorizedUser(email=email, username=username)
                 u.save()
                 print(f"Added {username} to the Authorized Users list ----> add success")
         else:

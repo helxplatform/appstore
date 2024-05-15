@@ -62,6 +62,21 @@ class AllowWhiteListedUserOnlyTests(TestCase):
             self.groups.name,
         )
 
+    def test_login_whitelisted_username(self):
+        print("---- TESTING FOR WHITELISTED USERNAME (steve_whitelist) ----- ")
+        user = self._create_user_and_login(
+            username="Steve_whitelist", email="steve@renci.com", password="admin"
+        )
+        AuthorizedUser.objects.create(username=user.username)
+        self.request.user = user
+        self.request.session = self.client.session
+        response = self.middleware.process_request(self.request)
+        self.assertFalse(isinstance(response, HttpResponseRedirect))
+        self.assertEqual(
+            list(self.request.user.groups.values_list("name", flat=True))[0],
+            self.groups.name,
+        )
+
     def test_redirect_non_whitelisted_user(self):
         user = self._create_user_and_login(
             username="Steve_nonwhitelist",

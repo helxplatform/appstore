@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django_saml2_auth.user import get_user
 
 def update_user(user):
@@ -14,14 +15,19 @@ def update_user(user):
     return _user
 
 class AuthorizedUser(models.Model):
-    email = models.EmailField(max_length=254)
+    email = models.EmailField(max_length=254, blank=True)
+    username = models.CharField(max_length=128, blank=True)
 
     def __str__(self):
-        return self.email
+        return f"{self.email}, {self.username}"
+
+    def clean(self):
+        if not self.email and not self.username:
+            raise ValidationError("Please enter a value for either email and/or username. Both cannot be empty.")
 
 class IrodAuthorizedUser(models.Model):
     user = models.TextField(max_length=254)
     uid = models.IntegerField()
 
     def __str__(self):
-        return (self.user,self.uid)
+        return f"{self.user}, {self.uid}"
