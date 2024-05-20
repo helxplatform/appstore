@@ -1,0 +1,11 @@
+---
+apiVersion: ambassador/v1
+kind:  Mapping
+name: {{system.name}}-mapping  
+host: helx-app-commonsshare-org
+prefix: {{system.system_name}}/{{system.username}}/{{system.identifier}}
+headers:
+  remote_user: {{system.username}}
+service: {{system.name}}:{{system.system_port}}
+bypass_auth: true
+timeout_ms: 300000

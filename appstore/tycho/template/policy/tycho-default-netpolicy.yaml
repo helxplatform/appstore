@@ -1,0 +1,33 @@
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: {{ system.identifier }}-netpolicy
+  labels:
+    executor: tycho
+    tycho-guid: {{ system.identifier }}
+spec:
+  podSelector:
+    matchLabels:
+      tycho-guid: {{ system.identifier }}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  {% if system.services|length > 0 %}
+  - from:
+  {% for name, service in system.services.items () %}
+    {% for ip_block in service.clients %}
+    - ipBlock:
+        cidr: {{ ip_block }}
+    {% endfor %}
+  {% endfor %}
+    - podSelector:
+        matchLabels:
+          tycho-guid: {{ system.identifier }}
+    ports:
+  {% for name, service in system.services.items () %}
+    - protocol: TCP
+      port: {{ service.port }}
+  {% endfor %}
+  {% endif %}
+  
