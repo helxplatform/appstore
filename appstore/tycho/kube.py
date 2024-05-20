@@ -1,13 +1,9 @@
-import argparse
 import json
 import logging
 import os
 import shutil
-import subprocess
 import sys
 import traceback
-import yaml
-import copy
 import base64
 from time import sleep
 from kubernetes import client as k8s_client, config as k8s_config
@@ -88,15 +84,12 @@ class KubernetesCompute(Compute):
             logger.debug(f"Raising persistent volume claim exception. {e}")
             #raise
 
-    def is_ambassador_context(self, namespace):
+    def is_ambassador_context(self, namespace, ambassador_service_name):
         try:
-            api_response = self.api.list_namespaced_service(field_selector="metadata.name=ambassador", namespace=namespace)
-            if len(api_response.items) > 0:
-                return True
-            else:
-                return False
+            field_sel_api_response = self.api.list_namespaced_service(field_selector=f"metadata.name={ambassador_service_name}", namespace=namespace)
+            return len(field_sel_api_response.items) == 1
         except ApiException as e:
-            logger.info(f"Amabassador is not configured.")
+            logger.info(f"There was a problem assessing whether the ambassador service is running.", e)
 
     def start (self, system, namespace="default"):
         """ Start an abstractly described distributed system on the cluster.
@@ -119,7 +112,7 @@ class KubernetesCompute(Compute):
                     systemVolumesCopy.append(value)
             system.volumes = systemVolumesCopy
             """ Check the status of ambassador """
-            amb_status = self.is_ambassador_context(namespace)
+            amb_status = self.is_ambassador_context(namespace, system.ambassador_service_name)
             if amb_status:
                 system.amb = True
             #api_response = self.api.list_namespace()
@@ -277,26 +270,10 @@ class KubernetesCompute(Compute):
                 exe = shutil.which ('kubectl')
                 command = f"{exe} port-forward --pod-running-timeout=3m0s deployment/{app_id} {node_port}:{port}"
                 logger.debug (f"-- port-forward: {command}")
-                # commented out due to bandit High Severity flag for this process. 
-                # The variable 'process' was not accessed so this should not cause issue.
-                # Leaving for now just in case there are problems encountered. 
-                # process = subprocess.Popen (command,
-                #                             shell=True,
-                #                             stderr=subprocess.STDOUT)
-                """ process dies when the other end disconnects so no need to clean up in delete. """
             #ip_address = "127.0.0.1"
         except Exception as e:
             traceback.print_exc ()
         logger.debug (f"service {service_metadata.metadata.name} ingress ip: {ip_address}")
-        '''
-        if not ip_address:
-            if self.try_minikube:
-                try:
-                    ip_address = os.popen ("minikube ip").read ().strip ()
-                except Exception as e:
-                    self.try_minikube = False
-                    # otherwise not an error, just means we're not using minikube.
-        '''
         return ip_address
 
     def pod_to_deployment (self, name, username, identifier, template, namespace="default"):
@@ -312,7 +289,6 @@ class KubernetesCompute(Compute):
             :type namespace: str
         """
         namespace = self.namespace #self.get_namespace()
-#        deployment_spec = k8s_client.ExtensionsV1beta1DeploymentSpec(
         deployment_spec = k8s_client.V1DeploymentSpec(
             replicas=1,
             template=template,
@@ -509,10 +485,6 @@ class KubernetesCompute(Compute):
                 message=f"Failed to modify system: {system_modify.guid}",
                 details=text
             )
-
-
-
-
 
 
 
