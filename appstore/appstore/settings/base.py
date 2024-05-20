@@ -104,6 +104,7 @@ LOCAL_APPS = [
     "frontend",
     "middleware",
     "product",
+    "tycho",
 ]
 
 OAUTH_PROVIDERS = os.environ.get("OAUTH_PROVIDERS", "").split(",")

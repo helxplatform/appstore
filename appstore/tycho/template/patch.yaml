@@ -1,0 +1,28 @@
+{% if system_modify.patch %}
+spec:
+  template:
+    {% if system_modify.labels|length > 0 %}
+    metadata:
+      labels:
+    {% for key, value in system_modify.labels.items() %}
+        {{ key }}: {{ value }}
+    {% endfor %}
+    {% endif %}
+    {% if system_modify.resources|length > 0 %}
+    spec:
+      containers:
+      {% for container in system_modify.containers %}
+      - resources:
+          limits:
+          {% for key, value in system_modify.resources.items() %}
+            {{ key }}: {{ value }}
+          {% endfor %}
+          requests:
+          {% for key, value in system_modify.resources.items() %}
+            {{ key }}: {{ value }}
+          {% endfor %}
+        name: {{ container.name }}
+        image: {{ container.image }}
+      {% endfor %}
+    {% endif %}
+{% endif %}

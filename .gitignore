@@ -148,7 +148,6 @@ venv
 *.DS_Store
 
 # Appstore optional dev dependencies
-tycho
 *.sqlite*
 
 # React frontend template
