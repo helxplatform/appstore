@@ -21,12 +21,14 @@ manageauthorizedusers () {
             for user in "${USERS[@]}"; do
                 cat <<EOF | appstore shell --settings=${BRAND_MODULE}
 from core.models import AuthorizedUser
-if AuthorizedUser.objects.filter(email="$user"):
-    print(f"User already in Authorized Users list ----> add skipping")
+is_email = re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',user) is not None
+is_authorized_user = AuthorizedUser.objects.filter(email="$user") if is_email else AuthorizedUser.objects.filter(username="$user")
+if is_authorized_user:
+    print(f"User {"$user"} already in Authorized Users list ----> add skipping")
 else:
-    u = AuthorizedUser(email="$user")
+    u = AuthorizedUser(email="$user") if is_email else AuthorizedUser(username="$user")
     u.save()
-    print(f"Added {'$user'} to the Authorized Users list ----> add success")
+    print(f"Added {"$user"} to the Authorized Users list ----> add success")    
 EOF
             done
         fi
@@ -38,12 +40,13 @@ EOF
             for user in "${USERS[@]}"; do
                 cat <<EOF | appstore shell --settings=appstore.settings.${brand}_settings
 from core.models import AuthorizedUser
-a_user = AuthorizedUser.objects.filter(email="$user")
+is_email = re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',user) is not None
+a_user = AuthorizedUser.objects.filter(email=$user) if is_email else AuthorizedUser.objects.filter(username=$user)
 if a_user:
     a_user.delete()
-    print(f"Removed {'$user'} from Authorized Users list ----> remove success")
+    print(f"Removed {user} from Authorized Users list ----> remove success")
 else:
-    print(f"{'$user'} not in Authorized Users list ----> remove skipping")
+    print(f"{$user} not in Authorized Users list ----> remove skipping")
 EOF
             done
         fi

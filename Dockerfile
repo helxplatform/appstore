@@ -16,11 +16,13 @@ RUN adduser --disabled-login --home $HOME --shell /bin/bash --uid $UID $USER && 
 
 RUN set -x && apt-get update && \
 	chown -R $UID:$UID $APP_HOME && \
-	apt-get install -y build-essential git xmlsec1 curl
+	apt-get install -y build-essential git xmlsec1 libpq5 gcc
 
-# Specifically install node v14.x, since otherwise apt-get will install a much more outdated version.
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash
-RUN apt-get install -y nodejs
+# Removing but leaving commented in case Tycho needs this for swagger.
+# Version 3.3.1 currently, if not complaints v3.3.3 this can be 
+# completely removed. 
+# RUN curl -sL https://deb.nodesource.com/setup_14.x | bash
+# RUN apt-get install -y nodejs
 
 WORKDIR $APP_HOME
 COPY . .

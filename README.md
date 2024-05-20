@@ -515,7 +515,7 @@ appstore:
     tag: <branchname>
     pullPolicy: Always
   django:
-    AUTHORIZED_USERS: <a list emails of authorized users>
+    AUTHORIZED_USERS: <a list emails or usernames of authorized users>
     EMAIL_HOST_USER: "appstore@renci.org"
     EMAIL_HOST_PASSWORD: <secret>
     DOCKSTORE_APPS_BRANCH: <appstore branch>

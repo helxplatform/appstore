@@ -1,0 +1,14 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ system.system_name }}-global-2
+  labels:
+    name: {{ system.system_name }}
+#subjects:
+#- kind: Group
+#  name: manager
+#  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: {{ system.system_name }}
+  apiGroup: rbac.authorization.k8s.io

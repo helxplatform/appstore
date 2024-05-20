@@ -43,12 +43,14 @@ def irods_user_create(username,uid):
 if AUTH_USERS:
     users = re.split(r'[\s,]+',AUTH_USERS)
     for user in users:
-        if AuthorizedUser.objects.filter(email=user):
-            print(f'{"User already in Authorized Users list ----> add skipping"}')
+        is_email = re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',user) is not None
+        is_authorized_user = AuthorizedUser.objects.filter(email=user) if is_email else AuthorizedUser.objects.filter(username=user)
+        if is_authorized_user:
+            print(f"User {user} already in Authorized Users list ----> add skipping")
         else:
-            u = AuthorizedUser(email=user)
+            u = AuthorizedUser(email=user) if is_email else AuthorizedUser(username=user)
             u.save()
-            print(f"Added {user} to the Authorized Users list ----> add success")
+            print(f"Added {user} to the Authorized Users list ----> add success")    
 
 if IROD_AUTH_USERS:
     print("IRODS USERS ENABLED")
@@ -56,14 +58,12 @@ if IROD_AUTH_USERS:
         for line in f:
             user,uid = line.split("::")
             irods_user_create(user,uid)
-        
-
-
 
 if REMOVE_AUTH_USERS:
     users = re.split(r'[\s,]+',REMOVE_AUTH_USERS)
     for user in users:
-        a_user = AuthorizedUser.objects.filter(email=user)
+        is_email = re.match(r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$',user) is not None
+        a_user = AuthorizedUser.objects.filter(email=user) if is_email else AuthorizedUser.objects.filter(username=user)
         if a_user:
             a_user.delete()
             print(f"Removed {user} from Authorized Users list ----> remove success")

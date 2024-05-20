@@ -8,5 +8,5 @@ PRODUCT_SETTINGS = ProductSettings(
     title="NIH HEAL Initiative",
     logo_url="/static/images/heal/logo.png",
     color_scheme=ProductColorScheme("#8a5a91", "#505057"),
-    links=None,
+    links=[],
 )
