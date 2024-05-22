@@ -92,7 +92,7 @@ class ResourceRequest:
                     },
                     "reservations": {
                         "cpus": "1",
-                        "memory": "1",
+                        "memory": "1Gi",
                         "gpus": self.gpus,
                         "ephemeralStorage": self.ephemeralStorage,
                     },
