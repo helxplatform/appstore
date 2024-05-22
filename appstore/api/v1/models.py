@@ -80,6 +80,7 @@ class ResourceRequest:
     resources: dict = None
 
     def __post_init__(self):
+        
         self.resources = {
             "deploy": {
                 "resources": {
@@ -90,8 +91,8 @@ class ResourceRequest:
                         "ephemeralStorage": self.ephemeralStorage,
                     },
                     "reservations": {
-                        "cpus": self.cpus,
-                        "memory": self.memory,
+                        "cpus": "1",
+                        "memory": "1GiB",
                         "gpus": self.gpus,
                         "ephemeralStorage": self.ephemeralStorage,
                     },
