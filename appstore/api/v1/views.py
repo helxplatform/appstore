@@ -225,19 +225,20 @@ def to_bytes(memory):
 
 # TODO fetch by user instead of iterating all?
 # sanitize input to avoid injection.
-def get_social_tokens(username):
+def get_social_tokens(request):
+    username = request.user
     social_token_model_objects = (
         ContentType.objects.get(model="socialtoken").model_class().objects.all()
     )
-    access_token = None
+    access_token = request.COOKIES.get("sessionid")
     refresh_token = None
-    for obj in social_token_model_objects:
-        if obj.account.user.username == username:
-            access_token = obj.token
-            refresh_token = obj.token_secret if obj.token_secret else None
-            break
-        else:
-            continue
+    # for obj in social_token_model_objects:
+    #     if obj.account.user.username == username:
+    #         access_token = obj.token
+    #         refresh_token = obj.token_secret if obj.token_secret else None
+    #         break
+    #     else:
+    #         continue
     # with DRF and the user interaction in social auth we need username to be a string
     # when it is passed to `tycho.start` otherwise it will be a `User` object and there
     # will be a serialization failure from this line of code:
@@ -454,12 +455,12 @@ class InstanceViewSet(viewsets.GenericViewSet):
             return InstanceSerializer
 
     @functools.lru_cache(maxsize=16, typed=False)
-    def get_principal(self, user):
+    def get_principal(self, request):
         """
         Retrieve principal information from Tycho based on the request
         user.
         """
-        tokens = get_social_tokens(user)
+        tokens = get_social_tokens(request)
         principal = Principal(*tokens)
         return principal
 
@@ -498,7 +499,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
 
         active = self.get_queryset()
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instances = []
@@ -551,7 +552,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         logging.debug(f"resource_request: {resource_request}")
         irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
-        tokens = get_social_tokens(request.user)
+        tokens = get_social_tokens(request)
         #Need to set an environment variable for the IRODS UID
         if irods_enabled != '':
             nfs_id = get_nfs_uid(request.user)
@@ -588,8 +589,12 @@ class InstanceViewSet(viewsets.GenericViewSet):
         if validation_response is not None:
             return validation_response
 
+        env = {}
+        if settings.GRADER_API_URL is not None:
+            env["GRADER_API_URL"] = settings.GRADER_API_URL
+
         host = get_host(request)
-        system = tycho.start(principal, app_id, resource_request.resources, host)
+        system = tycho.start(principal, app_id, resource_request.resources, host, env)
 
 
         s = InstanceSpec(
@@ -629,7 +634,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Provide active instance details.
         """
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = None
@@ -646,7 +651,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
     
     @action(detail=True, methods=['get'])
     def is_ready(self, request, sid=None):
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = None
@@ -691,7 +696,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         data = serializer.validated_data
         data.update({"tycho-guid": sid})
 
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = self.get_instance(sid,username,host)
