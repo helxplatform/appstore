@@ -109,6 +109,12 @@ spec:
       value: {{ system.username }}
     - name: USER
       value: {{ system.username }}
+    - name: ACCESS_TOKEN
+      value: {{ system.access_token }}
+    {% for key, value in system.extra_container_env.items() %}
+    - name: {{ key }}
+      value: {{ value }}
+    {%endfor %}
     {% if system.amb %}
     - name: NB_PREFIX
       value: /private/{{system.system_name}}/{{system.username}}/{{system.identifier}}
@@ -143,9 +149,11 @@ spec:
     {% endif %}
 {% endif %}
 {% if system.system_env %}
-  {% for env in system.system_env %}
-    - name: {{ env }}
-      value: {{ system.system_env[env]}}
+  {% for key, value in system.system_env.items() %}
+    {% if value is string or value is number or value is boolean %}
+    - name: {{ key }}
+      value: {{ value }}
+    {% endif %}
   {% endfor %}
 {% endif %}
 {% if container.expose|length > 0 %}

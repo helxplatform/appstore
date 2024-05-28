@@ -131,6 +131,8 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware"
 ]
 
+GRADER_API_URL = os.environ.get("GRADER_API_URL", None)
+
 SESSION_IDLE_TIMEOUT = int(os.environ.get("DJANGO_SESSION_IDLE_TIMEOUT", 300))
 EXPORTABLE_ENV = os.environ.get("EXPORTABLE_ENV",None)
 if EXPORTABLE_ENV != None: EXPORTABLE_ENV = EXPORTABLE_ENV.split(':')

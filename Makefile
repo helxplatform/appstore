@@ -55,7 +55,7 @@ LOG_LEVEL := "info"
 endif
 
 ifeq "${DEBUG}" "true"
-LOG_LEVEL := "debug"
+LOG_LEVEL := DEBUG
 endif
 
 ifeq "${ENVS_FROM_FILE}" "true"
