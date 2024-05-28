@@ -87,14 +87,14 @@ def auth_identity(request):
     try:
         token = UserIdentityToken.objects.get(token=raw_token)
         if not token.valid:
-            return HttpResponse()
+            return HttpResponse("The token is expired. Try restarting the app.", status=401)
         remote_user = token.user.get_username()
         response = HttpResponse(remote_user, status=200)
         response["REMOTE_USER"] = remote_user
         response["ACCESS_TOKEN"] = token.token
         return response
     except UserIdentityToken.DoesNotExist:
-        return HttpResponse("The token does not exist", status=401)
+        return HttpResponse("The token does not exist. Try restarting the app.", status=401)
 
 
 @login_required
