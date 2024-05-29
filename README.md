@@ -38,9 +38,7 @@ These published images can be found [here](https://hub.docker.com/r/helxplatform
 #### develop-branch
 - appstore:`develop`
 - appstore:`(short-commit-sha)`
-- appstore:`vX.X.X-prerelease{X}` 
 
-Prerelease version is the expected next release version based on current commits and the "prerelease{X}" number is the amount of commits on that version.
 #### master-branch
 - appstore:`latest`
 - appstore:`(short-commit-sha)`
@@ -50,6 +48,8 @@ Prerelease version is the expected next release version based on current commits
 
 [Releases](https://github.com/helxplatform/appstore/releases) are also automated following the semver specification ('major', 'minor','patch') for the project when merging `develop` branch to `master`. 
 
+For an automatic increase of the major version add a comment with "breaking|major" in it.  For an increase in the minor version add "feat|feature|minor" in a comment.  Make sure it is in the first part of the comment so it goes into the header.
+
 During a new release workflow, a new tag solidifying the semver version of the new release is first added to the master branch, then a github release object is created with release notes highlighting major, minor, patch changes and contributors for each release.
 
 The template for the release notes may be found [here](https://github.com/helxplatform/appstore/blob/develop/.github/release.yml)
@@ -57,6 +57,10 @@ The template for the release notes may be found [here](https://github.com/helxpl
 #### CI/CD HouseKeeping
 
 Inline comments within the code such as `#noqa: F401` are necessary items that instruct the linter to bypass or perform a special action for specific sections of code. ***PLEASE DO NOT DELETE these inline comments.
+
+#### Fail on Vulnerability Detection
+
+During PR's several vulnerability scanners are run. If there are vulnerabilities detected, the pr checks will fail and a report will be sent to Github Security Dashboard for viewing. Please ensure the vulnerability is mitigated prior to continuing the merge to protected branches.
 
 ## Deployment
 
@@ -175,7 +179,7 @@ make install
 #### With Tycho cloned locally
 
 > NOTE: To work with Tycho and appstore locally comment
-> `tycho-api` in requirements.txt and setup.cfg.
+> `tycho-api` in requirements.txt.
 
 Clone Tycho repo locally outside the appstore project.
 
@@ -446,8 +450,7 @@ python setup.py publish
 
 #### Updating Appstore
  
-1. Go to appstore code base and update tycho version in following files `requirements.txt`
-and `setup.cfg` created in the publishing step
+1. Go to appstore code base and update tycho version in following files `requirements.txt` created in the publishing step
 
 2. Build and publish appstore
 
@@ -512,7 +515,7 @@ appstore:
     tag: <branchname>
     pullPolicy: Always
   django:
-    AUTHORIZED_USERS: <a list emails of authorized users>
+    AUTHORIZED_USERS: <a list emails or usernames of authorized users>
     EMAIL_HOST_USER: "appstore@renci.org"
     EMAIL_HOST_PASSWORD: <secret>
     DOCKSTORE_APPS_BRANCH: <appstore branch>

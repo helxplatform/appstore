@@ -1,0 +1,23 @@
+{% for volume in system.volumes %}
+{% if volume["requires_nfs"] == "no" %}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    name: {{ system.name }}
+    username: {{ system.username }}
+    executor: tycho
+    tycho-guid: {{ system.identifier }}
+  name: {{ volume["claim_name"] }}
+spec:
+  storageClassName: manual
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  volumeName: {{ volume['volume_name'] }}
+status: {}
+{% endif %}
+{% endfor %}

@@ -11,7 +11,8 @@ class InstanceModifySerializer(serializers.Serializer):
     labels = serializers.DictField(
         child=serializers.CharField(), required=False, allow_empty=False
     )
-    cpu = serializers.CharField(required=False, allow_blank=False)
+    cpu = serializers.FloatField(required=False)
+    gpu = serializers.IntegerField(required=False)
     memory = serializers.CharField(
         validators=[memory_format_validator], required=False, allow_blank=False
     )
@@ -31,6 +32,7 @@ class InstanceSerializer(serializers.Serializer):
     gpus = serializers.IntegerField(default=0)
     # TODO switch to Float potentially, or validator
     memory = serializers.CharField()
+    ephemeralStorage = serializers.CharField()
     url = serializers.CharField()
     status = serializers.CharField()
 
@@ -56,6 +58,9 @@ class ResourceSerializer(serializers.Serializer):
     cpus = serializers.FloatField()
     gpus = serializers.IntegerField(default=0)
     memory = serializers.CharField(validators=[memory_format_validator])
+    # Can do something like this if we add an ephemeral storage selector
+    # in the web UI.
+    # ephemeralStorage = serializers.CharField(validators=[memory_format_validator])
 
     def create(self, validated_data):
         return ResourceRequest(**validated_data)

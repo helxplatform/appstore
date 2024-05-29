@@ -4,8 +4,8 @@ from core.models import AuthorizedUser
 
 
 class AuthorizedUserAdmin(admin.ModelAdmin):
-    fields = ['email']
-    list_display = 'email'
+    fields = ['email', 'username']
+    list_display = ['email', 'username']
 
 
 admin.site.register(AuthorizedUser)

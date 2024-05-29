@@ -3,6 +3,7 @@ import logging
 from dataclasses import asdict
 import time
 import os
+import re
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -111,8 +112,8 @@ def search_for_gpu_reservation(reservations):
     https://github.com/compose-spec/compose-spec/blob/master/deploy.md#capabilities
     for more details.
     """
-    for d in reservations.get("devices", {}).items():
-        if d.get("capabilities") == "gpu":
+    for d in reservations.get("devices", {}):
+        if "gpu" in d.get("capabilities"):
             # Returning 0 for now if a device id is specified, gpu spec needs to be
             # further defined for app-prototypes and tycho.
             # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
@@ -124,6 +125,102 @@ def search_for_gpu_reservation(reservations):
     # We may not find a GPU in the spec, in fact right now no specs have a GPU, but
     # we are providing minimum reservations to the front end from the spec.
     return 0
+
+def validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources):
+    if request_cpu is not None and request_cpu < float(minimum_resources.cpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {minimum_resources.cpus} cpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_cpu is not None and request_cpu > float(maximum_resources.cpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.cpus} cpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_gpu is not None and request_gpu < int(minimum_resources.gpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.gpus} gpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_gpu is not None and request_gpu > int(maximum_resources.gpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.gpus} gpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_memory is not None and to_bytes(request_memory) < to_bytes(minimum_resources.memory):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.memory} memory.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_memory is not None and to_bytes(request_memory) > to_bytes(maximum_resources.memory):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.memory} memory.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_ephemeral is not None and to_bytes(request_ephemeral) < to_bytes(minimum_resources.ephemeralStorage):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.ephemeralStorage} ephemeral storage.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_ephemeral is not None and to_bytes(request_ephemeral) > to_bytes(maximum_resources.ephemeralStorage):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.ephemeralStorage} ephemeral storage.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+
+def to_bytes(memory):
+    """
+    Convert memory string into bytes
+    - b
+    - k/kb, ki
+    - m/mb, mi
+    - g/gb, gi,
+    - t/tb, ti
+    
+    Ex: to_bytes("1M") == 1000000
+    """
+    units = {
+        "b": 1,
+
+        "k": 1e3,
+        "kb": 1e3,
+        "ki": 2**10,
+
+        "m": 1e+6,
+        "mb": 1e+6,
+        "mi": 2**20,
+
+        "g": 1e+9,
+        "gb": 1e+9,
+        "gi": 2**30,
+
+        "t": 1e12,
+        "tb": 1e12,
+        "ti": 2**40
+    }
+    
+    if isinstance(memory, int) or isinstance(memory, float): return memory
+
+    memory = memory.replace(" ", "")
+    match = re.match(r"(.*)([A-Za-z]+)", memory)
+    if match is None: return 0
+    
+    try:
+        number = float(match.group(1))
+    except ValueError:
+        return 0
+    unit = match.group(2).lower()
+    conversion = units.get(unit, 0)
+
+    return number * conversion
 
 
 # TODO fetch by user instead of iterating all?
@@ -153,7 +250,34 @@ def get_social_tokens(username):
 
 class AppViewSet(viewsets.GenericViewSet):
     """
-    Tycho App information.
+    AppViewSet - ViewSet for managing Tycho apps.
+    
+    This ViewSet provides endpoints to list all available apps and retrieve details 
+    about a specific app based on its app_id.
+
+    Endpoints:
+    - List All Apps:
+        - URL: /apps/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Lists all available apps, parses resource specifications, 
+                       and returns them in a structured format. GPU reservations 
+                       and limits are specially handled. Any errors during the 
+                       parsing of an app's data are logged and the app is skipped.
+
+    - Retrieve App Details:
+        - URL: /apps/{app_id}/
+        - HTTP Method: GET
+        - Method: retrieve
+        - Description: Provides detailed information about a specific app based on its 
+                       app_id. Similar to the list method, it parses resource specifications 
+                       and returns them in a structured format. 
+
+    Note:
+    - The app_id is used as a lookup field.
+    - The ViewSet interacts with an external system named 'tycho' to fetch app definitions 
+      and other relevant data. There are also utility functions like 'parse_spec_resources' 
+      and 'search_for_gpu_reservation' that are presumably defined elsewhere in the codebase.
     """
 
     lookup_field = "app_id"
@@ -184,7 +308,8 @@ class AppViewSet(viewsets.GenericViewSet):
                 # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
                 # #capabilities
                 # https://github.com/helxplatform/tycho/search?q=gpu
-                gpu = search_for_gpu_reservation(reservations)
+                gpu_reservations = search_for_gpu_reservation(reservations)
+                gpu_limits = search_for_gpu_reservation(limits)
                 spec = App(
                     app_data["name"],
                     app_id,
@@ -196,12 +321,18 @@ class AppViewSet(viewsets.GenericViewSet):
                     asdict(
                         Resources(
                             reservations.get("cpus", 0),
-                            gpu,
+                            gpu_reservations,
                             reservations.get("memory", 0),
+                            reservations.get("ephemeralStorage", 0),
                         )
                     ),
                     asdict(
-                        Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))
+                        Resources(
+                            limits.get("cpus", 0),
+                            gpu_limits,
+                            limits.get("memory", 0),
+                            limits.get("ephemeralStorage", 0),
+                        )
                     ),
                 )
 
@@ -211,6 +342,7 @@ class AppViewSet(viewsets.GenericViewSet):
                 continue
 
         apps = {key: value for key, value in sorted(apps.items())}
+        logging.debug(f"apps:\n${apps}")
         serializer = self.get_serializer(data=apps)
         serializer.is_valid()
         if serializer.errors:
@@ -229,7 +361,8 @@ class AppViewSet(viewsets.GenericViewSet):
         spec = tycho.get_definition(app_id)
         limits, reservations = parse_spec_resources(app_id, spec, app_data)
 
-        gpu = search_for_gpu_reservation(reservations)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
 
         app = App(
             app_data["name"],
@@ -241,11 +374,22 @@ class AppViewSet(viewsets.GenericViewSet):
             app_data["count"],
             asdict(
                 Resources(
-                    reservations.get("cpus", 0), gpu, reservations.get("memory", 0)
+                    reservations.get("cpus", 0),
+                    gpu_reservations,
+                    reservations.get("memory", 0),
+                    reservations.get("ephemeralStorage", 0)
                 )
             ),
-            asdict(Resources(limits.get("cpus", 0), gpu, limits.get("memory", 0))),
+            asdict(
+                Resources(
+                    limits.get("cpus", 0),
+                    gpu_limits,
+                    limits.get("memory", 0),
+                    limits.get("ephemeralStorage", 0)
+                )
+            )
         )
+        logging.debug(f"app:\n${app}")
 
         serializer = self.get_serializer(data=asdict(app))
         serializer.is_valid()
@@ -259,7 +403,41 @@ class AppViewSet(viewsets.GenericViewSet):
 
 class InstanceViewSet(viewsets.GenericViewSet):
     """
-    Active user instances.
+    InstanceViewSet - ViewSet for managing instances.
+
+    Endpoints:
+    - List Endpoint:
+        - URL: /instances/
+        - HTTP Method: GET
+        - Method: list
+
+    - Create Endpoint:
+        - URL: /instances/
+        - HTTP Method: POST
+        - Method: create
+
+    - Retrieve (Detail) Endpoint:
+        - URL: /instances/{sid}/
+        - HTTP Method: GET
+        - Method: retrieve
+        - Note: {sid} is a placeholder for the instance's ID.
+
+    - Destroy (Delete) Endpoint:
+        - URL: /instances/{sid}/
+        - HTTP Method: DELETE
+        - Method: destroy
+
+    - Partial Update Endpoint:
+        - URL: /instances/{sid}/
+        - HTTP Method: PATCH
+        - Method: partial_update
+
+    - Check Instance Readiness:
+        - URL: /instances/{sid}/is_ready/
+        - HTTP Method: GET
+        - Method: is_ready
+        - Description: Checks if a specific user instance, identified by its 'sid', is ready.
+
     """
 
     lookup_field = "sid"
@@ -288,6 +466,31 @@ class InstanceViewSet(viewsets.GenericViewSet):
     def get_queryset(self):
         status = tycho.status({"username": self.request.user.username})
         return status.services
+
+    def get_instance(self, sid, username, host):
+        active = self.get_queryset()
+
+        for instance in active:
+            if instance.identifier == sid:
+                app = tycho.apps.get(instance.app_id.rpartition("-")[0], {})
+                app_name = instance.app_id.replace(f"-{instance.identifier}", "")
+                return Instance(
+                    app.get("name"),
+                    app.get("docs"),
+                    app_name,
+                    instance.identifier,
+                    instance.app_id,
+                    instance.creation_time,
+                    instance.total_util["cpu"],
+                    instance.total_util["gpu"],
+                    instance.total_util["memory"],
+                    instance.total_util["ephemeralStorage"],
+                    app.get("app_id"),
+                    host,
+                    username,
+                    instance.is_ready
+                )
+        return None
 
     def list(self, request):
         """
@@ -321,8 +524,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         instance.total_util["cpu"],
                         instance.total_util["gpu"],
                         instance.total_util["memory"],
+                        instance.total_util["ephemeralStorage"],
                         host,
                         username,
+                        instance.is_ready
                     )
                     instances.append(asdict(inst))
         else:
@@ -339,8 +544,11 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
 
         serializer = self.get_serializer(data=request.data)
+        logging.debug("checking if request is valid")
         serializer.is_valid(raise_exception=True)
+        logging.debug("creating resource_request")
         resource_request = serializer.create(serializer.validated_data)
+        logging.debug(f"resource_request: {resource_request}")
         irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
         tokens = get_social_tokens(request.user)
@@ -352,8 +560,37 @@ class InstanceViewSet(viewsets.GenericViewSet):
         principal = Principal(*tokens)
 
         app_id = serializer.data["app_id"]
+        app_data = tycho.apps.get(app_id)
+        spec = tycho.get_definition(app_id)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
+
+        minimum_resources = Resources(
+            reservations.get("cpus", 0),
+            gpu_reservations,
+            reservations.get("memory", 0),
+            reservations.get("ephemeralStorage", 0)
+        )
+        maximum_resources = Resources(
+            limits.get("cpus", 0),
+            gpu_limits,
+            limits.get("memory", 0),
+            limits.get("ephemeralStorage", 0)
+        )
+
+        request_cpu = float(resource_request.cpus)
+        request_gpu = int(resource_request.gpus)
+        request_memory = to_bytes(resource_request.memory)
+        request_ephemeral = to_bytes(resource_request.ephemeralStorage)
+
+        validation_response = validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources)
+        if validation_response is not None:
+            return validation_response
+
         host = get_host(request)
         system = tycho.start(principal, app_id, resource_request.resources, host)
+
 
         s = InstanceSpec(
             principal.username,
@@ -392,34 +629,36 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Provide active instance details.
         """
-        active = self.get_queryset()
         principal = self.get_principal(request.user)
         username = principal.username
         host = get_host(request)
+        instance = None
 
-        for instance in active:
-            if instance.identifier == sid:
-                app = tycho.apps.get(instance.app_id.rpartition("-")[0], {})
-                inst = Instance(
-                    app.get("name"),
-                    app.get("docs"),
-                    instance.identifier,
-                    instance.app_id,
-                    instance.creation_time,
-                    instance.total_util["cpu"],
-                    instance.total_util["gpu"],
-                    instance.total_util["memory"],
-                    app.get("app_id"),
-                    host,
-                    username,
-                )
-
-                serializer = self.get_serializer(data=asdict(inst))
+        if sid != None: 
+            instance = self.get_instance(sid,username,host)
+            if instance != None:
+                serializer = self.get_serializer(data=asdict(instance))
                 serializer.is_valid(raise_exception=True)
                 return Response(serializer.validated_data)
 
         logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['get'])
+    def is_ready(self, request, sid=None):
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
+        instance = None
+
+        if sid != None: 
+            instance = self.get_instance(sid,username,host)
+            if instance != None:
+                return Response({'is_ready': instance.is_ready})
+
+        logger.error(f"\n{sid} not found\n")
+        return Response(status=drf_status.HTTP_404_NOT_FOUND)
+    
 
     def destroy(self, request, sid=None):
         """
@@ -446,12 +685,45 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Pass labels, cpu and memory to tycho for patching a running deployment.
         """
-
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = InstanceModifySerializer(data=request.data)
+        serializer.is_valid()
 
         data = serializer.validated_data
         data.update({"tycho-guid": sid})
+
+        principal = self.get_principal(request.user)
+        username = principal.username
+        host = get_host(request)
+        instance = self.get_instance(sid,username,host)
+
+        app_id = instance.aid
+        app_data = tycho.apps.get(app_id)
+        spec = tycho.get_definition(app_id)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
+
+        minimum_resources = Resources(
+            reservations.get("cpus", 0),
+            gpu_reservations,
+            reservations.get("memory", 0),
+            reservations.get("ephemeralStorage", 0)
+        )
+        maximum_resources = Resources(
+            limits.get("cpus", 0),
+            gpu_limits,
+            limits.get("memory", 0),
+            limits.get("ephemeralStorage", 0)
+        )
+        request_cpu = float(data["cpu"]) if "cpu" in data else None
+        request_gpu = float(data["gpu"]) if "gpu" in data else None
+        request_memory = to_bytes(data["memory"]) if "memory" in data else None
+        request_ephemeral = None
+        
+        validation_response = validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources)
+        if validation_response is not None:
+            return validation_response
+
         response = tycho.update(data)
 
         logger.debug(f"Update Response: {response}")
@@ -460,7 +732,32 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
 class UsersViewSet(viewsets.GenericViewSet):
     """
-    User information.
+    UsersViewSet - ViewSet for managing user information.
+
+    This ViewSet provides endpoints to retrieve details of the currently logged-in user 
+    and to handle user logout.
+
+    Endpoints:
+    - List User Details:
+        - URL: /users/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Provides details of the currently logged-in user, including their 
+                       username and access token. This endpoint is designed to support 
+                       scenarios where a reverse proxy (like nginx) performs authentication 
+                       before proxying a request.
+
+    - Logout:
+        - URL: /users/logout/
+        - HTTP Method: POST
+        - Method: logout
+        - Description: Logs out the current user and returns a success message.
+
+    Note:
+    - The ViewSet uses a private method '_get_access_token' to retrieve the user's 
+      access token from the session.
+    - 'EmptySerializer' is used for the 'logout' action, likely to simply validate the 
+      request without any specific data.
     """
 
     def get_serializer_class(self):
@@ -497,7 +794,38 @@ class UsersViewSet(viewsets.GenericViewSet):
 
 class LoginProviderViewSet(viewsets.GenericViewSet):
     """
-    Login provider information.
+    LoginProviderViewSet - ViewSet for retrieving login provider information.
+
+    This ViewSet provides information about the available social login providers 
+    from `allauth`, Django's default login, and any product-specific providers like SSO. 
+    It's designed to list out these available authentication providers and their 
+    respective login URLs.
+
+    Attributes:
+    - permission_classes: Allow any user (authenticated or not) to access this endpoint.
+    - serializer_class: Uses `LoginProviderSerializer` to serialize the data.
+
+    Methods:
+    - get_queryset: Returns the global `settings` object.
+    - _get_social_providers: A private method to retrieve social login providers 
+                             from `allauth`.
+    - _get_django_provider: A private method to check if Django's default login 
+                            is enabled and to get its login URL.
+    - _get_product_providers: A private method to check for any product-specific 
+                              SSO providers and retrieve their details.
+    - _get_login_providers: An aggregation method that combines the results 
+                            from the above three methods to get a comprehensive 
+                            list of login providers.
+    - list: The main endpoint which uses `_get_login_providers` to fetch all 
+            available login providers and returns them after serialization.
+
+    Endpoints:
+    - List Login Providers:
+        - URL: /providers/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Lists all available authentication/login providers 
+                       and their respective login URLs.
     """
 
     permission_classes = [AllowAny]
@@ -517,10 +845,11 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
             "allauth.account.auth_backends.AuthenticationBackend"
             in settings.AUTHENTICATION_BACKENDS
         ):
-            for provider in socialaccount.providers.registry.get_list():
+            for provider in socialaccount.providers.registry.get_class_list():
+                inst = provider(request, "allauth.socialaccount")
                 provider_data.append(
                     asdict(
-                        LoginProvider(provider.name, provider.get_login_url(request))
+                        LoginProvider(inst.name, inst.get_login_url(request))
                     )
                 )
 
@@ -580,7 +909,29 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
 
 class AppContextViewSet(viewsets.GenericViewSet):
     """
-    Brand/Product configuration information.
+    AppContextViewSet - ViewSet for retrieving brand/product configuration information.
+
+    This ViewSet provides information about the brand or product's configuration settings.
+    It fetches the settings from the global `settings` object and serializes them using 
+    the `AppContextSerializer`.
+
+    Attributes:
+    - permission_classes: Allow any user (authenticated or not) to access this endpoint.
+    - serializer_class: Uses `AppContextSerializer` to serialize the data.
+
+    Methods:
+    - get_queryset: Returns the global `settings` object.
+    - list: Fetches specific configuration settings from the `settings` object, 
+            combines them with specific environment variables from `EXPORTABLE_ENV`, 
+            and returns the aggregated data.
+
+    Endpoints:
+    - List Brand/Product Configuration:
+        - URL: /context/
+        - HTTP Method: GET
+        - Method: list
+        - Description: Lists specific configuration settings related to the brand or product 
+                       and certain environment variables specified in `EXPORTABLE_ENV`.
     """
 
     permission_classes = [AllowAny]

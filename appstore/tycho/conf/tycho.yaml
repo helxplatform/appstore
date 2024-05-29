@@ -1,0 +1,42 @@
+tycho:
+  # Configuration file for Tycho.
+
+  # Configure the orchestrator to use.
+  backplane: kubernetes
+  compute:
+    platform:
+      kube:
+        ip: x # Used for minikube environments.        
+    system:
+      # Configure application defaults.
+      defaults:
+        securityContext:
+          uid: 1000
+          gid: 1000
+        services:
+          init:
+            resources:
+              cpus: 250m
+              memory: 250Mi
+          deploy:
+            resources:
+              cpus: 0.2
+              memory: 50MB
+      volumes:
+        - pvc://stdnfs_pvc:parent_dir/shared_dir
+        - pvc://stdnfs_pvc/shared_dir:parent_dir/shared_dir
+        - pvc://stdnfs_pvc/username:parent_dir/subpath_dir  
+          
+  policy:
+    network:
+      ingress:
+        # If supplied, restrict ingress by CIDR.
+        restrict_by_client_cidr: true
+      egress:
+        mode: none
+        
+  templates:
+    # A list of alternate directories to search for templates.
+    # see tycho/templates for a list of templates that can be overriden.
+    # Place 
+    paths: []
