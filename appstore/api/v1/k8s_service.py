@@ -1,7 +1,6 @@
 import base64
 import os
 from kubernetes import client, config
-from app.models.user import UserType
 
 class KubernetesService:
     def __init__(self):
@@ -28,45 +27,6 @@ class KubernetesService:
             return current_context["context"]["namespace"]
         except KeyError:
             return "default"
-
-    def create_credential_secret(self, course_name: str, onyen: str, password: str, user_type: UserType):
-        current_namespace = self.get_current_namespace()
-
-        secret_name = self._compute_credential_secret_name(course_name, onyen)
-        secret_data = {
-            "onyen": onyen,
-            "password": password,
-            "class": course_name,
-            "user_type": user_type.value,
-        }
-        encoded_secret_data = {
-            key: base64.b64encode(value.encode()).decode() for (key, value) in secret_data.items()
-        }
-
-        secret = client.V1Secret(
-            api_version="v1",
-            kind="Secret",
-            metadata=client.V1ObjectMeta(
-                name=secret_name,
-                namespace=current_namespace
-            ),
-            type="Opaque",
-            data=encoded_secret_data
-        )
-
-        self.api_instance.create_namespaced_secret(
-            namespace=current_namespace,
-            body=secret
-        )
-
-    def delete_credential_secret(self, course_name: str, onyen: str):
-        current_namespace = self.get_current_namespace()
-
-        secret_name = self._compute_credential_secret_name(course_name, onyen)
-        self.api_instance.delete_namespaced_secret(
-            namespace=current_namespace,
-            name=secret_name
-        )
 
     def get_autogen_password(self, course_name: str, onyen: str) -> str:
         current_namespace = self.get_current_namespace()
