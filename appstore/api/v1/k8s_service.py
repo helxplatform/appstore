@@ -32,7 +32,7 @@ class KubernetesService:
         current_namespace = self.get_current_namespace()
         secret_name = self._compute_credential_secret_name(course_name, onyen)
         secret = self.api_instance.read_namespaced_secret(secret_name, current_namespace)
-        return base64.decode(secret.data["password"]).decode("utf-8")
+        return base64.b64decode(secret.data["password"]).decode("utf-8")
 
     @staticmethod
     def _compute_credential_secret_name(course_name: str, onyen: str) -> str:
