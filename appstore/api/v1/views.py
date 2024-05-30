@@ -19,7 +19,7 @@ from rest_framework import status
 from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
-from core.models import IrodAuthorizedUser
+from core.models import IrodAuthorizedUser, UserIdentityToken
 
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
@@ -35,6 +35,7 @@ from .serializers import (
     InstanceModifySerializer,
     EmptySerializer,
 )
+from .k8s_service import KubernetesService
 
 from urllib.parse import urljoin
 
@@ -225,7 +226,8 @@ def to_bytes(memory):
 
 # TODO fetch by user instead of iterating all?
 # sanitize input to avoid injection.
-def get_social_tokens(username):
+def get_social_tokens(request):
+    username = request.user
     social_token_model_objects = (
         ContentType.objects.get(model="socialtoken").model_class().objects.all()
     )
@@ -247,6 +249,10 @@ def get_social_tokens(username):
     #    principal_params_json = json.dumps(principal_params, indent=4)
     return str(username), access_token, refresh_token
 
+
+def get_tokens(request):
+    username = request.user.get_username()
+    return username, None, None
 
 class AppViewSet(viewsets.GenericViewSet):
     """
@@ -454,12 +460,12 @@ class InstanceViewSet(viewsets.GenericViewSet):
             return InstanceSerializer
 
     @functools.lru_cache(maxsize=16, typed=False)
-    def get_principal(self, user):
+    def get_principal(self, request):
         """
         Retrieve principal information from Tycho based on the request
         user.
         """
-        tokens = get_social_tokens(user)
+        tokens = get_tokens(request)
         principal = Principal(*tokens)
         return principal
 
@@ -498,7 +504,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
 
         active = self.get_queryset()
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instances = []
@@ -542,6 +548,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
         Given an app id and resources pass the information to Tycho to start
         a instance of an app.
         """
+        
+        username = request.user.get_username()
 
         serializer = self.get_serializer(data=request.data)
         logging.debug("checking if request is valid")
@@ -551,13 +559,15 @@ class InstanceViewSet(viewsets.GenericViewSet):
         logging.debug(f"resource_request: {resource_request}")
         irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
-        tokens = get_social_tokens(request.user)
+
         #Need to set an environment variable for the IRODS UID
         if irods_enabled != '':
-            nfs_id = get_nfs_uid(request.user)
+            nfs_id = get_nfs_uid(username)
             os.environ["NFSRODS_UID"] = str(nfs_id)
 
-        principal = Principal(*tokens)
+        # We will update this later once a system id for the app exists
+        identity_token = UserIdentityToken.objects.create(user=request.user)
+        principal = Principal(username, identity_token.token, None)
 
         app_id = serializer.data["app_id"]
         app_data = tycho.apps.get(app_id)
@@ -588,9 +598,17 @@ class InstanceViewSet(viewsets.GenericViewSet):
         if validation_response is not None:
             return validation_response
 
-        host = get_host(request)
-        system = tycho.start(principal, app_id, resource_request.resources, host)
+        env = {}
+        if settings.GRADER_API_URL is not None:
+            env["GRADER_API_URL"] = settings.GRADER_API_URL
+        if settings.EDUHELX_CLASS_NAME is not None:
+            env["USER_AUTOGEN_PASSWORD"] = KubernetesService().get_autogen_password(settings.EDUHELX_CLASS_NAME, username)
 
+        host = get_host(request)
+        system = tycho.start(principal, app_id, resource_request.resources, host, env)
+
+        identity_token.consumer_id = identity_token.compute_app_consumer_id(app_id, system.identifier)
+        identity_token.save()
 
         s = InstanceSpec(
             principal.username,
@@ -620,6 +638,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
             # Failed to construct a tracked instance, attempt to remove
             # potentially created instance rather than leaving it hanging.
             tycho.delete({"name": system.services[0].identifier})
+            identity_token.delete()
             return Response(
                 {"message": "failed to submit app start."},
                 status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -629,7 +648,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Provide active instance details.
         """
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = None
@@ -646,7 +665,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
     
     @action(detail=True, methods=['get'])
     def is_ready(self, request, sid=None):
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = None
@@ -673,6 +692,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
             logger.info("request username: " + str(request.user.username))
             if status.services[0].username == request.user.username:
                 response = tycho.delete({"name": serializer.validated_data["sid"]})
+                # Delete all the tokens the user had associated with that app
+                consumer_id = UserIdentityToken.compute_app_consumer_id(serializer.validated_data["aid"], serializer.validated_data["sid"])
+                tokens = UserIdentityToken.objects.filter(user=request.user, consumer_id=consumer_id)
+                tokens.delete()
                 # TODO How can we avoid this sleep? Do we need an immediate response beyond
                 # a successful submission? Can we do a follow up with Web Sockets or SSE
                 # to the front end?
@@ -691,7 +714,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         data = serializer.validated_data
         data.update({"tycho-guid": sid})
 
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = self.get_instance(sid,username,host)
