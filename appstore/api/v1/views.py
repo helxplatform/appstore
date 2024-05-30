@@ -35,6 +35,7 @@ from .serializers import (
     InstanceModifySerializer,
     EmptySerializer,
 )
+from .k8s_service import KubernetesService
 
 from urllib.parse import urljoin
 
@@ -600,6 +601,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
         env = {}
         if settings.GRADER_API_URL is not None:
             env["GRADER_API_URL"] = settings.GRADER_API_URL
+        if settings.EDUHELX_CLASS_NAME is not None:
+            env["USER_AUTOGEN_PASSWORD"] = KubernetesService().get_autogen_password(settings.EDUHELX_CLASS_NAME, username)
 
         host = get_host(request)
         system = tycho.start(principal, app_id, resource_request.resources, host, env)
