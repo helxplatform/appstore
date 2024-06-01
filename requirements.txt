@@ -19,7 +19,7 @@ webdriver-manager==3.2.1
 sqlparse==0.4.4
 asgiref==3.7.2
 psycopg2-binary
-python-irodsclient==1.1.5
+python-irodsclient==2.0.1
 deepmerge==1.0.1
 flasgger==0.9.5
 Flask==2.0.3
