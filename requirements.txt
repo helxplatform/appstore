@@ -2,7 +2,7 @@ Django==4.2
 django-allauth==0.61.1
 django-cors-headers==4.3.1
 django-crispy-forms==2.1
-django-debug-toolbar==4.3.0
+django-debug-toolbar==4.4.2
 django-extensions==3.2.3
 grafana-django-saml2-auth==3.12.0
 djangorestframework==3.14.0
