@@ -8,7 +8,7 @@ APPLICATION_BRAND = "eduhelx-dev-professor"
 PRODUCT_SETTINGS = ProductSettings(
     brand="eduhelx-dev-professor",
     title="EduHeLx Dev Professor",
-    logo_url="/static/images/eduhelx/logo.png",
+    logo_url="/static/images/eduhelx-dev-professor/logo.png",
     color_scheme=ProductColorScheme("#666666", "#e6e6e6"), #TBD
     links=[],
 )
