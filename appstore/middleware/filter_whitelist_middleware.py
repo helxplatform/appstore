@@ -58,7 +58,8 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                         )
                     finally:
                         # Make sure to always run the redirect.
-                        return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL) 
+                        return HttpResponseRedirect(settings.LOGIN_WHITELIST_URL)
+        logger.info(f"accepting user {user}")
         return None
 
     def _get_response(self, request):
