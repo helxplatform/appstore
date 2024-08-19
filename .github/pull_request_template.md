@@ -1,9 +1,14 @@
 ## Describe your changes
 
-## Secure Software Development Lifecycle
-- [ ] High Level Data Flow Diagrams Exist for Feature/Function?
-- [ ] Initial Threat Modeling table has been completed against diagram?
-- [ ] Have code changes been validated against [OWASP Top 10?](https://owasp.org/www-project-top-ten/)
+## General Best Practice
+- [ ] I have performed a self-review of my code
+- [ ] If it is a core feature, I have added thorough tests
+- [ ] I have updated the documentation and README where necessary
+
+## Secure Software Development
+- [ ] High Level Data Flow Diagrams exists for core features/functions?
+- [ ] Threat modeling table has been completed/updated incorporating new changes?
+- [ ] Code changes been validated against [OWASP Top 10?](https://owasp.org/www-project-top-ten/)
    - [A01:2021 - Broken Access Control](https://owasp.org/Top10/A01_2021-Broken_Access_Control/)
    - [A02:2021 - Cryptographic Failures](https://owasp.org/Top10/A02_2021-Cryptographic_Failures/)
    - [A03:2021 - Injection](https://owasp.org/Top10/A03_2021-Injection/)
