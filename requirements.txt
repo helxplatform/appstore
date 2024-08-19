@@ -15,7 +15,7 @@ python3-openid==3.2.0
 requests==2.31.0
 requests-oauthlib==1.4.0
 selenium==3.141.0
-webdriver-manager==3.2.1
+webdriver-manager==4.0.2
 sqlparse==0.4.4
 asgiref==3.7.2
 psycopg2-binary
