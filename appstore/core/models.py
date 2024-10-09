@@ -17,6 +17,9 @@ def generate_token():
             token = "".join(secrets.choice(ascii_letters + digits) for i in range(256))
         return token
 
+def user_token_expires():
+    return timezone.now() + timedelta(days=31)
+
 def update_user(user):
     # as of Django_saml2_auth v3.12.0 does not add email address by default
     # to the created use entry in django db according to: 
@@ -52,7 +55,7 @@ class UserIdentityToken(models.Model):
     token = models.CharField(max_length=256, unique=True, default=generate_token)
     # Optionally, identify the consumer (probably an app) whom the token was generated for.
     consumer_id = models.CharField(max_length=256, default=None, null=True)
-    expires = models.DateTimeField(default=timezone.now() + timedelta(days=31))
+    expires = models.DateTimeField(default=user_token_expires)
 
     @property
     def valid(self):
