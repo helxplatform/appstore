@@ -52,7 +52,7 @@ class UserIdentityToken(models.Model):
     token = models.CharField(max_length=256, unique=True, default=generate_token)
     # Optionally, identify the consumer (probably an app) whom the token was generated for.
     consumer_id = models.CharField(max_length=256, default=None, null=True)
-    expires = models.DateTimeField(default=timezone.now() + timedelta(days=31))
+    expires = models.DateTimeField(default=lambda: timezone.now() + timedelta(days=31))
 
     @property
     def valid(self):
