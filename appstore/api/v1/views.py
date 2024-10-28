@@ -604,7 +604,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         host = get_host(request)
         system = tycho.start(principal, app_id, resource_request.resources, host, env)
 
-        identity_token.consumer_id = identity_token.compute_app_consumer_id(app_id, system.identifier)
+        identity_token.consumer_id = identity_token.compute_app_consumer_id(system.identifier)
         identity_token.save()
 
         s = InstanceSpec(
@@ -690,7 +690,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
             if status.services[0].username == request.user.username:
                 response = tycho.delete({"name": serializer.validated_data["sid"]})
                 # Delete all the tokens the user had associated with that app
-                consumer_id = UserIdentityToken.compute_app_consumer_id(serializer.validated_data["aid"], serializer.validated_data["sid"])
+                consumer_id = UserIdentityToken.compute_app_consumer_id(serializer.validated_data["sid"])
                 tokens = UserIdentityToken.objects.filter(user=request.user, consumer_id=consumer_id)
                 tokens.delete()
                 # TODO How can we avoid this sleep? Do we need an immediate response beyond
