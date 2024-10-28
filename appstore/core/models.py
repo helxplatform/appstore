@@ -62,8 +62,8 @@ class UserIdentityToken(models.Model):
         return timezone.now() <= self.expires
     
     @staticmethod
-    def compute_app_consumer_id(app_id, system_id):
-        return f"{ app_id }-{ system_id }"
+    def compute_app_consumer_id(system_id):
+        return f"{ system_id }"
 
     def __str__(self):
         return f"{ self.user.get_username() }-token-{ self.pk }"
