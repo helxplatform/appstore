@@ -116,14 +116,23 @@ class ResourceRequest:
         # Case for Gi (Gibibytes)
         if memory.endswith("Gi"):
             value = float(memory[:-2])  # Extract numeric value (removes 'Gi' suffix)
-            # Convert Gi to Mi by multiplying by 1024
-            value_in_mi = value * 1024
-            # Divide by 2
+            value_in_mi = value * 1024  # Convert Gi to Mi
             divided_value = value_in_mi / 2
             # Ensure the result is not less than 100Mi
             if divided_value < 100:
                 divided_value = 100
-            return f"{int(divided_value)}Mi"  # Return as Mi with no decimal
+            return f"{int(divided_value)}Mi"
+    
+        # Case for G (Gigabytes)
+        elif memory.endswith("G"):
+            value = float(memory[:-1])  # Extract numeric value (removes 'G' suffix)
+            value_in_gi = value * 1024  # Convert G to Gi (G is 1024 times smaller than Gi)
+            value_in_mi = value_in_gi * 1024  # Convert Gi to Mi
+            divided_value = value_in_mi / 2
+            # Ensure the result is not less than 100Mi
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}Mi"
     
         # Case for Mi (Mebibytes)
         elif memory.endswith("Mi"):
@@ -132,11 +141,22 @@ class ResourceRequest:
             # Ensure the result is not less than 100Mi
             if divided_value < 100:
                 divided_value = 100
-            return f"{int(divided_value)}Mi"  # Return as Mi with no decimal
+            return f"{int(divided_value)}Mi"
+    
+        # Case for M (Megabytes)
+        elif memory.endswith("M"):
+            value = float(memory[:-1])  # Extract numeric value (removes 'M' suffix)
+            value_in_mi = value * 1024  # Convert M to Mi (M is 1024 times smaller than Mi)
+            divided_value = value_in_mi / 2
+            # Ensure the result is not less than 100Mi
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}Mi"
     
         # Default case for unrecognized memory format
         else:
-            return memory
+            return memory  # Return as is if the format is not recognized
+
 
 @dataclass
 class InstanceSpec:
