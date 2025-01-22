@@ -110,33 +110,33 @@ class ResourceRequest:
             }
         }
         
-def _divide_memory(self, memory: str) -> str:
-    """Helper method to divide memory by 2 (converting Gi to Mi and ensuring result is never less than 100Mi)."""
+    def _divide_memory(self, memory: str) -> str:
+        """Helper method to divide memory by 2 (converting Gi to Mi and ensuring result is never less than 100Mi)."""
+        
+        # Case for Gi (Gibibytes)
+        if memory.endswith("Gi"):
+            value = float(memory[:-2])  # Extract numeric value (removes 'Gi' suffix)
+            # Convert Gi to Mi by multiplying by 1024
+            value_in_mi = value * 1024
+            # Divide by 2
+            divided_value = value_in_mi / 2
+            # Ensure the result is not less than 100Mi
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}Mi"  # Return as Mi with no decimal
     
-    # Case for Gi (Gibibytes)
-    if memory.endswith("Gi"):
-        value = float(memory[:-2])  # Extract numeric value (removes 'Gi' suffix)
-        # Convert Gi to Mi by multiplying by 1024
-        value_in_mi = value * 1024
-        # Divide by 2
-        divided_value = value_in_mi / 2
-        # Ensure the result is not less than 100Mi
-        if divided_value < 100:
-            divided_value = 100
-        return f"{int(divided_value)}Mi"  # Return as Mi with no decimal
-
-    # Case for Mi (Mebibytes)
-    elif memory.endswith("Mi"):
-        value = float(memory[:-2])  # Extract numeric value (removes 'Mi' suffix)
-        divided_value = value / 2
-        # Ensure the result is not less than 100Mi
-        if divided_value < 100:
-            divided_value = 100
-        return f"{int(divided_value)}Mi"  # Return as Mi with no decimal
-
-    # Default case for unrecognized memory format
-    else:
-        return memory
+        # Case for Mi (Mebibytes)
+        elif memory.endswith("Mi"):
+            value = float(memory[:-2])  # Extract numeric value (removes 'Mi' suffix)
+            divided_value = value / 2
+            # Ensure the result is not less than 100Mi
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}Mi"  # Return as Mi with no decimal
+    
+        # Default case for unrecognized memory format
+        else:
+            return memory
 
 @dataclass
 class InstanceSpec:
