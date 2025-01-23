@@ -3,6 +3,7 @@ import logging
 from dataclasses import asdict
 import time
 import os
+import re
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -18,7 +19,7 @@ from rest_framework import status
 from allauth import socialaccount
 
 from tycho.context import ContextFactory, Principal
-from core.models import IrodAuthorizedUser
+from core.models import IrodAuthorizedUser, UserIdentityToken
 
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
 from .serializers import (
@@ -125,10 +126,107 @@ def search_for_gpu_reservation(reservations):
     # we are providing minimum reservations to the front end from the spec.
     return 0
 
+def validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources):
+    if request_cpu is not None and request_cpu < float(minimum_resources.cpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {minimum_resources.cpus} cpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_cpu is not None and request_cpu > float(maximum_resources.cpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.cpus} cpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_gpu is not None and request_gpu < int(minimum_resources.gpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.gpus} gpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_gpu is not None and request_gpu > int(maximum_resources.gpus):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.gpus} gpus.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_memory is not None and to_bytes(request_memory) < to_bytes(minimum_resources.memory):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.memory} memory.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_memory is not None and to_bytes(request_memory) > to_bytes(maximum_resources.memory):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.memory} memory.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+    
+    if request_ephemeral is not None and to_bytes(request_ephemeral) < to_bytes(minimum_resources.ephemeralStorage):
+        return Response(
+            f"Invalid resources requested. Cannot allocate less than {minimum_resources.ephemeralStorage} ephemeral storage.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+    if request_ephemeral is not None and to_bytes(request_ephemeral) > to_bytes(maximum_resources.ephemeralStorage):
+        return Response(
+            f"Invalid resources requested. Cannot allocate more than {maximum_resources.ephemeralStorage} ephemeral storage.",
+            status=drf_status.HTTP_400_BAD_REQUEST
+        )
+
+
+def to_bytes(memory):
+    """
+    Convert memory string into bytes
+    - b
+    - k/kb, ki
+    - m/mb, mi
+    - g/gb, gi,
+    - t/tb, ti
+    
+    Ex: to_bytes("1M") == 1000000
+    """
+    units = {
+        "b": 1,
+
+        "k": 1e3,
+        "kb": 1e3,
+        "ki": 2**10,
+
+        "m": 1e+6,
+        "mb": 1e+6,
+        "mi": 2**20,
+
+        "g": 1e+9,
+        "gb": 1e+9,
+        "gi": 2**30,
+
+        "t": 1e12,
+        "tb": 1e12,
+        "ti": 2**40
+    }
+    
+    if isinstance(memory, int) or isinstance(memory, float): return memory
+
+    memory = memory.replace(" ", "")
+    match = re.match(r"(.*)([A-Za-z]+)", memory)
+    if match is None: return 0
+    
+    try:
+        number = float(match.group(1))
+    except ValueError:
+        return 0
+    unit = match.group(2).lower()
+    conversion = units.get(unit, 0)
+
+    return number * conversion
+
 
 # TODO fetch by user instead of iterating all?
 # sanitize input to avoid injection.
-def get_social_tokens(username):
+def get_social_tokens(request):
+    username = request.user
     social_token_model_objects = (
         ContentType.objects.get(model="socialtoken").model_class().objects.all()
     )
@@ -150,6 +248,10 @@ def get_social_tokens(username):
     #    principal_params_json = json.dumps(principal_params, indent=4)
     return str(username), access_token, refresh_token
 
+
+def get_tokens(request):
+    username = request.user.get_username()
+    return username, None, None
 
 class AppViewSet(viewsets.GenericViewSet):
     """
@@ -287,8 +389,10 @@ class AppViewSet(viewsets.GenericViewSet):
                 Resources(
                     limits.get("cpus", 0),
                     gpu_limits,
-                    limits.get("memory", 0))),
+                    limits.get("memory", 0),
                     limits.get("ephemeralStorage", 0)
+                )
+            )
         )
         logging.debug(f"app:\n${app}")
 
@@ -355,12 +459,12 @@ class InstanceViewSet(viewsets.GenericViewSet):
             return InstanceSerializer
 
     @functools.lru_cache(maxsize=16, typed=False)
-    def get_principal(self, user):
+    def get_principal(self, request):
         """
         Retrieve principal information from Tycho based on the request
         user.
         """
-        tokens = get_social_tokens(user)
+        tokens = get_tokens(request)
         principal = Principal(*tokens)
         return principal
 
@@ -399,7 +503,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
 
         active = self.get_queryset()
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instances = []
@@ -443,6 +547,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
         Given an app id and resources pass the information to Tycho to start
         a instance of an app.
         """
+        
+        username = request.user.get_username()
 
         serializer = self.get_serializer(data=request.data)
         logging.debug("checking if request is valid")
@@ -452,17 +558,54 @@ class InstanceViewSet(viewsets.GenericViewSet):
         logging.debug(f"resource_request: {resource_request}")
         irods_enabled = os.environ.get("IROD_HOST",'').strip()
         # TODO update social query to fetch user.
-        tokens = get_social_tokens(request.user)
+
         #Need to set an environment variable for the IRODS UID
         if irods_enabled != '':
-            nfs_id = get_nfs_uid(request.user)
+            nfs_id = get_nfs_uid(username)
             os.environ["NFSRODS_UID"] = str(nfs_id)
 
-        principal = Principal(*tokens)
+        # We will update this later once a system id for the app exists
+        identity_token = UserIdentityToken.objects.create(user=request.user)
+        principal = Principal(username, identity_token.token, None)
 
         app_id = serializer.data["app_id"]
+        app_data = tycho.apps.get(app_id)
+        spec = tycho.get_definition(app_id)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
+
+        minimum_resources = Resources(
+            reservations.get("cpus", 0),
+            gpu_reservations,
+            reservations.get("memory", 0),
+            reservations.get("ephemeralStorage", 0)
+        )
+        maximum_resources = Resources(
+            limits.get("cpus", 0),
+            gpu_limits,
+            limits.get("memory", 0),
+            limits.get("ephemeralStorage", 0)
+        )
+
+        request_cpu = float(resource_request.cpus)
+        request_gpu = int(resource_request.gpus)
+        request_memory = to_bytes(resource_request.memory)
+        request_ephemeral = to_bytes(resource_request.ephemeralStorage)
+
+        validation_response = validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources)
+        if validation_response is not None:
+            return validation_response
+
+        env = {}
+        if settings.GRADER_API_URL is not None:
+            env["GRADER_API_URL"] = settings.GRADER_API_URL
+
         host = get_host(request)
-        system = tycho.start(principal, app_id, resource_request.resources, host)
+        system = tycho.start(principal, app_id, resource_request.resources, host, env)
+
+        identity_token.consumer_id = identity_token.compute_app_consumer_id(app_id, system.identifier)
+        identity_token.save()
 
         s = InstanceSpec(
             principal.username,
@@ -492,6 +635,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
             # Failed to construct a tracked instance, attempt to remove
             # potentially created instance rather than leaving it hanging.
             tycho.delete({"name": system.services[0].identifier})
+            identity_token.delete()
             return Response(
                 {"message": "failed to submit app start."},
                 status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -501,7 +645,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Provide active instance details.
         """
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = None
@@ -518,7 +662,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
     
     @action(detail=True, methods=['get'])
     def is_ready(self, request, sid=None):
-        principal = self.get_principal(request.user)
+        principal = self.get_principal(request)
         username = principal.username
         host = get_host(request)
         instance = None
@@ -545,6 +689,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
             logger.info("request username: " + str(request.user.username))
             if status.services[0].username == request.user.username:
                 response = tycho.delete({"name": serializer.validated_data["sid"]})
+                # Delete all the tokens the user had associated with that app
+                consumer_id = UserIdentityToken.compute_app_consumer_id(serializer.validated_data["aid"], serializer.validated_data["sid"])
+                tokens = UserIdentityToken.objects.filter(user=request.user, consumer_id=consumer_id)
+                tokens.delete()
                 # TODO How can we avoid this sleep? Do we need an immediate response beyond
                 # a successful submission? Can we do a follow up with Web Sockets or SSE
                 # to the front end?
@@ -557,12 +705,45 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """
         Pass labels, cpu and memory to tycho for patching a running deployment.
         """
-
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = InstanceModifySerializer(data=request.data)
+        serializer.is_valid()
 
         data = serializer.validated_data
         data.update({"tycho-guid": sid})
+
+        principal = self.get_principal(request)
+        username = principal.username
+        host = get_host(request)
+        instance = self.get_instance(sid,username,host)
+
+        app_id = instance.aid
+        app_data = tycho.apps.get(app_id)
+        spec = tycho.get_definition(app_id)
+        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+        gpu_reservations = search_for_gpu_reservation(reservations)
+        gpu_limits = search_for_gpu_reservation(limits)
+
+        minimum_resources = Resources(
+            reservations.get("cpus", 0),
+            gpu_reservations,
+            reservations.get("memory", 0),
+            reservations.get("ephemeralStorage", 0)
+        )
+        maximum_resources = Resources(
+            limits.get("cpus", 0),
+            gpu_limits,
+            limits.get("memory", 0),
+            limits.get("ephemeralStorage", 0)
+        )
+        request_cpu = float(data["cpu"]) if "cpu" in data else None
+        request_gpu = float(data["gpu"]) if "gpu" in data else None
+        request_memory = to_bytes(data["memory"]) if "memory" in data else None
+        request_ephemeral = None
+        
+        validation_response = validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources)
+        if validation_response is not None:
+            return validation_response
+
         response = tycho.update(data)
 
         logger.debug(f"Update Response: {response}")
