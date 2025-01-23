@@ -8,8 +8,6 @@ from django.dispatch import receiver
 from django.http import  HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 
-from core.models import UserIdentityToken
-
 from tycho.context import ContextFactory
 
 from urllib.parse import urljoin
@@ -59,11 +57,6 @@ def get_brand_details(brand):
         "heal": {"name": "NIH Heal Initiative", "logo": "logo.png"},
         "argus": {"name": "Argus Array", "logo": "logo.png"},
         "eduhelx": {"name": "EduHelx", "logo": "logo.png"},
-        "eduhelx-dev": {"name": "EduHelx", "logo": "logo.png"},
-        "eduhelx-dev-student": {"name": "EduHelx", "logo": "logo.png"},
-        "eduhelx-dev-professor": {"name": "EduHelx", "logo": "logo.png"},
-        "eduhelx-student": {"name": "EduHelx", "logo": "logo.png"},
-        "eduhelx-professor": {"name": "EduHelx", "logo": "logo.png"},
         "testing": {"name": "Testing", "logo": "logo.png"},
         "ordrd": {"name": "Ordr D", "logo": "logo.png"},
     }[brand]
@@ -79,27 +72,6 @@ def get_access_token(request):
         logger.debug(f"----------> {e.__class__.__name__}: Failed getting access token.")
         pass
     return access_token
-
-
-def auth_identity(request):
-    auth_header = request.headers.get("Authorization")
-    try:
-        bearer, raw_token = auth_header.split(" ")
-        if bearer != "Bearer": raise ValueError()
-    except:
-        return HttpResponse("Authorization header must be structured as 'Bearer {token}'", status=400)
-
-    try:
-        token = UserIdentityToken.objects.get(token=raw_token)
-        if not token.valid:
-            return HttpResponse("The token is expired. Try restarting the app.", status=401)
-        remote_user = token.user.get_username()
-        response = HttpResponse(remote_user, status=200)
-        response["REMOTE_USER"] = remote_user
-        response["ACCESS_TOKEN"] = token.token
-        return response
-    except UserIdentityToken.DoesNotExist:
-        return HttpResponse("The token does not exist. Try restarting the app.", status=401)
 
 
 @login_required

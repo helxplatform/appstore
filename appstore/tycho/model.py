@@ -207,9 +207,7 @@ class System:
         username_remove_us = self.username.replace("_", "-")
         username_remove_dot = username_remove_us.replace(".", "-")
         self.username_all_hyphens = username_remove_dot
-        self.access_token = principal.get("access_token")
         self.host = principal.get("host")
-        self.extra_container_env = principal.get("extra_container_env", {})
         self.annotations = {}
         self.namespace = "default"
         self.serviceaccount = service_account
