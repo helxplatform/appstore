@@ -80,6 +80,17 @@ class ResourceRequest:
     resources: dict = None
 
     def __post_init__(self):
+        
+        # Dividing resources by 2 for reservations
+        # This helps in cloud scenarios to reduce costs.
+        if self.cpus >= 0.5:
+            self.cpus_reservation = self.cpus / 2  # Allow fractional CPU reservation
+        else:
+            self.cpus_reservation = self.cpus
+        self.gpus_reservation = self.gpus
+        # self.gpus_reservation = self.gpus // 2  # Use floor division for integer GPUs
+        self.memory_reservation = self._divide_memory(self.memory)
+        
         self.resources = {
             "deploy": {
                 "resources": {
@@ -90,14 +101,64 @@ class ResourceRequest:
                         "ephemeralStorage": self.ephemeralStorage,
                     },
                     "reservations": {
-                        "cpus": self.cpus,
-                        "memory": self.memory,
-                        "gpus": self.gpus,
+                        "cpus": self.cpus_reservation,
+                        "memory": self.memory_reservation,
+                        "gpus": self.gpus_reservation,
                         "ephemeralStorage": self.ephemeralStorage,
                     },
                 }
             }
         }
+        
+    def _divide_memory(self, memory: str) -> str:
+        """Helper method to divide memory by 2 (converting G to M and ensuring result is never less than 100M)."""
+        # Case for G (Gigabytes) - SI prefix
+        if memory.endswith("G"):
+            value = float(memory[:-1])  # Extract numeric value (removes 'G' suffix)
+            # Convert G (Gigabytes) to M (Megabytes) - SI (1 GB = 1000 MB)
+            value_in_m = value * 1000
+            # Divide the value by 2
+            divided_value = value_in_m / 2
+            # Ensure the result is not less than 100M
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}M"
+        
+        # Case for M (Megabytes) - SI prefix
+        elif memory.endswith("M"):
+            value = float(memory[:-1])  # Extract numeric value (removes 'M' suffix')
+            # Divide the value by 2
+            divided_value = value / 2
+            # Ensure the result is not less than 100M
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}M"
+        
+        # Case for Gi (Gibibytes) - IEC prefix
+        elif memory.endswith("Gi"):
+            value = float(memory[:-2])  # Extract numeric value (removes 'Gi' suffix)
+            # Convert Gi (Gibibytes) to Mi (Mebibytes) - IEC (1 Gi = 1024 Mi)
+            value_in_mi = value * 1024
+            # Divide the value by 2
+            divided_value = value_in_mi / 2
+            # Ensure the result is not less than 100Mi
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}Mi"
+        
+        # Case for Mi (Mebibytes) - IEC prefix
+        elif memory.endswith("Mi"):
+            value = float(memory[:-2])  # Extract numeric value (removes 'Mi' suffix)
+            # Divide the value by 2
+            divided_value = value / 2
+            # Ensure the result is not less than 100Mi
+            if divided_value < 100:
+                divided_value = 100
+            return f"{int(divided_value)}Mi"
+        # Default case for unrecognized memory format
+        else:
+            return memory  # Return as is if the format is not recognized
+
 
 
 @dataclass
