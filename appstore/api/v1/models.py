@@ -84,7 +84,7 @@ class ResourceRequest:
         # Dividing resources by 2 for reservations
         # This helps in cloud scenarios to reduce costs.
         if self.cpus >= 0.5:
-            self.cpus_reservation = self.cpus / 2  # Allow fractional CPU reservation
+            self.cpus_reservation = 0.5  # Allow fractional CPU reservation
         else:
             self.cpus_reservation = self.cpus
         self.gpus_reservation = self.gpus
