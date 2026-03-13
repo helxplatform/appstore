@@ -114,10 +114,24 @@ def HelxSpaRedirectView(request):
 
 class HelxSpaLoaderView(TemplateView):
     """
-    Serve frontend artifact after authentication.
+    Serve the React SPA in production (frontend/index.html built artifact),
+    or fall back to the Django landing page in local dev when the build
+    artifact is not present.
     """
 
-    template_name = "frontend/index.html"
+    brand_context = get_brand_details()
+
+    def get_template_names(self):
+        return ["frontend/index.html", "frontend/landing.html"]
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx.update(
+            brand=self.brand_context["brand"],
+            brand_logo=self.brand_context["logo_url"],
+            brand_links=self.brand_context["links"],
+        )
+        return ctx
 
     # @method_decorator(login_required(login_url=reverse_lazy("helx_login")))
     def dispatch(self, *args, **kwargs):

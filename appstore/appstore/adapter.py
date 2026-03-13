@@ -1,6 +1,8 @@
 import logging
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.models import SocialAccount
+from allauth.account.utils import filter_users_by_email
 
 from django.conf import settings
 from django.forms import ValidationError
@@ -68,6 +70,45 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
     #     user = super().populate_user(request, sociallogin, data)
     #     print('sociallogin.account.extra_data:', sociallogin.account.extra_data)
     #     return user
+
+    def pre_social_login(self, request, sociallogin):
+        """
+        Connect the incoming social login to an existing user account when
+        the email address already exists in the database, preventing the
+        Django sign-in/signup page from appearing for returning users.
+
+        This covers two cases that SOCIALACCOUNT_EMAIL_AUTHENTICATION alone
+        does not handle:
+        1. The provider does not mark the email as verified (e.g. some OIDC/
+           Dex/CILogon configurations), so allauth's _lookup_by_email skips it.
+        2. The existing account was created via SAML/Django login and has no
+           linked SocialAccount record, so _lookup_by_socialaccount also fails.
+        """
+        if sociallogin.is_existing:
+            return
+
+        email_addresses = sociallogin.email_addresses
+        if not email_addresses:
+            return
+
+        # Try every email the provider returned, verified or not.
+        for email_obj in email_addresses:
+            email = email_obj.email
+            if not email:
+                continue
+            users = filter_users_by_email(email, prefer_verified=True)
+            if not users:
+                continue
+            existing_user = users[0]
+            # Connect this social account to the existing user so that
+            # allauth treats the login as an existing account rather than
+            # triggering the signup/confirmation flow.
+            sociallogin.connect(request, existing_user)
+            logger.info(
+                f"pre_social_login: connected {sociallogin.account.provider} "
+                f"social account to existing user '{existing_user}' via email match"
+            )
+            return
 
     def on_authentication_error(self, request, provider, error=None, exception=None, extra_context=None):
         provider_id = provider.id if provider else "unknown"
