@@ -31,9 +31,9 @@ spec:
   {% if container.limits or container.requests %}
   {% if container.limits.gpus != None and loop.first %}
   tolerations:
-  - key: "workload"
+  - key: "gpupool"
     operator: "Equal"
-    value: "notebook"
+    value: "a100m1"
     effect: "NoSchedule"
   {% endif %}
   {% endif %}
