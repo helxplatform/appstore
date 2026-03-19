@@ -189,7 +189,9 @@ AUTHENTICATION_BACKENDS = (
 )
 
 ACCOUNT_ADAPTER = "appstore.adapter.LoginRedirectAdapter"
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
+# Start of fix for ASVS req_id V12.2.1
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "https")
+# End of fix for req_id V12.2.1
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_RATE_LIMITS= {'login_failed':10}
@@ -204,6 +206,27 @@ SAML_ACS_URL = "/saml2_auth/acs/"
 #SAML_ACS_URL = "/sso/acs/"
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
+# Start of fix for ASVS req_id V3.3.1
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# End of fix for req_id V3.3.1
+
+# Start of fix for ASVS req_id V3.3.2
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+# End of fix for req_id V3.3.2
+
+# Start of fix for ASVS req_id V3.4.1
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+# End of fix for req_id V3.4.1
+
+# Start of fix for ASVS req_id V7.3.2
+SESSION_COOKIE_AGE = 86400  # 24-hour absolute session lifetime
+# End of fix for req_id V7.3.2
 
 TEMPLATES = [
     {
@@ -242,6 +265,16 @@ REST_FRAMEWORK = {
     ],
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Start of fix for ASVS req_id V2.4.1
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "60/hour",
+        "user": "1000/hour",
+    },
+    # End of fix for req_id V2.4.1
 }
 
 SPECTACULAR_DEFAULTS = {
@@ -417,6 +450,21 @@ LOGGING = {
 
 csrf_strings = os.environ.get("CSRF_DOMAINS", "")
 CSRF_TRUSTED_ORIGINS = [] if len(csrf_strings) == 0 else csrf_strings.split(',')
+
+# Start of fix for ASVS req_id V3.4.2
+cors_origins_string = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_origins_string.split(',') if o.strip()] if cors_origins_string else []
+# End of fix for req_id V3.4.2
+
+# Start of fix for ASVS req_id V6.2.11
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 12}},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "core.validators.ContextWordlistValidator"},
+]
+# End of fix for req_id V6.2.11
 
 # All debug settings
 if DEBUG and DEV_PHASE in ("local", "stub", "dev"):

@@ -41,7 +41,9 @@ def pre_login(sender, request, sociallogin, **kwargs):
     if sociallogin.token:
         access_token = sociallogin.token
         request.session["Authorization"] = f"Bearer {access_token}"
-        logger.debug(f'{"----------> Adding Bearer token to the user session"}')
+        # Start of fix for ASVS req_id V16.2.5
+        logger.debug("----------> Adding Bearer token to the user session")
+        # End of fix for req_id V16.2.5
 
 
 def get_brand_details(brand):
@@ -119,10 +121,12 @@ def auth(request):
         except Exception as e:
             response = HttpResponse(content_type="application/json", status=403)
             response["REMOTE_USER"] = request.user
-            logger.debug(
-                f"----------> exception {e.__class__.__name__} \
-                with the remote user ----- {request.user} "
+            # Start of fix for ASVS req_id V16.3.4
+            logger.error(
+                f"----------> exception {e.__class__.__name__} "
+                f"with the remote user ----- {request.user}"
             )
+            # End of fix for req_id V16.3.4
     else:
         response = HttpResponse(content_type="application/json", status=403)
         response["REMOTE_USER"] = request.user

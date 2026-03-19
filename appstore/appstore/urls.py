@@ -6,6 +6,10 @@ from django.views.static import serve
 
 from django_saml2_auth import views as saml2_auth_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+# Start of fix for ASVS req_id V13.4.5
+from rest_framework.permissions import IsAdminUser
+from drf_spectacular.utils import extend_schema
+# End of fix for req_id V13.4.5
 
 from core.views import custom404
 from frontend.views import HelxLoginView
@@ -27,13 +31,15 @@ urlpatterns += [
     path("", include("frontend.urls")),
 ]
 
+# Start of fix for ASVS req_id V13.4.5
 urlpatterns += [
-    path("api/schema/", SpectacularAPIView.as_view(), name="api-schema"),
+    path("api/schema/", SpectacularAPIView.as_view(permission_classes=[IsAdminUser]), name="api-schema"),
     path(
         "api/schema/swagger-ui/",
-        SpectacularSwaggerView.as_view(url_name="api-schema"),
+        SpectacularSwaggerView.as_view(url_name="api-schema", permission_classes=[IsAdminUser]),
         name="swagger-ui",
     ),
+# End of fix for req_id V13.4.5
     path(
         "favicon.ico",
         RedirectView.as_view(url="/static/images/favicon.ico", permanent=True),

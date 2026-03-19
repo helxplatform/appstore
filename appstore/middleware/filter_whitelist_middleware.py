@@ -12,6 +12,9 @@ from django.core.mail import send_mail
 from smtplib import SMTPSenderRefused, SMTPResponseException
 
 from ldap3 import Server, Connection, SUBTREE  # NEW
+# Start of fix for ASVS req_id V1.2.6
+from ldap3.utils.conv import escape_filter_chars
+# End of fix for req_id V1.2.6
 from core.models import AuthorizedUser
 
 
@@ -57,7 +60,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
             return False
 
         base   = os.getenv("LDAP_SEARCH_BASE", group_dn.split(",", 1)[1])
-        flt    = f"(|(mail={user.email})(uid={user.username}))"
+        # Start of fix for ASVS req_id V1.2.6
+        flt    = f"(|(mail={escape_filter_chars(user.email)})(uid={escape_filter_chars(user.username)}))"
+        # End of fix for req_id V1.2.6
         logger.debug("[LDAP] Searching base=%s filter=%s", base, flt)
 
         try:
@@ -118,7 +123,12 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
                     whitelist_group = Group.objects.get(name="whitelisted")
                     user.groups.add(whitelist_group)
                 else:
-                    logger.info("Filtering user %s is not authorized", user)
+                    # Start of fix for ASVS req_id V16.3.2
+                    logger.warning(
+                        "Authorization DENIED for user %s (%s) on path %s",
+                        user.username, user.email, request.path
+                    )
+                    # End of fix for req_id V16.3.2
                     self.clear_session(request)
                     try:
                         self.send_whitelist_email(request, user)
