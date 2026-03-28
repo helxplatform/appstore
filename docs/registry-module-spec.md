@@ -13,31 +13,37 @@ The HeLx AppStore needs to know *what applications exist* before it can
 instantiate them as Kubernetes workloads.  That catalog comes from a
 **YAML app-registry file** — a declarative document that lists every
 launchable application together with its metadata, container images,
-ports, environment, security contexts, and docker-compose spec URLs.
+ports, environment, and security contexts.
 
 Today this processing lives inside `TychoContext` (context.py lines
 45–180).  Its job is to:
 
-1. Load the registry YAML (from a local file or a remote URL).
+1. Load the registry YAML from a local file.
 2. Load a defaults YAML that is merged into every app.
 3. Resolve a **product context** (e.g. `"braini"`, `"helx"`,
    `"eduhelx"`) — a named slice of the full registry.
 4. Walk the context's **inheritance chain** (`extends`) to assemble the
    final set of apps via depth-first deep-merge.
-5. Resolve **repository URLs** via string interpolation so each app gets
-   an absolute URL to its `docker-compose.yaml` specification.
-6. On demand, **fetch** each app's docker-compose spec from that URL,
+5. Resolve **spec paths** so each app points to its local
+   `docker-compose.yaml` specification.
+6. On demand, **load** each app's docker-compose spec from that path,
    render Jinja2 template variables, and cache the result.
-7. On demand, **fetch** the companion `.env` file for an app.
+7. On demand, **load** the companion `.env` file for an app.
 8. Merge registry-level `env` overrides into the settings.
 9. When starting an app, merge the user's resource request, security
-   context, ephemeral-storage, service account,
-   and connection-string into the spec — then hand the whole thing to
-   the compute backend.
+   context, ephemeral-storage, and service account into the spec — then
+   hand the whole thing to the compute backend.
 
 The new `registry` module must perform steps 1–8 identically (or with
 clearly documented improvements) and replace step 9 with production of
 `HelxAppSpec` / `HelxInstSpec` objects from the `kube.models` module.
+
+> **Note — local-only registry.**  The legacy code supported fetching
+> the registry and app specs from remote git URLs.  This added
+> complexity (URL resolution, HTTP caching, branch-name substitution)
+> that caused more problems than it solved.  The new module assumes all
+> files — registry YAML, defaults YAML, docker-compose specs, and `.env`
+> files — are present on the local filesystem.
 
 ---
 
@@ -55,10 +61,8 @@ metadata:
   name: HeLx Application Registry
   author: HeLx Dev
 
-repositories:
-  helx_apps:
-    description: Main repository for HeLx Apps
-    url: app-specs          # relative or absolute URL
+spec_dir: app-specs            # Base directory for docker-compose specs
+                               # (relative to registry file, or absolute)
 
 settings:                   # Jinja2 template variables for docker-compose
   helx_registry: containers.renci.org
@@ -111,8 +115,8 @@ contexts:
 | `contexts.<name>.extends` | list of strings | Inheritance — apps from all named contexts are deep-merged depth-first; child values override parent values at every nesting level |
 | `contexts.<name>.apps` | dict | App definitions local to this context |
 | `contexts.<name>.<app_id>` | dict (top-level key matching an app name) | Context-level overrides — typically `securityContext` — merged onto the app after inheritance resolution |
-| `repositories.<name>.url` | string | Base URL for building spec paths; may be relative to `tycho_config_url` |
-| `settings` | dict | Jinja2 variables substituted into docker-compose specs at fetch time |
+| `spec_dir` | string | Base directory for docker-compose specs; relative to registry file location, or absolute |
+| `settings` | dict | Jinja2 variables substituted into docker-compose specs at load time |
 
 > **Note — `mixin` keyword removed.** The legacy registry used both
 > `extends` (shallow copy of app catalog) and `mixin` (deep-merge of
@@ -132,8 +136,8 @@ These fields appear inside `contexts.<ctx>.apps.<app_id>`:
 | `details` | str | yes | Long description |
 | `docs` | str | yes | Documentation URL |
 | `services` | dict[str, str\|int] | yes | Map of container name → exposed port. Exactly one entry is typical. The key must match a service name in the app's docker-compose. |
-| `spec` | str | no | Explicit URL to docker-compose.yaml. If absent, synthesized from `{repo_url}/{app_id}/docker-compose.yaml` |
-| `icon` | str | auto | Synthesized as sibling of spec URL |
+| `spec` | str | no | Explicit path to docker-compose.yaml. If absent, synthesized as `{spec_dir}/{app_id}/docker-compose.yaml` |
+| `icon` | str | auto | Synthesized as sibling of spec path |
 | `count` | int | yes | Max concurrent instances per user. `-1` = unlimited, `1` = singleton |
 | `serviceAccount` | str | no | K8s service account name for the pod |
 | `securityContext` | dict | no | `{runAsUser, runAsGroup, fsGroup}` — applied at pod level |
@@ -219,26 +223,23 @@ for app_id in apps:
 Uses `deepmerge.Merger` with strategy: lists override, dicts merge, sets
 union.  Defaults provide the base; app values win on conflict.
 
-### Step 4: Resolve spec URLs
+### Step 4: Resolve spec paths
 
 ```python
-repo_map = {name: r["url"] for name, r in registry["repositories"].items()}
+spec_dir = registry.get("spec_dir", ".")
+if not os.path.isabs(spec_dir):
+    spec_dir = os.path.join(registry_dir, spec_dir)
 
 for app_id, app in apps.items():
     if "spec" not in app:
-        repo_url = first(repo_map.values())
-        if not repo_url.startswith("http"):
-            repo_url = urljoin(config_base_url, repo_url)
-        app["spec"] = f"{repo_url}/{app_id}/docker-compose.yaml"
-    app["icon"] = dirname(app["spec"]) + "/icon.png"
-    for key in ["spec", "icon", "docs"]:
-        app[key] = Template(app[key]).safe_substitute(repo_map)
+        app["spec"] = os.path.join(spec_dir, app_id, "docker-compose.yaml")
+    app["icon"] = os.path.join(os.path.dirname(app["spec"]), "icon.png")
 ```
 
 ### Result
 
 `apps` is a `dict[str, dict]` where each value has all the fields from
-§2.2 resolved, plus the synthesized `spec`, `icon` URLs.
+§2.2 resolved, plus the synthesized `spec`, `icon` paths.
 
 ### Resolution order (priority low → high)
 
@@ -250,32 +251,28 @@ for app_id, app in apps.items():
 
 ---
 
-## 4. Lazy Fetching (get_spec, get_definition, get_settings)
+## 4. Lazy Loading (get_spec, get_settings)
 
-After `_grok()`, the app dict has a `spec` URL but not the actual
-docker-compose content.  Three methods fetch lazily and cache:
+After resolution, the app dict has a `spec` path but not the actual
+docker-compose content.  Two methods load lazily and cache:
 
 ### `get_spec(app_id)` → dict
 
 1. Check `apps[app_id]["spec_obj"]` cache.
-2. HTTP GET the `spec` URL.
+2. Read the `spec` file from disk.
 3. Parse YAML.
 4. Render as a Jinja2 template with `registry["settings"]` as context.
 5. Parse YAML again (template output may contain template expressions).
 6. Cache in `apps[app_id]["spec_obj"]`.
 
-### `get_definition(app_id)` → dict
-
-Identical to `get_spec` but caches in `apps[app_id]["definition"]`.
-(These two methods appear to be near-duplicates; the new module should
-unify them.)
+(The legacy `get_definition()` was a near-duplicate of `get_spec()`;
+the new module unifies them into a single method.)
 
 ### `get_settings(app_id)` → str
 
-1. Derive `.env` URL as sibling of the `spec` URL.
-2. HTTP GET.
-3. Return raw text (or empty string on 404).
-4. Cache in `apps[app_id]["env_obj"]`.
+1. Derive `.env` path as sibling of the `spec` path.
+2. Read file (or return empty string if absent).
+3. Cache in `apps[app_id]["env_obj"]`.
 
 ### `get_env_registry(app_id, settings)` → dict
 
@@ -288,7 +285,7 @@ into the settings dict.
 
 When a user launches an app, `TychoContext.start()` does final assembly:
 
-1. Fetch and parse docker-compose via `get_spec(app_id)`.
+1. Load and parse docker-compose via `get_spec(app_id)`.
 2. Parse `.env` via `get_settings(app_id)`, merge registry env.
 3. Read the `services` port map from the app dict.
 4. Read optional `serviceAccount`.
@@ -311,8 +308,8 @@ from the registry data + a `HelxInstSpec` from the user's request.
 ```
 appstore/kube/registry/
 ├── __init__.py          # Public API: AppRegistry class
-├── loader.py            # Load YAML from file or URL, Jinja2 rendering
-├── resolver.py          # The core algorithm: extends resolution, defaults, URL resolution
+├── loader.py            # Load YAML from local files, Jinja2 rendering
+├── resolver.py          # The core algorithm: extends resolution, defaults, path resolution
 ├── spec_builder.py      # Convert resolved app dict → HelxAppSpec
 ├── models.py            # ResolvedApp dataclass (intermediate representation)
 └── tests/
@@ -336,8 +333,8 @@ class ResolvedApp:
     description: str
     details: str
     docs_url: str
-    spec_url: str
-    icon_url: str
+    spec_path: str
+    icon_path: str
     services: dict[str, int]         # container_name → port
     count: int = 1
     service_account: str | None = None
@@ -353,27 +350,23 @@ class ResolvedApp:
 
 ```
 
-### 6.3 `loader.py` — Configuration & Spec Fetching
+### 6.3 `loader.py` — Configuration & Spec Loading
 
 Responsibilities:
-- Load YAML from local filesystem path or HTTP URL.
-- Manage an HTTP session with caching (`requests_cache` or stdlib).
-- Fetch and render docker-compose specs (Jinja2 with `settings`).
-- Fetch `.env` files.
+- Load YAML from local filesystem paths.
+- Load and render docker-compose specs (Jinja2 with `settings`).
+- Load `.env` files.
 
 ```python
 class RegistryLoader:
-    def __init__(self, base_url: str = ""):
-        """base_url: if non-empty, configs are fetched via HTTP."""
+    def load_config(self, path: str) -> dict:
+        """Load YAML from a local file."""
 
-    def load_config(self, filename: str) -> dict:
-        """Load YAML from file or URL."""
+    def load_spec(self, spec_path: str, settings: dict) -> dict:
+        """Read file + Jinja2 render + YAML parse."""
 
-    def fetch_spec(self, spec_url: str, settings: dict) -> dict:
-        """HTTP GET + Jinja2 render + YAML parse."""
-
-    def fetch_settings(self, spec_url: str) -> str:
-        """Fetch the .env sibling of a spec URL."""
+    def load_settings(self, spec_path: str) -> str:
+        """Read the .env sibling of a spec path (empty string if absent)."""
 ```
 
 ### 6.4 `resolver.py` — The Core Algorithm
@@ -393,7 +386,7 @@ def resolve_apps(
        with deep-merge — handles inheritance, property overlay,
        and context-level overrides in one traversal)
     3. Merge defaults
-    4. Resolve spec/icon/docs URLs
+    4. Resolve spec/icon paths
     Returns the fully resolved app dict.
     """
 
@@ -411,17 +404,17 @@ def resolve_context(
 def apply_defaults(apps: dict, defaults: dict) -> None:
     """Deep-merge defaults into each app (in place)."""
 
-def resolve_urls(
+def resolve_paths(
     apps: dict,
-    repositories: dict,
-    base_url: str,
+    spec_dir: str,
+    registry_dir: str,
 ) -> None:
-    """Synthesize and interpolate spec/icon/docs URLs."""
+    """Synthesize spec and icon filesystem paths."""
 ```
 
 ### 6.5 `spec_builder.py` — Registry → CRD Conversion
 
-Converts a `ResolvedApp` plus a fetched docker-compose spec into
+Converts a `ResolvedApp` plus a loaded docker-compose spec into
 `HelxAppSpec` / `HelxInstSpec` from `kube.models`.
 
 ```python
@@ -462,14 +455,13 @@ concerns.
 class AppRegistry:
     def __init__(
         self,
-        registry_config: str = "app-registry.yaml",
-        defaults_config: str = "app-defaults.yaml",
+        registry_path: str = "app-registry.yaml",
+        defaults_path: str = "app-defaults.yaml",
         product: str = "common",
-        base_url: str = "",
     ):
-        self.loader = RegistryLoader(base_url)
-        raw_registry = self.loader.load_config(registry_config)
-        raw_defaults = self.loader.load_config(defaults_config)
+        self.loader = RegistryLoader()
+        raw_registry = self.loader.load_config(registry_path)
+        raw_defaults = self.loader.load_config(defaults_path)
         self.settings = raw_registry.get("settings", {})
         self._raw_apps = resolve_apps(raw_registry, raw_defaults, product)
         self.apps: dict[str, ResolvedApp] = {
@@ -483,16 +475,13 @@ class AppRegistry:
         """Return all resolved apps."""
 
     def get_spec(self, app_id: str) -> dict:
-        """Lazy-fetch and cache the docker-compose spec."""
-
-    def get_definition(self, app_id: str) -> dict:
-        """Lazy-fetch and cache the app definition (same as spec)."""
+        """Lazy-load and cache the docker-compose spec from disk."""
 
     def get_settings(self, app_id: str) -> dict[str, str]:
-        """Lazy-fetch the .env, merge registry env, return as dict."""
+        """Lazy-load the .env, merge registry env, return as dict."""
 
     def build_helxapp(self, app_id: str) -> HelxAppSpec:
-        """Fetch spec, convert to HelxAppSpec."""
+        """Load spec, convert to HelxAppSpec."""
 
     def build_helxinst(
         self,
@@ -514,12 +503,12 @@ class AppRegistry:
 | Two separate keywords (`extends` + `mixin`) with two recursive traversals for what is logically one operation | Single `extends` keyword with deep-merge semantics — one recursive pass handles catalog assembly and property overlay |
 | `inherit()` uses a mutable default argument (`apps={}`) — a classic Python bug that causes cross-call contamination | `resolve_context()` uses `None` default with explicit fresh-dict creation |
 | `add_conf_impl()` is a recursive function with unclear purpose | Bare-key override handling is a clear final step inside `resolve_context()` |
-| `get_spec()` and `get_definition()` are near-identical | Unify into a single internal `_fetch_and_render_spec()`, expose two names if needed for compatibility |
+| `get_spec()` and `get_definition()` are near-identical | Unified into a single `get_spec()` that loads from disk |
 | App dict is an untyped `dict` — callers guess at keys | `ResolvedApp` dataclass with documented fields |
-| `start()` mixes registry concerns (fetch spec, merge env) with compute concerns (build request, call API) | Registry module handles catalog; `kube.helxapps` / `kube.helxinsts` handle CRD creation. Clean separation. |
+| `start()` mixes registry concerns (load spec, merge env) with compute concerns (build request, call API) | Registry module handles catalog; `kube.helxapps` / `kube.helxinsts` handle CRD creation. Clean separation. |
 | Jinja2 rendering happens with `str(dict)` → template → `yaml.safe_load()` which is fragile | Use `yaml.dump()` → Jinja2 render → `yaml.safe_load()` consistently; document the double-pass pattern |
-| Error handling swallows exceptions in several places | Raise typed exceptions (`RegistryError`, `SpecFetchError`) |
-| No unit tests for the resolution algorithm | `test_resolver.py` tests inheritance/defaults/URL resolution with synthetic YAML fixtures — no HTTP needed |
+| Error handling swallows exceptions in several places | Raise typed exceptions (`RegistryError`, `SpecLoadError`) |
+| No unit tests for the resolution algorithm | `test_resolver.py` tests inheritance/defaults/path resolution with synthetic YAML fixtures |
 
 ---
 
@@ -538,23 +527,21 @@ class AppRegistry:
 | `test_extends_order_matters` | `extends: [a, b]` — b's values override a's for the same field |
 | `test_defaults_merged` | Every app gets default fields |
 | `test_defaults_app_wins_on_conflict` | App's explicit value overrides default |
-| `test_url_resolution_relative` | Relative repo URL + base_url produces absolute spec URL |
-| `test_url_resolution_absolute` | Absolute repo URL is used directly |
-| `test_url_interpolation` | `$helx_apps` in URL is substituted from repository map |
+| `test_path_resolution_relative` | Relative `spec_dir` + registry dir produces absolute spec path |
+| `test_path_resolution_absolute` | Absolute `spec_dir` is used directly |
 | `test_context_override_security_context` | `braini.jupyter-ds.securityContext` applied to app |
 | `test_unknown_product_raises` | Requesting a non-existent product raises an error |
 | `test_cycle_detection` | `extends` cycle raises an error rather than infinite recursion |
 | `test_registry_example_braini` | Load `fu/registry-example.yaml`, resolve `braini`, verify expected apps and securityContexts |
 
-### 8.2 `test_loader.py` — I/O (Mocked HTTP)
+### 8.2 `test_loader.py` — File I/O
 
 | Test | What It Verifies |
 |------|-----------------|
-| `test_load_local_file` | Loads YAML from filesystem |
-| `test_load_remote_url` | HTTP GET + YAML parse (mocked) |
-| `test_fetch_spec_renders_jinja2` | `{{ helx_registry }}` in docker-compose is substituted |
-| `test_fetch_settings` | `.env` sibling URL is fetched |
-| `test_fetch_settings_404_returns_empty` | Missing `.env` returns `""` |
+| `test_load_config` | Loads YAML from a local file |
+| `test_load_spec_renders_jinja2` | `{{ helx_registry }}` in docker-compose is substituted |
+| `test_load_settings` | `.env` sibling file is read |
+| `test_load_settings_missing_returns_empty` | Missing `.env` returns `""` |
 
 ### 8.3 `test_spec_builder.py` — Conversion
 
@@ -572,7 +559,7 @@ class AppRegistry:
 |------|-----------------|
 | `test_list_apps_returns_all` | All apps for the product are present |
 | `test_get_app_metadata` | Name, description, docs, services are correct |
-| `test_get_spec_caches` | Second call returns cached result, no second HTTP fetch |
+| `test_get_spec_caches` | Second call returns cached result, file read only once |
 | `test_build_helxapp_end_to_end` | Full pipeline: registry YAML → `HelxAppSpec` |
 
 ---
@@ -591,7 +578,7 @@ class AppRegistry:
                 │                     │
                 │  resolve_context()  │
                 │  apply_defaults()   │
-                │  resolve_urls()     │
+                │  resolve_paths()    │
                 └────────┬────────────┘
                          │
               dict[app_id, dict]  (raw resolved)
@@ -606,7 +593,7 @@ class AppRegistry:
     .list_apps()    .get_spec()    .build_helxapp()
           │              │              │
           │    RegistryLoader      spec_builder
-          │    .fetch_spec()       .build_helxapp_spec()
+          │    .load_spec()        .build_helxapp_spec()
           │              │              │
           ▼              ▼              ▼
     UI app catalog   dict (compose)  HelxAppSpec ──→ HelxAppManager.ensure()
@@ -625,7 +612,6 @@ class AppRegistry:
 | `PyYAML` | YAML parsing | Yes |
 | `Jinja2` | Template rendering in docker-compose specs | Yes |
 | `deepmerge` | Dict deep-merge with configurable strategy | Yes (used by TychoContext) |
-| `requests` / `requests_cache` | HTTP fetching of remote configs and specs | Yes |
 
 No new dependencies required.
 
