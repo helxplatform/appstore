@@ -1,0 +1,44 @@
+{
+  "name": "Ubuntu + Go + Python + Node",
+  "dockerFile": "Dockerfile",
+
+  // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+  // "remoteUser": "root"
+  "remoteUser": "vscode",
+
+  "features": {
+    "ghcr.io/jungaretti/features/make:1": {},
+    "ghcr.io/devcontainers/features/go:1":     { "version": "1.24" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" }
+  },
+
+  "runArgs": [
+    "--env-file", "${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}/local.env"
+  ],
+
+  // Mount Claude credentials to persist across container rebuilds, per-project
+  "mounts": [
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}/claude/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}/claude/.claude.json,target=/home/vscode/.claude.json,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}/claude/.claude.json.backup,target=/home/vscode/.claude.json.backup,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}/codex,target=/home/vscode/.codex,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}/kube-config,target=/home/vscode/.kube/config,type=bind,consistency=cached",
+    "source=${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}/kube-cache,target=/home/vscode/.kube/cache,type=bind,consistency=cached"
+  ],
+
+  "initializeCommand": "bash -lc '.devcontainer/init.sh ${localEnv:HOME}${localEnv:USERPROFILE}/.vscode-projects/${localWorkspaceFolderBasename}'"
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  // "features": {},
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  // "forwardPorts": [],
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": "bash .devcontainer/post-create.sh"
+
+  // Configure tool-specific properties.
+  // "customizations": {},
+
+}
