@@ -1,6 +1,6 @@
 # Registry Module Specification
 
-Design document for `appstore/kube/registry/` — the app-registry
+Design document for `appstore/registry/` — the app-registry
 processing module that replaces `TychoContext._grok()` and related
 methods, producing `HelxApp` specs consumable by the
 helxapp-controller.
@@ -301,12 +301,12 @@ from the registry data + a `HelxInstSpec` from the user's request.
 
 ---
 
-## 6. Module Design for `appstore/kube/registry/`
+## 6. Module Design for `appstore/registry/`
 
 ### 6.1 File Layout
 
 ```
-appstore/kube/registry/
+appstore/registry/
 ├── __init__.py          # Public API: AppRegistry class
 ├── loader.py            # Load YAML from local files, Jinja2 rendering
 ├── resolver.py          # The core algorithm: extends resolution, defaults, path resolution
