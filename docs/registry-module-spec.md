@@ -144,7 +144,7 @@ These fields appear inside `contexts.<ctx>.apps.<app_id>`:
 | `ext.kube.livenessProbe` | dict | no | Probe definition: `{cmd, delay, period}` or `{httpGet: {path, port}, delay, period}` |
 | `ext.kube.readinessProbe` | dict\|str | no | Same as liveness, or the string `"none"` to disable |
 | `env` | dict | no | Extra env vars merged into docker-compose settings |
-| `gitea-integration` | bool | no | Enables Gitea VCS integration |
+
 
 ### 2.3 The Defaults File (`app-defaults.yaml`)
 
@@ -351,7 +351,7 @@ class ResolvedApp:
     conn_string: str = ""
     env: dict[str, str] = field(default_factory=dict)
     ext: dict | None = None          # kube extensions (probes)
-    gitea_integration: bool = False
+
 
     # Lazily populated by the loader
     spec_obj: dict | None = None     # Parsed docker-compose
