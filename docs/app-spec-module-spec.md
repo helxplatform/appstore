@@ -173,6 +173,158 @@ The compose file may contain Jinja2 expressions like
 module sees the dict — the loader handles this.  The appspec module
 receives a fully resolved dict with no template expressions.
 
+### 2.8 Extended Resource Model (`x-helx-resources`)
+
+Standard docker-compose `deploy.resources` is insufficient for
+Kubernetes and the appstore UI because:
+
+1. **GPU resources** on Kubernetes are not simple counts — they are
+   typed extended resources (e.g. `nvidia.com/gpu`) managed by device
+   plugins.  The compose `gpus` field and `devices[].capabilities`
+   syntax have no way to name the resource type.
+2. **The appstore UI** presents sliders that let users choose resource
+   levels between a minimum and maximum.  Compose only has
+   `limits` (max) and `reservations` (min request), but no concept of
+   "the user may choose anywhere in this range."
+3. **Kubernetes distinguishes requests from limits** for scheduling vs.
+   OOM-kill thresholds.  The compose model conflates reservations
+   (scheduling) with what should be independently tunable
+   request/limit pairs.
+
+To address these, the spec file supports an `x-helx-resources`
+extension alongside (or instead of) the standard `deploy.resources`.
+The parser reads `x-helx-resources` when present; if absent, it falls
+back to the standard compose resources.
+
+```yaml
+version: "3"
+services:
+  jupyter:
+    image: jupyter/scipy:latest
+    ports:
+      - 8888:8888
+    x-helx-resources:
+      bounds:
+        cpu:
+          min: "0.5"
+          max: "8"
+          default_request: "1"
+          default_limit: "4"
+        memory:
+          min: 512Mi
+          max: 32Gi
+          default_request: 1Gi
+          default_limit: 4Gi
+        gpu:
+          resource_name: nvidia.com/gpu    # explicit K8s resource name
+          min: "0"
+          max: "2"
+          default_request: "0"
+          default_limit: "0"
+        ephemeral-storage:
+          min: 1Gi
+          max: 50Gi
+          default_request: 5Gi
+          default_limit: 10Gi
+      lock: false          # if true, request == limit (no slider)
+```
+
+#### Design rationale
+
+| Concept | Where it lives | Who consumes it |
+|---------|---------------|-----------------|
+| **bounds** (min/max per resource) | `x-helx-resources.bounds` in spec → `resourceBounds` in HelxApp CRD | Appstore UI: populates slider range |
+| **default request/limit** | `default_request` / `default_limit` in each bound | Appstore UI: initial slider position; HelxInst if user accepts defaults |
+| **actual request/limit** | User's slider choice → `HelxInstSpec.resources[svc].request` / `.limit` | Controller: applied to the Pod |
+| **GPU resource name** | `gpu.resource_name` (defaults to `nvidia.com/gpu`) | Controller: used as the K8s resource key |
+| **lock** | `x-helx-resources.lock` | If true, UI hides sliders; request == limit == default |
+
+This maps cleanly to the existing CRD model:
+
+- `HelxApp.spec.services[].resourceBounds` stores the bounds and
+  defaults — advisory, not enforced by the controller.
+- `HelxInst.spec.resources[svc].request` / `.limit` stores the user's
+  actual choice, validated against bounds by appstore before creating
+  the CRD.
+- The controller applies the HelxInst resources to the Pod spec.
+
+#### Fallback to compose resources
+
+When `x-helx-resources` is absent, the parser falls back to the
+standard compose model:
+
+| Compose | Interpreted as |
+|---------|---------------|
+| `deploy.resources.limits` | max bound and default limit |
+| `deploy.resources.reservations` | min bound and default request |
+
+This preserves backward compatibility with existing spec files.
+
+### 2.9 Per-User Substitution (`x-helx-vars`)
+
+Today, `System.parse()` does a fragile double-pass: it dumps the
+entire spec to YAML, renders it as a Jinja2 template with env vars
+containing `username`, `identifier`, etc., then re-parses.  This
+conflates two distinct template passes (registry-level settings like
+`{{ helx_registry }}` vs. per-instance values like `{{ username }}`).
+
+The new model separates these cleanly:
+
+1. **Registry-level** Jinja2 rendering (loader) — resolves image
+   registries, settings.  Happens once at load time.
+2. **Per-instance** substitution — resolves user/instance-specific
+   values.  Happens at HelxInst creation time via the controller's
+   Go template pass (which already supports `{{ .system.UserName }}`).
+
+The spec file declares which per-instance variables it expects via an
+`x-helx-vars` section:
+
+```yaml
+version: "3"
+x-helx-vars:
+  - username          # populated from HelxInst.spec.userName
+  - identifier        # populated from HelxInst.status.uuid
+  - access_token      # populated from appstore user context
+
+services:
+  jupyter:
+    image: jupyter/scipy:latest
+    environment:
+      NB_USER: "{{ username }}"
+      NB_PREFIX: "/private/jupyter/{{ username }}/{{ identifier }}"
+    volumes:
+      - "{{ username }}-home:/home/{{ username }},rwx,retain"
+```
+
+#### How substitution works
+
+The `x-helx-vars` list is **declarative metadata** — it tells the
+system which variables the spec expects.  The actual substitution
+happens in two stages:
+
+| Stage | Who | When | Variables available |
+|-------|-----|------|-------------------|
+| Registry load | `RegistryLoader` (Jinja2) | App catalog build time | `settings` from registry YAML (e.g. `helx_registry`) |
+| Instance creation | helxapp-controller (Go templates) | Pod creation | `username`, `identifier`, plus any values from HelxUser / appstore user context |
+
+The appspec parser extracts `x-helx-vars` as metadata on the
+`ComposeApp` so that:
+- The registry/appstore can validate that required context is
+  available before creating a HelxInst.
+- The controller knows which Go template variables to inject.
+- Template expressions in `environment`, `command`, and `volumes`
+  fields are preserved as-is (not rendered) by the appspec parser —
+  they are destined for the controller's second pass.
+
+#### Appstore user context
+
+The appstore maintains per-user context (username, OAuth tokens, host)
+in the `Principal` object (tycho/context.py:26–31) and passes it via
+`extra_container_env`.  In the new model, this context is attached to
+the HelxUser CRD or passed as part of the HelxInst creation request.
+The `x-helx-vars` declaration makes the dependency explicit rather
+than relying on implicit env var injection.
+
 ---
 
 ## 3. What Tycho Does Today
@@ -244,12 +396,18 @@ class VolumeMount:
     mount_path: str        # Container path
     sub_path: str | None = None
     is_pvc: bool = True
+    options: dict[str, str] = field(default_factory=dict)  # e.g. rwx, retain
 
     def to_dsl_string(self) -> str:
         """Convert to volume DSL format for HelxApp spec."""
         dsl = f"{self.source}:{self.mount_path}"
         if self.sub_path:
             dsl = f"{self.source}:{self.mount_path}#{self.sub_path}"
+        if self.options:
+            opts = ",".join(
+                f"{k}={v}" if v else k for k, v in self.options.items()
+            )
+            dsl = f"{dsl},{opts}"
         return dsl
 
 
@@ -273,6 +431,26 @@ class ProbeSpec:
 
 
 @dataclass
+class ResourceBound:
+    """Min/max/default range for a single resource type."""
+    min: str | None = None
+    max: str | None = None
+    default_request: str | None = None
+    default_limit: str | None = None
+    resource_name: str | None = None   # explicit K8s name (e.g. "nvidia.com/gpu")
+
+
+@dataclass
+class ResourceBounds:
+    """Full bounds specification from x-helx-resources.bounds."""
+    cpu: ResourceBound | None = None
+    memory: ResourceBound | None = None
+    gpu: ResourceBound | None = None
+    ephemeral_storage: ResourceBound | None = None
+    lock: bool = False                  # if True, request == limit == default
+
+
+@dataclass
 class ComposeResources:
     """Resource limits/requests extracted from deploy.resources."""
     cpu: str | None = None
@@ -293,6 +471,7 @@ class ComposeService:
     volumes: list[VolumeMount] = field(default_factory=list)
     limits: ComposeResources = field(default_factory=ComposeResources)
     requests: ComposeResources = field(default_factory=ComposeResources)
+    resource_bounds: ResourceBounds | None = None  # from x-helx-resources
     depends_on: list[str] = field(default_factory=list)
     liveness_probe: ProbeSpec | None = None
     readiness_probe: ProbeSpec | None = None
@@ -302,6 +481,7 @@ class ComposeService:
 class ComposeApp:
     """The complete parsed result of a docker-compose spec."""
     services: list[ComposeService] = field(default_factory=list)
+    helx_vars: list[str] = field(default_factory=list)  # from x-helx-vars
 
     def get_service(self, name: str) -> ComposeService | None:
         for svc in self.services:
@@ -326,6 +506,9 @@ def parse_compose(
         Probe definitions are matched to services by name — if ext
         is provided at the top level, probes apply to all services.
     :raises ParseError: On missing required fields.
+
+    Extracts top-level x-helx-vars into ComposeApp.helx_vars.
+    For each service, prefers x-helx-resources over deploy.resources.
     """
 
 def parse_service(
@@ -333,7 +516,13 @@ def parse_service(
     svc: dict,
     probes: dict | None = None,
 ) -> ComposeService:
-    """Parse a single service dict."""
+    """Parse a single service dict.
+
+    If the service has x-helx-resources, parse_helx_resources() is
+    called and the result stored on ComposeService.resource_bounds.
+    The limits/requests fields are also populated from the bounds'
+    default_limit/default_request values for backward compatibility.
+    """
 
 def parse_ports(raw_ports: list) -> list[int]:
     """Extract container ports from compose port entries."""
@@ -346,6 +535,18 @@ def parse_volumes(raw_volumes: list[str]) -> list[VolumeMount]:
 
 def parse_resources(raw: dict) -> ComposeResources:
     """Parse a limits or reservations dict."""
+
+def parse_helx_resources(raw: dict) -> ResourceBounds:
+    """Parse an x-helx-resources dict into ResourceBounds.
+
+    Each key in raw["bounds"] maps to a ResourceBound:
+        cpu, memory, gpu, ephemeral-storage.
+    The gpu bound may include a resource_name (default: nvidia.com/gpu).
+    raw.get("lock", False) sets ResourceBounds.lock.
+    """
+
+def parse_resource_bound(raw: dict) -> ResourceBound:
+    """Parse a single resource bound dict (min/max/default_request/default_limit)."""
 
 def parse_probe(raw: dict | str | None) -> ProbeSpec | None:
     """Parse a probe definition. Returns None for 'none' or absent."""
@@ -369,6 +570,31 @@ def extract_gpu_from_devices(devices: list[dict]) -> str | None:
 
     Handles: [{capabilities: ["gpu"], count: N}]
     """
+
+def bounds_to_resource_bounds(bounds: ResourceBounds) -> dict:
+    """Convert ResourceBounds to the dict structure for HelxApp CRD.
+
+    Output shape matches AppServiceSpec.resource_bounds:
+    {
+        "cpu": {"min": "0.5", "max": "8",
+                "defaultRequest": "1", "defaultLimit": "4"},
+        "memory": {...},
+        "nvidia.com/gpu": {"min": "0", "max": "2", ...},
+        "ephemeral-storage": {...},
+        "lock": false
+    }
+
+    The GPU key uses resource_name from the bound (default: nvidia.com/gpu).
+    Only non-None bounds are included.
+    """
+
+def bounds_to_default_resources(bounds: ResourceBounds) -> tuple[ComposeResources, ComposeResources]:
+    """Extract default request/limit from bounds as ComposeResources pair.
+
+    Returns (requests, limits) populated from default_request/default_limit.
+    Used when x-helx-resources is present but caller needs backward-
+    compatible ComposeResources (e.g. for fallback or validation).
+    """
 ```
 
 ### 4.5 `exceptions.py`
@@ -382,8 +608,12 @@ class ParseError(KubeError):
 
 ```python
 from appspec.parser import parse_compose
-from appspec.models import ComposeApp, ComposeService, ComposeResources, VolumeMount, ProbeSpec
-from appspec.resource_map import to_k8s_resources
+from appspec.models import (
+    ComposeApp, ComposeService, ComposeResources,
+    ResourceBounds, ResourceBound,
+    VolumeMount, ProbeSpec,
+)
+from appspec.resource_map import to_k8s_resources, bounds_to_resource_bounds
 from appspec.exceptions import ParseError
 ```
 
@@ -435,6 +665,8 @@ Both produce `dict[str, str]`.
 
 ### 5.4 Resource Parsing
 
+#### Standard compose resources (fallback)
+
 ```yaml
 deploy:
   resources:
@@ -454,6 +686,39 @@ deploy:
 `limits` maps to `ComposeResources` directly. `reservations` maps to
 `ComposeResources` with GPU extracted from either the top-level `gpus`
 key or from `devices[].capabilities`.
+
+#### Extended resources (`x-helx-resources`)
+
+When present on a service, `x-helx-resources` takes precedence over
+`deploy.resources`.  The parser applies these rules:
+
+1. **Presence check**: If `svc.get("x-helx-resources")` exists, call
+   `parse_helx_resources()`.  Otherwise fall back to
+   `deploy.resources`.
+2. **Bounds parsing**: Each key in `bounds` (`cpu`, `memory`, `gpu`,
+   `ephemeral-storage`) maps to a `ResourceBound` with fields `min`,
+   `max`, `default_request`, `default_limit`.  All are optional
+   strings.
+3. **GPU resource name**: `bounds.gpu.resource_name` defaults to
+   `"nvidia.com/gpu"` if the `gpu` bound exists but `resource_name`
+   is absent.
+4. **Lock flag**: `x-helx-resources.lock` (default `false`).  When
+   true, the UI should not present sliders and should use the default
+   values directly.
+5. **Default backfill**: The parser also populates
+   `ComposeService.limits` and `.requests` from
+   `default_limit`/`default_request` of each bound.  This ensures
+   that code paths that only inspect the simple `ComposeResources`
+   still get reasonable values.
+
+| `x-helx-resources` field | `ResourceBound` field | Notes |
+|---|---|---|
+| `bounds.cpu.min` | `cpu.min` | String, may be fractional |
+| `bounds.cpu.max` | `cpu.max` | |
+| `bounds.cpu.default_request` | `cpu.default_request` | → also `ComposeService.requests.cpu` |
+| `bounds.cpu.default_limit` | `cpu.default_limit` | → also `ComposeService.limits.cpu` |
+| `bounds.gpu.resource_name` | `gpu.resource_name` | Defaults to `nvidia.com/gpu` |
+| `bounds.lock` | `ResourceBounds.lock` | Boolean |
 
 ### 5.5 Command / Entrypoint Parsing
 
@@ -520,7 +785,7 @@ The current `spec_builder.py` in the registry module inlines compose
 parsing.  With `appspec`, it becomes a thin adapter:
 
 ```python
-from appspec import parse_compose, to_k8s_resources
+from appspec import parse_compose, to_k8s_resources, bounds_to_resource_bounds
 
 def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
     compose_app = parse_compose(compose_spec, ext=app.ext)
@@ -535,6 +800,17 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
                 port=registry_port or 0,
             ))
 
+        # Resource bounds: prefer x-helx-resources; fall back to compose
+        if svc.resource_bounds is not None:
+            rb = bounds_to_resource_bounds(svc.resource_bounds)
+        elif svc.limits.cpu or svc.requests.cpu:
+            rb = {
+                "limits": to_k8s_resources(svc.limits).to_dict(),
+                "requests": to_k8s_resources(svc.requests).to_dict(),
+            }
+        else:
+            rb = None
+
         svc_specs.append(AppServiceSpec(
             name=svc.name,
             image=svc.image,
@@ -543,13 +819,21 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
             ports=ports,
             volumes={v.source: v.to_dsl_string() for v in svc.volumes},
             security_context=app.security_context,
-            resource_bounds={
-                "limits": to_k8s_resources(svc.limits).to_dict(),
-                "requests": to_k8s_resources(svc.requests).to_dict(),
-            } if svc.limits.cpu or svc.requests.cpu else None,
+            resource_bounds=rb,
         ))
-    return HelxAppSpec(app_class_name=app.app_id, services=svc_specs)
+    return HelxAppSpec(
+        app_class_name=app.app_id,
+        services=svc_specs,
+        # helx_vars passed through so appstore can validate context
+        # before creating HelxInst
+        helx_vars=compose_app.helx_vars or None,
+    )
 ```
+
+Note: `HelxAppSpec` gains an optional `helx_vars: list[str] | None`
+field so the appstore UI / API can inspect which per-user variables
+the spec requires.  The controller ignores this field — it uses the
+Go template expressions in the spec directly.
 
 ### 6.3 What the Module Does NOT Do
 
@@ -579,6 +863,10 @@ The following are **not** the appspec module's responsibility:
 | `System.parse()` is 125 lines mixing parsing with env injection and volume injection | `parse_compose()` is pure parsing — no env vars, no config, no side effects |
 | Compose resource names (`cpus`, `ephemeralStorage`) leak into the model | `resource_map.to_k8s_resources()` translates at the boundary |
 | GPU parsing split between `Limits.gpus` and `search_for_gpu_reservation()` | Single `parse_resources()` handles both `gpus` key and `devices[].capabilities` |
+| GPU type hardcoded to `nvidia.com/gpu` with no override | `ResourceBound.resource_name` allows explicit K8s resource name per bound |
+| No min/max range for resources — UI must infer from env vars and view logic | `ResourceBounds` provides explicit min/max/default per resource type |
+| Requests and limits conflated (reservations treated as both request floor and scheduling hint) | `default_request` and `default_limit` are independent values in each bound |
+| Per-user substitution via fragile double-pass Jinja2 rendering | `x-helx-vars` declares variables explicitly; second pass is the controller's Go templates |
 | `Volumes.process_volumes()` only supports `pvc://` format | `parse_volumes()` handles both `pvc://` and plain `source:dest` |
 | Probe classes (`Probe`, `HttpProbe`, `TcpProbe`) are structurally inconsistent | Single `ProbeSpec` dataclass with `probe_type` discriminator |
 | Environment merging (spec + registry + system) happens inside the parser | Parser only extracts spec-level env; merging is the caller's job |
@@ -620,6 +908,16 @@ The following are **not** the appspec module's responsibility:
 | `test_parse_expose` | `expose: [5432]` → expose list |
 | `test_parse_depends_on` | `depends_on: [db]` → depends_on list |
 | `test_missing_image_raises` | Service without `image` raises ParseError |
+| `test_parse_helx_resources_full` | Full `x-helx-resources` → ResourceBounds with all four resource types |
+| `test_parse_helx_resources_gpu_name` | `gpu.resource_name: "amd.com/gpu"` → stored on ResourceBound |
+| `test_parse_helx_resources_gpu_default_name` | Missing `resource_name` → defaults to `nvidia.com/gpu` |
+| `test_parse_helx_resources_lock` | `lock: true` → `ResourceBounds.lock == True` |
+| `test_parse_helx_resources_partial` | Only `cpu` bound → other bounds are None |
+| `test_helx_resources_backfills_limits_requests` | `default_request`/`default_limit` → populate `svc.requests`/`svc.limits` |
+| `test_helx_resources_overrides_deploy_resources` | Both present → `x-helx-resources` wins, `deploy.resources` ignored |
+| `test_parse_helx_vars` | `x-helx-vars: [username, identifier]` → `ComposeApp.helx_vars` |
+| `test_parse_helx_vars_absent` | No `x-helx-vars` → empty list |
+| `test_helx_vars_preserves_templates` | `{{ username }}` in environment values is not rendered, preserved as-is |
 
 ### 8.2 `test_models.py` — Data Model Behavior
 
@@ -627,8 +925,11 @@ The following are **not** the appspec module's responsibility:
 |------|-----------------|
 | `test_volume_mount_to_dsl_simple` | `VolumeMount("pvc", "/data")` → `"pvc:/data"` |
 | `test_volume_mount_to_dsl_subpath` | `VolumeMount("pvc", "/data", "sub")` → `"pvc:/data#sub"` |
+| `test_volume_mount_to_dsl_options` | `VolumeMount("pvc", "/data", options={"rwx": "", "retain": ""})` → `"pvc:/data,rwx,retain"` |
 | `test_compose_app_get_service` | Lookup by name returns correct service |
 | `test_compose_app_get_service_missing` | Lookup for missing name returns None |
+| `test_resource_bound_defaults` | `ResourceBound()` → all fields None |
+| `test_resource_bounds_lock_default` | `ResourceBounds()` → `lock == False` |
 
 ### 8.3 `test_resource_map.py` — Compose → K8s Translation
 
@@ -640,6 +941,14 @@ The following are **not** the appspec module's responsibility:
 | `test_extract_gpu_from_devices` | `[{capabilities: ["gpu"], count: 2}]` → `"2"` |
 | `test_extract_gpu_no_gpu_device` | `[{capabilities: ["tpu"]}]` → None |
 | `test_extract_gpu_empty` | `[]` → None |
+| `test_bounds_to_resource_bounds_full` | All four resource types → dict with K8s resource names as keys |
+| `test_bounds_to_resource_bounds_gpu_custom_name` | `resource_name: "amd.com/gpu"` → key is `"amd.com/gpu"` |
+| `test_bounds_to_resource_bounds_gpu_default_name` | No `resource_name` → key is `"nvidia.com/gpu"` |
+| `test_bounds_to_resource_bounds_lock` | `lock: true` → `{"lock": true}` in output dict |
+| `test_bounds_to_resource_bounds_partial` | Only cpu bound → only `"cpu"` key present |
+| `test_bounds_to_resource_bounds_empty` | No bounds → empty dict (plus `lock: false`) |
+| `test_bounds_to_default_resources` | Extracts `default_request`/`default_limit` into ComposeResources pair |
+| `test_bounds_to_default_resources_partial` | Missing defaults → None fields in ComposeResources |
 
 ---
 
