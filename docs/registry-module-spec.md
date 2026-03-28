@@ -31,7 +31,7 @@ Today this processing lives inside `TychoContext` (context.py lines
 7. On demand, **fetch** the companion `.env` file for an app.
 8. Merge registry-level `env` overrides into the settings.
 9. When starting an app, merge the user's resource request, security
-   context, proxy-rewrite settings, ephemeral-storage, service account,
+   context, ephemeral-storage, service account,
    and connection-string into the spec — then hand the whole thing to
    the compute backend.
 
@@ -87,7 +87,6 @@ contexts:
         docs: https://…
         services:
           jupyter-helx-tensorflow-nb: "8888"
-        proxy-rewrite-rule: True
         count: 1
 
   braini:                   # A product context
@@ -111,7 +110,7 @@ contexts:
 |---------|----------|-------------|
 | `contexts.<name>.extends` | list of strings | Inheritance — apps from all named contexts are deep-merged depth-first; child values override parent values at every nesting level |
 | `contexts.<name>.apps` | dict | App definitions local to this context |
-| `contexts.<name>.<app_id>` | dict (top-level key matching an app name) | Context-level overrides — typically `securityContext`, `conn_string` — merged onto the app after inheritance resolution |
+| `contexts.<name>.<app_id>` | dict (top-level key matching an app name) | Context-level overrides — typically `securityContext` — merged onto the app after inheritance resolution |
 | `repositories.<name>.url` | string | Base URL for building spec paths; may be relative to `tycho_config_url` |
 | `settings` | dict | Jinja2 variables substituted into docker-compose specs at fetch time |
 
@@ -136,9 +135,6 @@ These fields appear inside `contexts.<ctx>.apps.<app_id>`:
 | `spec` | str | no | Explicit URL to docker-compose.yaml. If absent, synthesized from `{repo_url}/{app_id}/docker-compose.yaml` |
 | `icon` | str | auto | Synthesized as sibling of spec URL |
 | `count` | int | yes | Max concurrent instances per user. `-1` = unlimited, `1` = singleton |
-| `proxy-rewrite-rule` | bool | no | If true, Ambassador proxy rewrite is enabled |
-| `proxy-rewrite` | dict | no | `{enabled: bool, target: str}` |
-| `conn_string` | str | no | URL suffix appended to the instance URL |
 | `serviceAccount` | str | no | K8s service account name for the pod |
 | `securityContext` | dict | no | `{runAsUser, runAsGroup, fsGroup}` — applied at pod level |
 | `ext.kube.livenessProbe` | dict | no | Probe definition: `{cmd, delay, period}` or `{httpGet: {path, port}, delay, period}` |
@@ -301,8 +297,7 @@ When a user launches an app, `TychoContext.start()` does final assembly:
 7. If the docker-compose defines `ephemeralStorage` in limits or
    reservations, copy those into the user's resource request.
 8. Merge the user's resource request into the spec.
-9. Inject `conn_string` and `proxy-rewrite` into the spec.
-10. Call the compute backend.
+9. Call the compute backend.
 
 In the new model, steps 1–9 are replaced by building a `HelxAppSpec`
 from the registry data + a `HelxInstSpec` from the user's request.
@@ -347,8 +342,6 @@ class ResolvedApp:
     count: int = 1
     service_account: str | None = None
     security_context: SecurityContext | None = None
-    proxy_rewrite: ProxyRewrite | None = None
-    conn_string: str = ""
     env: dict[str, str] = field(default_factory=dict)
     ext: dict | None = None          # kube extensions (probes)
 
@@ -358,10 +351,6 @@ class ResolvedApp:
     definition: dict | None = None
     settings_text: str | None = None
 
-@dataclass
-class ProxyRewrite:
-    enabled: bool = False
-    target: str | None = None
 ```
 
 ### 6.3 `loader.py` — Configuration & Spec Fetching
