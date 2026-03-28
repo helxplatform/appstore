@@ -256,48 +256,109 @@ for app_id, app in apps.items():
 After resolution, the app dict has a `spec` path but not the actual
 docker-compose content.  Two methods load lazily and cache:
 
-### `get_spec(app_id)` → dict
+### 4.1 Evaluation lifecycle
+
+The registry is loaded **at server startup, before any user has logged
+in**.  This catalog-build phase must produce enough information for the
+UI to display app names, descriptions, resource-slider ranges, and
+icons.  Per-user values (username, OAuth tokens) do not exist yet.
+
+App specs (docker-compose files) may contain **two kinds of variable
+reference**:
+
+| Kind | Syntax | Available at | Example |
+|------|--------|-------------|---------|
+| Registry settings | `{{ setting }}` (Jinja2) | Catalog build | `{{ helx_registry }}` |
+| Per-user variables | `${varname}` (shell-style) | Instance creation | `${username}` |
+
+The loader resolves Jinja2 at catalog-build time.  `${varname}`
+references are **inert** — Jinja2 ignores `${}` syntax, so they pass
+through rendering and YAML parsing as literal strings.  They are
+resolved later by the controller when a user launches an app (see
+`app-spec-module-spec.md` §2.9 for the full substitution protocol).
+
+### 4.2 `get_spec(app_id)` → dict
 
 1. Check `apps[app_id]["spec_obj"]` cache.
 2. Read the `spec` file from disk.
-3. Parse YAML.
-4. Render as a Jinja2 template with `registry["settings"]` as context.
-5. Parse YAML again (template output may contain template expressions).
-6. Cache in `apps[app_id]["spec_obj"]`.
+3. Render as a Jinja2 template with `registry["settings"]` as context.
+   `${varname}` references pass through untouched.
+4. Parse the rendered text as YAML.
+5. Cache in `apps[app_id]["spec_obj"]`.
 
 (The legacy `get_definition()` was a near-duplicate of `get_spec()`;
 the new module unifies them into a single method.)
 
-### `get_settings(app_id)` → str
+### 4.3 `get_settings(app_id)` → str
 
 1. Derive `.env` path as sibling of the `spec` path.
 2. Read file (or return empty string if absent).
 3. Cache in `apps[app_id]["env_obj"]`.
 
-### `get_env_registry(app_id, settings)` → dict
+### 4.4 `get_env_registry(app_id, settings)` → dict
 
 Merge registry-level `env` overrides (from the app dict's `env` field)
 into the settings dict.
 
 ---
 
-## 5. The Start-Time Assembly (context.start)
+## 5. The Start-Time Assembly (Instance Creation)
 
-When a user launches an app, `TychoContext.start()` does final assembly:
+When a user launches an app, `TychoContext.start()` does final assembly
+today.  In the new model, this becomes two distinct operations — one
+that happens once (HelxApp), one per launch (HelxInst):
 
-1. Load and parse docker-compose via `get_spec(app_id)`.
-2. Parse `.env` via `get_settings(app_id)`, merge registry env.
-3. Read the `services` port map from the app dict.
-4. Read optional `serviceAccount`.
-5. Inject `securityContext` from the app dict into the spec.
-6. Inject `ext` (probes) into the spec.
-7. If the docker-compose defines `ephemeralStorage` in limits or
-   reservations, copy those into the user's resource request.
-8. Merge the user's resource request into the spec.
-9. Call the compute backend.
+### 5.1 HelxApp creation (idempotent, may already exist)
 
-In the new model, steps 1–9 are replaced by building a `HelxAppSpec`
-from the registry data + a `HelxInstSpec` from the user's request.
+1. Load the docker-compose spec via `get_spec(app_id)` — already
+   Jinja2-rendered at catalog time.  `${varname}` references are
+   still present as literal strings.
+2. Parse the spec via `appspec.parse_compose()` — extracts services,
+   ports, resource bounds, `x-helx-vars`.
+3. Build `HelxAppSpec` via `spec_builder.build_helxapp_spec()` — the
+   CRD template for this app, including `${varname}` literals and the
+   `helx_vars` list.
+4. Ensure the HelxApp CRD exists via `HelxAppManager.ensure()`.
+
+### 5.2 HelxInst creation (per-user, per-launch)
+
+1. Resolve per-user variable bindings from the user's session context:
+   ```python
+   vars = {}
+   for var in helxapp.helx_vars:
+       vars[var] = resolve_var(var, principal, instance_id)
+   ```
+   Where `resolve_var()` maps well-known names to `Principal` fields:
+   `username` → `principal.username`, `identifier` → generated UUID,
+   `access_token` → `principal.access_token`, etc.
+2. Validate the user's resource request against the HelxApp's
+   resource bounds.
+3. Build `HelxInstSpec`:
+   ```python
+   HelxInstSpec(
+       app_name=app_id,
+       user_name=principal.username,
+       vars=vars,
+       resources={...},
+       security_context=...,
+   )
+   ```
+4. Create the HelxInst CRD via `HelxInstManager.create()`.
+
+### 5.3 Controller reconciliation
+
+The helxapp-controller sees the HelxInst, reads the referenced
+HelxApp, and:
+1. Walks the HelxApp spec's string values (environment, command,
+   volumes).
+2. Substitutes every `${varname}` occurrence using
+   `HelxInst.spec.vars`.
+3. Applies the HelxInst's resource request/limit to the containers.
+4. Creates the Deployment, Service, PVCs, etc.
+
+This completes the deferred evaluation: structural information
+(images, ports, bounds) was available at catalog time; per-user
+values are resolved only when the user launches the app.
 
 ---
 
@@ -435,12 +496,16 @@ def build_helxinst_spec(
     username: str,
     resource_request: dict,
     security_context: SecurityContext | None = None,
+    vars: dict[str, str] | None = None,
 ) -> HelxInstSpec:
     """
     Build a HelxInst spec for a user's launch request.
 
     - app_name: app.app_id
     - user_name: username
+    - vars: per-user variable bindings (e.g. {"username": "alice",
+      "identifier": "abc123"}) — the controller substitutes ${varname}
+      in the HelxApp template with these values
     - resources: converted from the UI resource request format
     - security_context: from instance override, or app-level, or None
     """
@@ -486,11 +551,17 @@ class AppRegistry:
     def build_helxinst(
         self,
         app_id: str,
-        username: str,
+        principal: Principal,
         resource_request: dict,
         security_context: SecurityContext | None = None,
     ) -> HelxInstSpec:
-        """Build a HelxInstSpec for launching."""
+        """Build a HelxInstSpec for launching.
+
+        Resolves per-user variable bindings from the Principal session
+        context.  Only variables declared in the app's x-helx-vars are
+        included.  The controller uses these to substitute ${varname}
+        in the HelxApp template.
+        """
 ```
 
 ---
@@ -567,6 +638,11 @@ class AppRegistry:
 ## 9. Data Flow Summary
 
 ```
+═══════════════════════════════════════════════════════════════════
+  CATALOG BUILD (server startup, no users)
+  Resolves: {{ jinja2 }}    Preserves: ${varname}
+═══════════════════════════════════════════════════════════════════
+
                     registry-example.yaml
                     app-defaults.yaml
                            │
@@ -575,7 +651,6 @@ class AppRegistry:
                            ▼
                 ┌─────────────────────┐
                 │   resolver.py       │
-                │                     │
                 │  resolve_context()  │
                 │  apply_defaults()   │
                 │  resolve_paths()    │
@@ -594,13 +669,41 @@ class AppRegistry:
           │              │              │
           │    RegistryLoader      spec_builder
           │    .load_spec()        .build_helxapp_spec()
+          │    (Jinja2 resolves    (${varname} preserved
+          │     {{ settings }};     in env/cmd/volumes;
+          │     ${vars} pass        helx_vars stored on
+          │     through)            HelxAppSpec)
           │              │              │
           ▼              ▼              ▼
     UI app catalog   dict (compose)  HelxAppSpec ──→ HelxAppManager.ensure()
-                                                          │
-                                                          ▼
-                                          helxapp-controller reconciles
-                                          ──→ Deployment + Service + PVCs
+    (names, bounds,  (structural     (template with
+     descriptions)    info ready)     ${} placeholders)
+
+═══════════════════════════════════════════════════════════════════
+  INSTANCE CREATION (user logged in, launches app)
+  Resolves: ${varname} via HelxInst.spec.vars
+═══════════════════════════════════════════════════════════════════
+
+    Principal (username, tokens, host)
+          │
+    AppRegistry.build_helxinst(principal, ...)
+          │
+          ├── resolve_var(var, principal)  for each x-helx-vars entry
+          │        username  → principal.username
+          │        identifier → generated UUID
+          │        access_token → principal.access_token
+          │
+          ▼
+    HelxInstSpec(vars={"username": "alice", ...}, resources={...})
+          │
+    HelxInstManager.create()
+          │
+          ▼
+    helxapp-controller reconciles:
+      1. Read HelxApp template
+      2. Substitute ${varname} with HelxInst.spec.vars
+      3. Apply HelxInst.spec.resources
+      4. Create Deployment + Service + PVCs
 ```
 
 ---

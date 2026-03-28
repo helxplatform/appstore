@@ -265,65 +265,129 @@ This preserves backward compatibility with existing spec files.
 Today, `System.parse()` does a fragile double-pass: it dumps the
 entire spec to YAML, renders it as a Jinja2 template with env vars
 containing `username`, `identifier`, etc., then re-parses.  This
-conflates two distinct template passes (registry-level settings like
-`{{ helx_registry }}` vs. per-instance values like `{{ username }}`).
+conflates two distinct template stages (registry-level settings like
+`{{ helx_registry }}` vs. per-instance values like `username`), and
+it happens at start-time — but the app catalog must be built at
+server startup, before any user has logged in.
 
-The new model separates these cleanly:
+#### The lifecycle problem
 
-1. **Registry-level** Jinja2 rendering (loader) — resolves image
-   registries, settings.  Happens once at load time.
-2. **Per-instance** substitution — resolves user/instance-specific
-   values.  Happens at HelxInst creation time via the controller's
-   Go template pass (which already supports `{{ .system.UserName }}`).
+The registry is parsed and compose specs are loaded **at catalog-build
+time** (server startup) so the UI can display the list of launchable
+apps.  At this point no user context exists — there is no username,
+no identifier, no access token.  Yet the compose spec may contain
+references to those values in environment variables, volume paths, and
+commands.
 
-The spec file declares which per-instance variables it expects via an
-`x-helx-vars` section:
+If per-user references use Jinja2 syntax (`{{ username }}`), the
+catalog-time Jinja2 render will either raise `UndefinedError` or
+silently produce empty strings — corrupting the parsed spec.
+
+#### Solution: distinct `${varname}` syntax
+
+Per-user variable references use **`${varname}`** — a shell-style
+syntax that Jinja2 ignores.  This cleanly separates the two
+evaluation stages:
+
+| Stage | Syntax | Resolver | When | What's available |
+|-------|--------|----------|------|-----------------|
+| **Catalog build** | `{{ setting }}` (Jinja2) | `RegistryLoader.load_spec()` | Server startup, before login | `settings` from registry YAML (`helx_registry`, etc.) |
+| **Instance creation** | `${varname}` | Appstore + controller | User launches an app | Per-user context from `Principal` / `HelxUser` |
+
+The Jinja2 pass resolves `{{ helx_registry }}` at catalog time.
+`${username}` passes through untouched — it is an opaque string to
+Jinja2, to `yaml.safe_load()`, and to the appspec parser.  It is
+resolved later, at instance creation time.
+
+#### The `x-helx-vars` declaration
+
+The spec file declares which per-user variables it expects via a
+top-level `x-helx-vars` section.  This is **declarative metadata**:
+it does not cause substitution by itself, but tells the system which
+`${…}` references the spec contains and what they mean.
 
 ```yaml
 version: "3"
 x-helx-vars:
-  - username          # populated from HelxInst.spec.userName
-  - identifier        # populated from HelxInst.status.uuid
-  - access_token      # populated from appstore user context
+  - username          # logged-in user's name
+  - identifier        # unique instance UUID
+  - access_token      # OAuth access token
 
 services:
   jupyter:
     image: jupyter/scipy:latest
     environment:
-      NB_USER: "{{ username }}"
-      NB_PREFIX: "/private/jupyter/{{ username }}/{{ identifier }}"
+      NB_USER: "${username}"
+      NB_PREFIX: "/private/jupyter/${username}/${identifier}"
     volumes:
-      - "{{ username }}-home:/home/{{ username }},rwx,retain"
+      - "${username}-home:/home/${username},rwx,retain"
 ```
 
-#### How substitution works
+#### Well-known variable vocabulary
 
-The `x-helx-vars` list is **declarative metadata** — it tells the
-system which variables the spec expects.  The actual substitution
-happens in two stages:
+The set of per-user variables is system-defined, not app-defined.
+Each app declares which subset it needs via `x-helx-vars`.
 
-| Stage | Who | When | Variables available |
-|-------|-----|------|-------------------|
-| Registry load | `RegistryLoader` (Jinja2) | App catalog build time | `settings` from registry YAML (e.g. `helx_registry`) |
-| Instance creation | helxapp-controller (Go templates) | Pod creation | `username`, `identifier`, plus any values from HelxUser / appstore user context |
+| Variable | Source | Description |
+|----------|--------|-------------|
+| `username` | `Principal.username` / `HelxUser.spec.userName` | Logged-in user's name |
+| `identifier` | Generated UUID | Unique per-instance identifier |
+| `access_token` | `Principal.access_token` / `HelxUser.spec.tokens.access` | OAuth access token |
+| `refresh_token` | `Principal.refresh_token` / `HelxUser.spec.tokens.refresh` | OAuth refresh token |
+| `host` | Request host | The hostname of the appstore |
 
-The appspec parser extracts `x-helx-vars` as metadata on the
-`ComposeApp` so that:
-- The registry/appstore can validate that required context is
-  available before creating a HelxInst.
-- The controller knows which Go template variables to inject.
-- Template expressions in `environment`, `command`, and `volumes`
-  fields are preserved as-is (not rendered) by the appspec parser —
-  they are destined for the controller's second pass.
+These correspond directly to the values that `TychoContext.start()`
+passes today (context.py:303–310).
+
+#### Resolution protocol
+
+1. **Catalog build** — `RegistryLoader.load_spec()` renders Jinja2
+   with `settings`.  `${varname}` references are inert strings —
+   they pass through Jinja2 and YAML parsing unchanged.
+
+2. **Appspec parse** — `parse_compose()` extracts `x-helx-vars` as
+   metadata on the `ComposeApp`.  String values containing `${…}`
+   are preserved as-is.  The parser optionally validates that every
+   `${…}` reference in the spec appears in the `x-helx-vars` list.
+
+3. **HelxApp CRD** — `build_helxapp_spec()` stores the spec with
+   `${varname}` literals in environment, command, and volume values.
+   The `helx_vars` list is stored on the HelxApp so the appstore can
+   inspect required variables.
+
+4. **Instance creation** — When a user launches an app, the appstore
+   resolves each declared variable from the user's `Principal`
+   context and passes the bindings as part of the `HelxInst` spec:
+
+   ```python
+   HelxInstSpec(
+       app_name="jupyter",
+       user_name="alice",
+       vars={"username": "alice", "identifier": "a1b2c3", ...},
+       resources={...},
+   )
+   ```
+
+5. **Controller** — The helxapp-controller substitutes `${varname}`
+   in the HelxApp template using the var bindings from the HelxInst
+   before creating the Pod.  This is a simple string replacement —
+   no template engine required.
+
+#### Why the appstore resolves bindings, not the controller alone
+
+The appstore is the component that holds the user session (`Principal`,
+OAuth tokens).  The controller only sees the CRD objects.  By having
+the appstore populate `HelxInst.spec.vars` from the session context,
+the controller remains a generic template applicator — it doesn't
+need to know about OAuth, session management, or user stores.
 
 #### Appstore user context
 
 The appstore maintains per-user context (username, OAuth tokens, host)
 in the `Principal` object (tycho/context.py:26–31) and passes it via
-`extra_container_env`.  In the new model, this context is attached to
-the HelxUser CRD or passed as part of the HelxInst creation request.
-The `x-helx-vars` declaration makes the dependency explicit rather
-than relying on implicit env var injection.
+`extra_container_env`.  In the new model, this context populates the
+`vars` map on the HelxInst.  The `x-helx-vars` declaration makes the
+dependency explicit rather than relying on implicit env var injection.
 
 ---
 
@@ -760,20 +824,34 @@ registry.yaml
     │
     ├─ spec_dir/{app_id}/docker-compose.yaml
     │       │
-    │  RegistryLoader.load_spec()     ← Jinja2 render + YAML parse
-    │       │
+    │  RegistryLoader.load_spec()     ← Jinja2 renders {{ settings }};
+    │       │                            ${varname} passes through
     │       ▼
-    │   dict (raw compose)
+    │   dict (raw compose, with ${varname} literals in values)
     │       │
     │  appspec.parse_compose(spec, ext=app.ext)
     │       │
     │       ▼
-    │   ComposeApp
+    │   ComposeApp                    ← .helx_vars extracted
+    │       │                            ${varname} preserved in strings
     │       │
-    │  to_helxapp_spec(app, compose_app)     ← new function in registry
+    │  build_helxapp_spec(app, compose_spec)
     │       │
     │       ▼
     │   HelxAppSpec  ──→  HelxAppManager.ensure()
+    │       │               (template with ${} placeholders)
+    │       │
+    │  [user launches app]
+    │       │
+    │  build_helxinst_spec(app, principal, ...)
+    │       │               (resolves vars from Principal)
+    │       ▼
+    │   HelxInstSpec ──→  HelxInstManager.create()
+    │       │               vars={"username": "alice", ...}
+    │       │
+    │  [controller reconciles]
+    │       └── substitutes ${varname} in HelxApp with HelxInst.vars
+    │           creates Deployment + Service + PVCs
     │
     └─ ResolvedApp.ext     ← probes from registry
     └─ ResolvedApp.security_context  ← security context from registry
@@ -832,8 +910,12 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
 
 Note: `HelxAppSpec` gains an optional `helx_vars: list[str] | None`
 field so the appstore UI / API can inspect which per-user variables
-the spec requires.  The controller ignores this field — it uses the
-Go template expressions in the spec directly.
+the spec requires.  The controller uses this list to know which
+`${varname}` references to substitute from `HelxInst.spec.vars`.
+
+`HelxInstSpec` gains an optional `vars: dict[str, str] | None` field
+populated by the appstore from the user's `Principal` session context
+at launch time (see `registry-module-spec.md` §5.2).
 
 ### 6.3 What the Module Does NOT Do
 
@@ -866,7 +948,7 @@ The following are **not** the appspec module's responsibility:
 | GPU type hardcoded to `nvidia.com/gpu` with no override | `ResourceBound.resource_name` allows explicit K8s resource name per bound |
 | No min/max range for resources — UI must infer from env vars and view logic | `ResourceBounds` provides explicit min/max/default per resource type |
 | Requests and limits conflated (reservations treated as both request floor and scheduling hint) | `default_request` and `default_limit` are independent values in each bound |
-| Per-user substitution via fragile double-pass Jinja2 rendering | `x-helx-vars` declares variables explicitly; second pass is the controller's Go templates |
+| Per-user substitution via fragile double-pass Jinja2 rendering | `x-helx-vars` declares variables explicitly with `${varname}` syntax that Jinja2 ignores; resolved at instance creation via `HelxInst.spec.vars` |
 | `Volumes.process_volumes()` only supports `pvc://` format | `parse_volumes()` handles both `pvc://` and plain `source:dest` |
 | Probe classes (`Probe`, `HttpProbe`, `TcpProbe`) are structurally inconsistent | Single `ProbeSpec` dataclass with `probe_type` discriminator |
 | Environment merging (spec + registry + system) happens inside the parser | Parser only extracts spec-level env; merging is the caller's job |
@@ -917,7 +999,8 @@ The following are **not** the appspec module's responsibility:
 | `test_helx_resources_overrides_deploy_resources` | Both present → `x-helx-resources` wins, `deploy.resources` ignored |
 | `test_parse_helx_vars` | `x-helx-vars: [username, identifier]` → `ComposeApp.helx_vars` |
 | `test_parse_helx_vars_absent` | No `x-helx-vars` → empty list |
-| `test_helx_vars_preserves_templates` | `{{ username }}` in environment values is not rendered, preserved as-is |
+| `test_helx_vars_preserves_templates` | `${username}` in environment values preserved as literal string |
+| `test_helx_vars_validates_references` | `${unknown}` in spec but not in `x-helx-vars` → optional warning or error |
 
 ### 8.2 `test_models.py` — Data Model Behavior
 
