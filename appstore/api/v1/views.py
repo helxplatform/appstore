@@ -1,13 +1,12 @@
-import functools
 import logging
 import time
 import os
 import re
+import uuid
 from typing import Optional
 from dataclasses import asdict
 
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import logout
 
 
@@ -19,7 +18,9 @@ from rest_framework import status
 
 from allauth import socialaccount
 
-from tycho.context import ContextFactory, Principal
+from appspec import parse_compose
+from kube import KubeClient, HelxAppManager, HelxInstManager, StatusQuery
+from registry import AppRegistry
 from core.models import IrodAuthorizedUser, UserIdentityToken
 
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
@@ -37,30 +38,44 @@ from .serializers import (
     EmptySerializer,
 )
 
-from urllib.parse import urljoin
-
 # TODO: Structured Logging
 logger = logging.getLogger(__name__)
 
 
-"""
-Tycho context for application management.
-Manages application metadata, discovers and invokes TychoClient, etc.
-"""
-contextFactory = ContextFactory()
-if settings.EXTERNAL_TYCHO_APP_REGISTRY_ENABLED == "false":
-    logger.debug (f"-- appstore.appstore.core.views.py: EXTERNAL_TYCHO_APP_REGISTRY_ENABLED is 'false', using Tycho built-in app registry file")
-    tycho = contextFactory.get(
-            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
-    )
-else:
-    logger.debug (f"-- appstore.appstore.core.views.py: EXTERNAL_TYCHO_APP_REGISTRY_REPO is {settings.EXTERNAL_TYCHO_APP_REGISTRY_REPO}, EXTERNAL_TYCHO_APP_REGISTRY_BRANCH is {settings.EXTERNAL_TYCHO_APP_REGISTRY_BRANCH}, using external app registry file")
-    # urljoin might not work as planned if the first part doesn't end with a slash.
-    tycho_config_url = urljoin(settings.EXTERNAL_TYCHO_APP_REGISTRY_REPO, settings.EXTERNAL_TYCHO_APP_REGISTRY_BRANCH)
-    logger.debug (f"tycho_config_url: {tycho_config_url}")
-    tycho = contextFactory.get(
-            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url=tycho_config_url
-    )
+# ---------------------------------------------------------------------------
+# Module-level singletons: AppRegistry (catalog) and Kube clients (runtime)
+# ---------------------------------------------------------------------------
+
+registry = AppRegistry(
+    registry_path=os.environ.get("APP_REGISTRY_PATH", "app-registry.yaml"),
+    defaults_path=os.environ.get("APP_DEFAULTS_PATH", "app-defaults.yaml"),
+    product=getattr(settings, "APPLICATION_BRAND", "common"),
+)
+
+_kube_client: KubeClient | None = None
+
+
+def _get_kube() -> KubeClient:
+    """Lazily initialise the Kubernetes client (only needed at runtime)."""
+    global _kube_client
+    if _kube_client is None:
+        _kube_client = KubeClient()
+    return _kube_client
+
+
+def _get_helxapp_mgr() -> HelxAppManager:
+    kc = _get_kube()
+    return HelxAppManager(kc.custom, kc.namespace)
+
+
+def _get_helxinst_mgr() -> HelxInstManager:
+    kc = _get_kube()
+    return HelxInstManager(kc.custom, kc.namespace)
+
+
+def _get_status_query() -> StatusQuery:
+    kc = _get_kube()
+    return StatusQuery(kc.apps, kc.namespace)
 
 
 def get_nfs_uid(username):
@@ -79,53 +94,62 @@ def get_host(request):
     return host
 
 
-def parse_spec_resources(app_id, spec, app_data):
-    """
-    Parse spec dictionary based on docker-compose definition files managed by tycho.
+def extract_app_resources(app_id: str) -> tuple[Resources, Resources]:
+    """Extract minimum (request) and maximum (limit) resources for an app.
 
-    https://github.com/compose-spec/compose-spec/blob/master/deploy.md#memory
-    https://github.com/compose-spec/compose-spec/blob/master/deploy.md#cpus
-    """
-    try:
-        instances = spec["services"]
-        app_scope = instances[app_id]
-        resource_scope = app_scope["deploy"]["resources"]
-        limits = resource_scope["limits"]
-        reservations = resource_scope["reservations"]
-        # If lock-resources is set to True, the reservations and limits should
-        # be equal.
-        lock_resources = app_data.get("lock-resources", False)
-        if lock_resources:
-            limits = reservations
-        return limits, reservations
-    except KeyError:
-        logger.error(f"Could not parse {app_id}.\nInvalid spec {spec}")
-        pass
+    Uses appspec to parse the compose spec.  Prefers ``x-helx-resources``
+    bounds when available; falls back to standard compose
+    ``deploy.resources``.
 
-
-def search_for_gpu_reservation(reservations):
+    Returns (minimum_resources, maximum_resources).
     """
-    GPU info will be nested under devices. Because there could be multiple devices we
-    need to find the GPU device from the list, if it exists.
+    app = registry.get_app(app_id)
+    compose = registry.get_spec(app_id)
+    compose_app = parse_compose(compose, ext=app.ext)
 
-    Currently exits on the first GPU spec, and assumes the spec is defining a generic
-    GPU and count. This is not a requirement of docker-compose spec, see capabilities
-    https://github.com/compose-spec/compose-spec/blob/master/deploy.md#capabilities
-    for more details.
-    """
-    for d in reservations.get("devices", {}):
-        if "gpu" in d.get("capabilities"):
-            # Returning 0 for now if a device id is specified, gpu spec needs to be
-            # further defined for app-prototypes and tycho.
-            # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
-            # #device_ids
-            return d.get("count", 0)
-    # TODO what is the behavior the frontend should exhibit if a spec doesn't define
-    # a GPU reservation? Do we want to pass 0, or `null`? What's the impact for the
-    # user flow?
-    # We may not find a GPU in the spec, in fact right now no specs have a GPU, but
-    # we are providing minimum reservations to the front end from the spec.
-    return 0
+    svc = compose_app.get_service(app_id)
+    if svc is None and compose_app.services:
+        # Fall back to the first service if the primary name doesn't match
+        svc = compose_app.services[0]
+
+    if svc is None:
+        return (
+            Resources(0, 0, 0, 0),
+            Resources(0, 0, 0, 0),
+        )
+
+    if svc.resource_bounds is not None:
+        bounds = svc.resource_bounds
+        minimum = Resources(
+            cpus=float(bounds.cpu.min) if bounds.cpu and bounds.cpu.min else 0,
+            gpus=int(bounds.gpu.min) if bounds.gpu and bounds.gpu.min else 0,
+            memory=bounds.memory.min if bounds.memory and bounds.memory.min else 0,
+            ephemeralStorage=bounds.ephemeral_storage.min if bounds.ephemeral_storage and bounds.ephemeral_storage.min else 0,
+        )
+        maximum = Resources(
+            cpus=float(bounds.cpu.max) if bounds.cpu and bounds.cpu.max else 0,
+            gpus=int(bounds.gpu.max) if bounds.gpu and bounds.gpu.max else 0,
+            memory=bounds.memory.max if bounds.memory and bounds.memory.max else 0,
+            ephemeralStorage=bounds.ephemeral_storage.max if bounds.ephemeral_storage and bounds.ephemeral_storage.max else 0,
+        )
+        if bounds.lock:
+            maximum = minimum
+        return minimum, maximum
+
+    # Fall back to standard compose limits / requests
+    minimum = Resources(
+        cpus=float(svc.requests.cpu) if svc.requests.cpu else 0,
+        gpus=int(svc.requests.gpu) if svc.requests.gpu else 0,
+        memory=svc.requests.memory if svc.requests.memory else 0,
+        ephemeralStorage=svc.requests.ephemeral_storage if svc.requests.ephemeral_storage else 0,
+    )
+    maximum = Resources(
+        cpus=float(svc.limits.cpu) if svc.limits.cpu else 0,
+        gpus=int(svc.limits.gpu) if svc.limits.gpu else 0,
+        memory=svc.limits.memory if svc.limits.memory else 0,
+        ephemeralStorage=svc.limits.ephemeral_storage if svc.limits.ephemeral_storage else 0,
+    )
+    return minimum, maximum
 
 def validate_request_resources(request_cpu, request_gpu, request_memory, request_ephemeral, minimum_resources, maximum_resources, username=None, app_id=None):
     """
@@ -251,73 +275,15 @@ def to_bytes(memory):
     return number * conversion
 
 
-# TODO fetch by user instead of iterating all?
-# sanitize input to avoid injection.
-def get_social_tokens(request):
-    username = request.user
-    social_token_model_objects = (
-        ContentType.objects.get(model="socialtoken").model_class().objects.all()
-    )
-    access_token = None
-    refresh_token = None
-    for obj in social_token_model_objects:
-        if obj.account.user.username == username:
-            access_token = obj.token
-            refresh_token = obj.token_secret if obj.token_secret else None
-            break
-        else:
-            continue
-    # with DRF and the user interaction in social auth we need username to be a string
-    # when it is passed to `tycho.start` otherwise it will be a `User` object and there
-    # will be a serialization failure from this line of code:
-    # tycho.context.TychoContext.start
-    #    principal_params = {"username": principal.username, "access_token":
-    #    principal.access_token, "refresh_token": principal.refresh_token}
-    #    principal_params_json = json.dumps(principal_params, indent=4)
-    return str(username), access_token, refresh_token
-
-
-def get_tokens(request):
-    username = request.user.get_username()
-    return username, None, None
-
 class AppViewSet(viewsets.GenericViewSet):
     """
-    AppViewSet - ViewSet for managing Tycho apps.
-    
-    This ViewSet provides endpoints to list all available apps and retrieve details 
-    about a specific app based on its app_id.
+    ViewSet for listing and retrieving available applications.
 
-    Endpoints:
-    - List All Apps:
-        - URL: /apps/
-        - HTTP Method: GET
-        - Method: list
-        - Description: Lists all available apps, parses resource specifications, 
-                       and returns them in a structured format. GPU reservations 
-                       and limits are specially handled. Any errors during the 
-                       parsing of an app's data are logged and the app is skipped.
-
-    - Retrieve App Details:
-        - URL: /apps/{app_id}/
-        - HTTP Method: GET
-        - Method: retrieve
-        - Description: Provides detailed information about a specific app based on its 
-                       app_id. Similar to the list method, it parses resource specifications 
-                       and returns them in a structured format. 
-
-    Note:
-    - The app_id is used as a lookup field.
-    - The ViewSet interacts with an external system named 'tycho' to fetch app definitions 
-      and other relevant data. There are also utility functions like 'parse_spec_resources' 
-      and 'search_for_gpu_reservation' that are presumably defined elsewhere in the codebase.
+    Uses AppRegistry (backed by appspec) instead of the legacy TychoContext.
     """
 
     lookup_field = "app_id"
     lookup_url_kwarg = "app_id"
-
-    def get_queryset(self):
-        return tycho.apps
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -325,53 +291,31 @@ class AppViewSet(viewsets.GenericViewSet):
         elif self.action == "retrieve":
             return AppDetailSerializer
 
+    def _app_to_response(self, resolved_app, minimum, maximum):
+        """Build an App response object from a ResolvedApp + resources."""
+        return App(
+            name=resolved_app.name,
+            app_id=resolved_app.app_id,
+            description=resolved_app.description,
+            detail=resolved_app.details,
+            docs=resolved_app.docs_url,
+            spec=resolved_app.spec_path,
+            count=resolved_app.count,
+            minimum_resources=asdict(minimum),
+            maximum_resources=asdict(maximum),
+        )
+
     def list(self, request):
-        """
-        Provide all available apps.
-        """
+        """Provide all available apps."""
         apps = {}
 
-        for app_id, app_data in self.get_queryset().items():
+        for resolved_app in registry.list_apps():
             try:
-                spec = tycho.get_definition(app_id)
-                limits, reservations = parse_spec_resources(app_id, spec, app_data)
-
-                # TODO GPUs can be defined differently in docker-compose than in the
-                # submission from Tycho to k8s, how do we want to handle this?
-                # https://github.com/compose-spec/compose-spec/blob/master/deploy.md
-                # #capabilities
-                # https://github.com/helxplatform/tycho/search?q=gpu
-                gpu_reservations = search_for_gpu_reservation(reservations)
-                gpu_limits = search_for_gpu_reservation(limits)
-                spec = App(
-                    app_data["name"],
-                    app_id,
-                    app_data["description"],
-                    app_data["details"],
-                    app_data["docs"],
-                    app_data["spec"],
-                    app_data["count"],
-                    asdict(
-                        Resources(
-                            reservations.get("cpus", 0),
-                            gpu_reservations,
-                            reservations.get("memory", 0),
-                            reservations.get("ephemeralStorage", 0),
-                        )
-                    ),
-                    asdict(
-                        Resources(
-                            limits.get("cpus", 0),
-                            gpu_limits,
-                            limits.get("memory", 0),
-                            limits.get("ephemeralStorage", 0),
-                        )
-                    ),
-                )
-
-                apps[app_id] = asdict(spec)
+                minimum, maximum = extract_app_resources(resolved_app.app_id)
+                app_obj = self._app_to_response(resolved_app, minimum, maximum)
+                apps[resolved_app.app_id] = asdict(app_obj)
             except Exception as e:
-                logger.error(f"Could not parse {app_id}...continuing. {e}")
+                logger.error(f"Could not parse {resolved_app.app_id}...continuing. {e}")
                 continue
 
         apps = {key: value for key, value in sorted(apps.items())}
@@ -386,45 +330,14 @@ class AppViewSet(viewsets.GenericViewSet):
         # TODO change this to serializer.data after discovery on nested object data
         return Response(apps)
 
-    def retrieve(self, request, app_id: Optional[str]=None):
-        """
-        Provide app details.
-        """
-        app_data = self.get_queryset()[app_id]
-        spec = tycho.get_definition(app_id)
-        limits, reservations = parse_spec_resources(app_id, spec, app_data)
+    def retrieve(self, request, app_id: Optional[str] = None):
+        """Provide app details."""
+        resolved_app = registry.get_app(app_id)
+        minimum, maximum = extract_app_resources(app_id)
+        app_obj = self._app_to_response(resolved_app, minimum, maximum)
+        logger.debug(f"app:\n${app_obj}")
 
-        gpu_reservations = search_for_gpu_reservation(reservations)
-        gpu_limits = search_for_gpu_reservation(limits)
-
-        app = App(
-            app_data["name"],
-            app_id,
-            app_data["description"],
-            app_data["details"],
-            app_data["docs"],
-            app_data["spec"],
-            app_data["count"],
-            asdict(
-                Resources(
-                    reservations.get("cpus", 0),
-                    gpu_reservations,
-                    reservations.get("memory", 0),
-                    reservations.get("ephemeralStorage", 0)
-                )
-            ),
-            asdict(
-                Resources(
-                    limits.get("cpus", 0),
-                    gpu_limits,
-                    limits.get("memory", 0),
-                    limits.get("ephemeralStorage", 0)
-                )
-            )
-        )
-        logger.debug(f"app:\n${app}")
-
-        serializer = self.get_serializer(data=asdict(app))
+        serializer = self.get_serializer(data=asdict(app_obj))
         serializer.is_valid()
         if serializer.errors:
             logger.error(
@@ -436,41 +349,10 @@ class AppViewSet(viewsets.GenericViewSet):
 
 class InstanceViewSet(viewsets.GenericViewSet):
     """
-    InstanceViewSet - ViewSet for managing instances.
+    ViewSet for managing running application instances.
 
-    Endpoints:
-    - List Endpoint:
-        - URL: /instances/
-        - HTTP Method: GET
-        - Method: list
-
-    - Create Endpoint:
-        - URL: /instances/
-        - HTTP Method: POST
-        - Method: create
-
-    - Retrieve (Detail) Endpoint:
-        - URL: /instances/{sid}/
-        - HTTP Method: GET
-        - Method: retrieve
-        - Note: {sid} is a placeholder for the instance's ID.
-
-    - Destroy (Delete) Endpoint:
-        - URL: /instances/{sid}/
-        - HTTP Method: DELETE
-        - Method: destroy
-
-    - Partial Update Endpoint:
-        - URL: /instances/{sid}/
-        - HTTP Method: PATCH
-        - Method: partial_update
-
-    - Check Instance Readiness:
-        - URL: /instances/{sid}/is_ready/
-        - HTTP Method: GET
-        - Method: is_ready
-        - Description: Checks if a specific user instance, identified by its 'sid', is ready.
-
+    Uses kube.StatusQuery, HelxAppManager, and HelxInstManager instead
+    of the legacy TychoContext.
     """
 
     lookup_field = "sid"
@@ -486,83 +368,77 @@ class InstanceViewSet(viewsets.GenericViewSet):
         else:
             return InstanceSerializer
 
-    @functools.lru_cache(maxsize=16, typed=False)
-    def get_principal(self, request):
-        """
-        Retrieve principal information from Tycho based on the request
-        user.
-        """
-        tokens = get_tokens(request)
-        principal = Principal(*tokens)
-        return principal
-
     def get_queryset(self):
-        status = tycho.status({"username": self.request.user.username})
-        return status.services
+        """Return InstanceStatus objects for the current user."""
+        return _get_status_query().by_username(self.request.user.username)
+
+    def _instance_from_status(self, ist, username, host):
+        """Convert an InstanceStatus to the API Instance model."""
+        app_name = ist.app_name or ""
+        try:
+            resolved = registry.get_app(app_name)
+            name = resolved.name
+            docs = resolved.docs_url
+        except KeyError:
+            name = app_name
+            docs = ""
+
+        # Aggregate resource usage across containers
+        total_cpu = 0.0
+        total_gpu = 0
+        total_memory = 0.0
+        total_ephemeral = ""
+        for _cname, res in ist.resource_usage.items():
+            total_cpu += float(res.get("cpu", 0))
+            gpu_val = res.get("nvidia.com/gpu", 0)
+            total_gpu += int(gpu_val) if gpu_val else 0
+            total_memory += to_bytes(res.get("memory", "0"))
+            if res.get("ephemeral-storage"):
+                total_ephemeral = res["ephemeral-storage"]
+
+        return Instance(
+            name=name,
+            docs=docs,
+            aid=app_name,
+            sid=ist.instance_id,
+            fqsid=ist.name,
+            workspace_name=ist.workspace_name,
+            creation_time=ist.creation_time or "",
+            cpus=total_cpu,
+            gpus=total_gpu,
+            memory=total_memory,
+            ephemeralStorage=total_ephemeral,
+            host=host,
+            username=username,
+            is_ready=ist.is_ready,
+        )
 
     def get_instance(self, sid, username, host):
         active = self.get_queryset()
-
-        for instance in active:
-            if instance.identifier == sid:
-                app = tycho.apps.get(instance.app_id.rpartition("-")[0], {})
-                app_name = instance.app_id.replace(f"-{instance.identifier}", "")
-                return Instance(
-                    app.get("name"),
-                    app.get("docs"),
-                    app_name,
-                    instance.identifier,
-                    instance.app_id,
-                    instance.creation_time,
-                    instance.total_util["cpu"],
-                    instance.total_util["gpu"],
-                    instance.total_util["memory"],
-                    instance.total_util["ephemeralStorage"],
-                    app.get("app_id"),
-                    host,
-                    username,
-                    instance.is_ready
-                )
+        for ist in active:
+            if ist.instance_id == sid:
+                return self._instance_from_status(ist, username, host)
         return None
 
     def list(self, request):
-        """
-        Provide all active instances.
-        """
-
+        """Provide all active instances."""
         active = self.get_queryset()
-        principal = self.get_principal(request)
-        username = principal.username
+        username = request.user.get_username()
         host = get_host(request)
         instances = []
 
-        # host should be in the form of the deployment domain, if ambassador is
-        # marked as host then app url construction will be invalid.
         if not host.lower() == "ambassador":
-            for instance in active:
-                app_name = instance.app_id.replace(f"-{instance.identifier}", "")
+            for ist in active:
+                app_name = ist.app_name or ""
                 logger.debug(f"\nActive instance type:\n{app_name}\n")
 
-                app = tycho.apps.get(app_name)
-                if app:
+                try:
+                    registry.get_app(app_name)
+                except KeyError:
+                    continue
 
-                    inst = Instance(
-                        app.get("name"),
-                        app.get("docs"),
-                        app_name,
-                        instance.identifier,
-                        instance.app_id,
-                        instance.workspace_name,
-                        instance.creation_time,
-                        instance.total_util["cpu"],
-                        instance.total_util["gpu"],
-                        instance.total_util["memory"],
-                        instance.total_util["ephemeralStorage"],
-                        host,
-                        username,
-                        instance.is_ready
-                    )
-                    instances.append(asdict(inst))
+                inst = self._instance_from_status(ist, username, host)
+                instances.append(asdict(inst))
         else:
             logger.error(f"\nAmbassador seen as host:\n{host}\n")
 
@@ -571,11 +447,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         return Response(serializer.validated_data)
 
     def create(self, request):
-        """
-        Given an app id and resources pass the information to Tycho to start
-        a instance of an app.
-        """
-        
+        """Launch an instance of an app via the helxapp-controller."""
         username = request.user.get_username()
 
         serializer = self.get_serializer(data=request.data)
@@ -584,15 +456,13 @@ class InstanceViewSet(viewsets.GenericViewSet):
         logger.debug("creating resource_request")
         resource_request = serializer.create(serializer.validated_data)
         logger.debug(f"resource_request: {resource_request}")
-        irods_enabled = os.environ.get("IROD_HOST",'').strip()
-        # TODO update social query to fetch user.
+        irods_enabled = os.environ.get("IROD_HOST", '').strip()
 
-        #Need to set an environment variable for the IRODS UID
         if irods_enabled != '':
             nfs_id = get_nfs_uid(username)
             os.environ["NFSRODS_UID"] = str(nfs_id)
 
-        # We will update this later once a system id for the app exists
+        # Create identity token
         try:
             identity_token = UserIdentityToken.objects.create(user=request.user)
             logger.debug(f"Created identity token for user {username}")
@@ -602,27 +472,11 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 {"message": "Failed to create authentication token"},
                 status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        principal = Principal(username, identity_token.token, None)
 
         app_id = serializer.data["app_id"]
-        app_data = tycho.apps.get(app_id)
-        spec = tycho.get_definition(app_id)
-        limits, reservations = parse_spec_resources(app_id, spec, app_data)
-        gpu_reservations = search_for_gpu_reservation(reservations)
-        gpu_limits = search_for_gpu_reservation(limits)
 
-        minimum_resources = Resources(
-            reservations.get("cpus", 0),
-            gpu_reservations,
-            reservations.get("memory", 0),
-            reservations.get("ephemeralStorage", 0)
-        )
-        maximum_resources = Resources(
-            limits.get("cpus", 0),
-            gpu_limits,
-            limits.get("memory", 0),
-            limits.get("ephemeralStorage", 0)
-        )
+        # Validate resources against bounds
+        minimum_resources, maximum_resources = extract_app_resources(app_id)
 
         request_cpu = float(resource_request.cpus)
         request_gpu = int(resource_request.gpus)
@@ -637,136 +491,153 @@ class InstanceViewSet(viewsets.GenericViewSet):
         if validation_response is not None:
             return validation_response
 
-        env = {}
-        if settings.GRADER_API_URL is not None:
-            env["GRADER_API_URL"] = settings.GRADER_API_URL
-
+        # Build CRD specs
         host = get_host(request)
-        system = tycho.start(principal, app_id, resource_request.resources, host, env)
+        instance_id = uuid.uuid4().hex[:32]
+        inst_name = f"{app_id}-{instance_id}"
 
-        try:
-            identity_token.consumer_id = identity_token.compute_app_consumer_id(system.identifier)
-            identity_token.save()
-            logger.debug(f"Updated identity token with consumer_id {identity_token.consumer_id} for user {username}")
-        except Exception as e:
-            logger.error(
-                f"Failed to save identity token for user {username}, app {app_id}, "
-                f"system {system.identifier}: {type(e).__name__}: {str(e)}"
-            )
-            # Clean up the system that was started
-            try:
-                tycho.delete({"name": system.services[0].identifier})
-            except Exception as cleanup_error:
-                logger.error(f"Failed to cleanup system after token save failure: {str(cleanup_error)}")
-            return Response(
-                {"message": "Failed to save authentication token"},
-                status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+        helxapp_spec = registry.build_helxapp(app_id)
 
-        s = InstanceSpec(
-            principal.username,
+        # Per-user variable bindings for ${varname} substitution
+        inst_vars = {
+            "username": username,
+            "identifier": instance_id,
+            "access_token": str(identity_token.token),
+            "host": host,
+        }
+
+        helxinst_spec = registry.build_helxinst(
             app_id,
-            tycho.apps[app_id]["name"],
-            host,
-            resource_request.resources,
-            system.services[0].ip_address,
-            system.services[0].port,
-            system.services[0].identifier,
-            system.identifier,
+            username,
+            resource_request={
+                "cpu": str(resource_request.cpus),
+                "memory": resource_request.memory,
+                "gpu": str(resource_request.gpus),
+                "ephemeral_storage": resource_request.ephemeralStorage or None,
+            },
+            vars=inst_vars,
         )
-        # TODO: better status capture from Tycho on submission
-        if s:
-            serializer = InstanceSpecSerializer(data=asdict(s))
-            try:
-                serializer.is_valid(raise_exception=True)
-                logger.info(f"Launched app { app_id }-{ system.identifier } for user { username }")
-                return Response(serializer.validated_data)
-            except serializers.ValidationError as e:
-                # Delete invalid instance configuration that we won't be tracking
-                # for the user.
-                logger.error(f"Failed to launch app { app_id } for user { username }; exception: { str(e) }")
-                tycho.delete({"name": system.services[0].identifier})
-                # Clean up the identity token since instance won't be tracked
-                try:
-                    identity_token.delete()
-                    logger.debug(f"Deleted identity token for failed instance launch: user={username}, app={app_id}")
-                except Exception as token_error:
-                    logger.error(
-                        f"Failed to delete identity token after instance validation failure: "
-                        f"user={username}, app={app_id}, error={str(token_error)}"
-                    )
-                return Response(
-                    serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST
-                )
-        else:
-            # Failed to construct a tracked instance, attempt to remove
-            # potentially created instance rather than leaving it hanging.
-            logger.error(f"Failed to launch app { app_id } for user { username }; null instance spec")
-            tycho.delete({"name": system.services[0].identifier})
+
+        # Submit to Kubernetes
+        try:
+            _get_helxapp_mgr().ensure(app_id, helxapp_spec)
+            _get_helxinst_mgr().create(inst_name, helxinst_spec)
+        except Exception as e:
+            logger.error(f"Failed to create CRDs for {app_id}, user {username}: {e}")
             try:
                 identity_token.delete()
-                logger.debug(f"Deleted identity token for null instance spec: user={username}, app={app_id}")
-            except Exception as token_error:
-                logger.error(
-                    f"Failed to delete identity token after null instance spec: "
-                    f"user={username}, app={app_id}, error={str(token_error)}"
-                )
+            except Exception:
+                pass
             return Response(
                 {"message": "failed to submit app start."},
                 status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    def retrieve(self, request, sid=None):
-        """
-        Provide active instance details.
-        """
-        principal = self.get_principal(request)
-        username = principal.username
-        host = get_host(request)
-        instance = None
+        # Update identity token with consumer ID
+        try:
+            identity_token.consumer_id = identity_token.compute_app_consumer_id(instance_id)
+            identity_token.save()
+            logger.debug(f"Updated identity token with consumer_id {identity_token.consumer_id} for user {username}")
+        except Exception as e:
+            logger.error(
+                f"Failed to save identity token for user {username}, app {app_id}, "
+                f"instance {instance_id}: {type(e).__name__}: {str(e)}"
+            )
+            try:
+                _get_helxinst_mgr().delete(inst_name)
+            except Exception as cleanup_error:
+                logger.error(f"Failed to cleanup instance after token save failure: {str(cleanup_error)}")
+            return Response(
+                {"message": "Failed to save authentication token"},
+                status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
-        if sid != None: 
-            instance = self.get_instance(sid,username,host)
-            if instance != None:
+        resolved_app = registry.get_app(app_id)
+        s = InstanceSpec(
+            username=username,
+            app_id=app_id,
+            name=resolved_app.name,
+            host=host,
+            resources=resource_request.resources,
+            ip=None,
+            port=0,
+            svc_id=inst_name,
+            sys_id=instance_id,
+        )
+
+        serializer = InstanceSpecSerializer(data=asdict(s))
+        try:
+            serializer.is_valid(raise_exception=True)
+            logger.info(f"Launched app {app_id}-{instance_id} for user {username}")
+            return Response(serializer.validated_data)
+        except serializers.ValidationError as e:
+            logger.error(f"Failed to launch app {app_id} for user {username}; exception: {str(e)}")
+            try:
+                _get_helxinst_mgr().delete(inst_name)
+            except Exception:
+                pass
+            try:
+                identity_token.delete()
+                logger.debug(f"Deleted identity token for failed instance launch: user={username}, app={app_id}")
+            except Exception as token_error:
+                logger.error(
+                    f"Failed to delete identity token after instance validation failure: "
+                    f"user={username}, app={app_id}, error={str(token_error)}"
+                )
+            return Response(
+                serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST
+            )
+
+    def retrieve(self, request, sid=None):
+        """Provide active instance details."""
+        username = request.user.get_username()
+        host = get_host(request)
+
+        if sid is not None:
+            instance = self.get_instance(sid, username, host)
+            if instance is not None:
                 serializer = self.get_serializer(data=asdict(instance))
                 serializer.is_valid(raise_exception=True)
                 return Response(serializer.validated_data)
 
         logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
-    
+
     @action(detail=True, methods=['get'])
     def is_ready(self, request, sid=None):
-        principal = self.get_principal(request)
-        username = principal.username
+        username = request.user.get_username()
         host = get_host(request)
-        instance = None
 
-        if sid != None: 
-            instance = self.get_instance(sid,username,host)
-            if instance != None:
+        if sid is not None:
+            instance = self.get_instance(sid, username, host)
+            if instance is not None:
                 return Response({'is_ready': instance.is_ready})
 
         logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
-    
 
     def destroy(self, request, sid=None):
-        """
-        Submit instance id (sid) to tycho for removal.
-        """
+        """Delete an instance via the helxapp-controller."""
         serializer = self.get_serializer(data={"sid": sid})
         serializer.is_valid(raise_exception=True)
-        status = tycho.status({"name": serializer.validated_data["sid"]})
-        if status.services != None and len(status.services) == 1:
-            logger.debug("service username: " + str(status.services[0].username))
+        instance_id = serializer.validated_data["sid"]
+
+        # Find the instance and verify ownership
+        statuses = _get_status_query().by_instance_id(instance_id)
+        if statuses and len(statuses) == 1:
+            ist = statuses[0]
+            logger.debug("service username: " + str(ist.username))
             logger.debug("request username: " + str(request.user.username))
-            if status.services[0].username == request.user.username:
-                logger.info(f"Terminating app id { sid } for user { request.user.username }")
-                response = tycho.delete({"name": serializer.validated_data["sid"]})
-                # Delete all the tokens the user had associated with that app
+            if ist.username == request.user.username:
+                logger.info(f"Terminating app id {sid} for user {request.user.username}")
+
+                # Find the HelxInst CR name from the deployment name pattern
+                inst_mgr = _get_helxinst_mgr()
+                inst_mgr.delete(ist.name)
+
+                # Clean up identity tokens
                 try:
-                    consumer_id = UserIdentityToken.compute_app_consumer_id(serializer.validated_data["sid"])
+                    consumer_id = UserIdentityToken.compute_app_consumer_id(instance_id)
                     tokens = UserIdentityToken.objects.filter(user=request.user, consumer_id=consumer_id)
                     token_count = tokens.count()
                     tokens.delete()
@@ -776,51 +647,30 @@ class InstanceViewSet(viewsets.GenericViewSet):
                         f"Failed to delete identity tokens for terminated instance: "
                         f"user={request.user.username}, sid={sid}, error={type(token_error).__name__}: {str(token_error)}"
                     )
-                    # Continue anyway since the app was terminated successfully
-                # TODO How can we avoid this sleep? Do we need an immediate response beyond
-                # a successful submission? Can we do a follow up with Web Sockets or SSE
-                # to the front end?
                 time.sleep(2)
-                return Response(response)
+                return Response({"status": "success"})
             else:
-                logger.warning(f"User { request.user.username } attempted to terminate app id { sid } owned by user { status.services[0].username }")
+                logger.warning(f"User {request.user.username} attempted to terminate app id {sid} owned by user {ist.username}")
                 return Response(status=drf_status.HTTP_403_FORBIDDEN)
-        else: return Response(status=drf_status.HTTP_404_NOT_FOUND)
+        else:
+            return Response(status=drf_status.HTTP_404_NOT_FOUND)
 
     def partial_update(self, request, sid=None):
-        """
-        Pass labels, cpu and memory to tycho for patching a running deployment.
-        """
+        """Update resources on a running instance."""
         serializer = InstanceModifySerializer(data=request.data)
         serializer.is_valid()
 
         data = serializer.validated_data
-        data.update({"tycho-guid": sid})
-
-        principal = self.get_principal(request)
-        username = principal.username
+        username = request.user.get_username()
         host = get_host(request)
-        instance = self.get_instance(sid,username,host)
+        instance = self.get_instance(sid, username, host)
+
+        if instance is None:
+            return Response(status=drf_status.HTTP_404_NOT_FOUND)
 
         app_id = instance.aid
-        app_data = tycho.apps.get(app_id)
-        spec = tycho.get_definition(app_id)
-        limits, reservations = parse_spec_resources(app_id, spec, app_data)
-        gpu_reservations = search_for_gpu_reservation(reservations)
-        gpu_limits = search_for_gpu_reservation(limits)
+        minimum_resources, maximum_resources = extract_app_resources(app_id)
 
-        minimum_resources = Resources(
-            reservations.get("cpus", 0),
-            gpu_reservations,
-            reservations.get("memory", 0),
-            reservations.get("ephemeralStorage", 0)
-        )
-        maximum_resources = Resources(
-            limits.get("cpus", 0),
-            gpu_limits,
-            limits.get("memory", 0),
-            limits.get("ephemeralStorage", 0)
-        )
         request_cpu = float(data["cpu"]) if "cpu" in data else None
         request_gpu = float(data["gpu"]) if "gpu" in data else None
         request_memory = to_bytes(data["memory"]) if "memory" in data else None
@@ -834,10 +684,38 @@ class InstanceViewSet(viewsets.GenericViewSet):
         if validation_response is not None:
             return validation_response
 
-        response = tycho.update(data)
+        # Build updated HelxInstSpec and patch the CRD
+        resource_dict = {}
+        if "cpu" in data:
+            resource_dict["cpu"] = str(data["cpu"])
+        if "memory" in data:
+            resource_dict["memory"] = data["memory"]
+        if "gpu" in data:
+            resource_dict["gpu"] = str(data["gpu"])
 
-        logger.debug(f"Update Response: {response}")
-        return Response(response)
+        helxinst_spec = registry.build_helxinst(
+            app_id,
+            username,
+            resource_request=resource_dict if resource_dict else None,
+        )
+
+        # Find the HelxInst CR name from the instance status
+        statuses = _get_status_query().by_instance_id(sid)
+        if not statuses:
+            return Response(status=drf_status.HTTP_404_NOT_FOUND)
+
+        inst_name = statuses[0].name
+        try:
+            _get_helxinst_mgr().update(inst_name, helxinst_spec)
+        except Exception as e:
+            logger.error(f"Failed to update instance {inst_name}: {e}")
+            return Response(
+                {"message": "Failed to update instance."},
+                status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        logger.debug(f"Updated instance {inst_name}")
+        return Response({"status": "success"})
 
 
 class UsersViewSet(viewsets.GenericViewSet):
