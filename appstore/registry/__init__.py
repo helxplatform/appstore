@@ -134,10 +134,18 @@ class AppRegistry:
         username: str,
         resource_request: dict | None = None,
         security_context: SecurityContext | None = None,
+        vars: dict[str, str] | None = None,
     ) -> HelxInstSpec:
-        """Build a HelxInstSpec for launching."""
+        """Build a HelxInstSpec for launching.
+
+        :param vars: Per-user variable bindings resolved from the
+            user's session context.  The controller substitutes
+            ``${varname}`` in the HelxApp template with these values.
+        """
         app = self.get_app(app_id)
-        return build_helxinst_spec(app, username, resource_request, security_context)
+        return build_helxinst_spec(
+            app, username, resource_request, security_context, vars
+        )
 
 
 __all__ = [

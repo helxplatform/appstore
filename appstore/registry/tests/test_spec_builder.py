@@ -65,7 +65,7 @@ class TestBuildHelxappSpec:
     def test_with_volumes(self):
         compose = _compose(volumes=["data:/home/jovyan", "scratch:/tmp"])
         spec = build_helxapp_spec(_app(), compose)
-        assert spec.services[0].volumes == {"data": "/home/jovyan", "scratch": "/tmp"}
+        assert spec.services[0].volumes == {"data": "data:/home/jovyan", "scratch": "scratch:/tmp"}
 
     def test_with_security_context(self):
         sc = SecurityContext(run_as_user=1000, fs_group=100)

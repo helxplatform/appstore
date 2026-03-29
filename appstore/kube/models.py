@@ -128,12 +128,16 @@ class HelxAppSpec:
 
     app_class_name: str
     services: list[AppServiceSpec] = field(default_factory=list)
+    helx_vars: list[str] | None = None
 
     def to_dict(self) -> dict:
-        return {
+        d: dict = {
             "appClassName": self.app_class_name,
             "services": [s.to_dict() for s in self.services],
         }
+        if self.helx_vars:
+            d["helxVars"] = self.helx_vars
+        return d
 
 
 @dataclass
@@ -144,12 +148,15 @@ class HelxInstSpec:
     user_name: str
     resources: dict[str, ContainerResources] = field(default_factory=dict)
     security_context: SecurityContext | None = None
+    vars: dict[str, str] | None = None
 
     def to_dict(self) -> dict:
         d: dict = {
             "appName": self.app_name,
             "userName": self.user_name,
         }
+        if self.vars:
+            d["vars"] = self.vars
         if self.resources:
             d["resources"] = {
                 name: cr.to_dict() for name, cr in self.resources.items()
