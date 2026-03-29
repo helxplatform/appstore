@@ -2,7 +2,6 @@ import logging
 
 from allauth.socialaccount.signals import pre_social_login
 
-from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.dispatch import receiver
 from django.http import  HttpResponse, JsonResponse
@@ -10,30 +9,7 @@ from django.shortcuts import render, redirect
 
 from core.models import UserIdentityToken
 
-from tycho.context import ContextFactory
-
-from urllib.parse import urljoin
-
 logger = logging.getLogger(__name__)
-
-"""
-Tycho context for application management.
-Manages application metadata, discovers and invokes TychoClient, etc.
-"""
-contextFactory = ContextFactory()
-if settings.EXTERNAL_TYCHO_APP_REGISTRY_ENABLED == "false":
-    logger.debug (f"-- appstore.appstore.core.views.py: EXTERNAL_TYCHO_APP_REGISTRY_ENABLED is 'false', using Tycho built-in app registry file")
-    tycho = contextFactory.get(
-            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND
-    )
-else:
-    logger.debug (f"-- appstore.appstore.core.views.py: EXTERNAL_TYCHO_APP_REGISTRY_REPO is {settings.EXTERNAL_TYCHO_APP_REGISTRY_REPO}, EXTERNAL_TYCHO_APP_REGISTRY_BRANCH is {settings.EXTERNAL_TYCHO_APP_REGISTRY_BRANCH}, using external app registry file")
-    # urljoin might not work as planned if the first part doesn't end with a slash.
-    tycho_config_url = urljoin(settings.EXTERNAL_TYCHO_APP_REGISTRY_REPO, settings.EXTERNAL_TYCHO_APP_REGISTRY_BRANCH)
-    logger.debug (f"tycho_config_url: {tycho_config_url}")
-    tycho = contextFactory.get(
-            context_type=settings.TYCHO_MODE, product=settings.APPLICATION_BRAND, tycho_config_url=tycho_config_url
-    )
 
 
 @receiver(pre_social_login)

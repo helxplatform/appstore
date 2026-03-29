@@ -20,7 +20,7 @@ from allauth import socialaccount
 
 from appspec import parse_compose
 from kube import KubeClient, HelxAppManager, HelxInstManager, StatusQuery
-from registry import AppRegistry
+from registry import get_registry
 from core.models import IrodAuthorizedUser, UserIdentityToken
 
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
@@ -46,11 +46,7 @@ logger = logging.getLogger(__name__)
 # Module-level singletons: AppRegistry (catalog) and Kube clients (runtime)
 # ---------------------------------------------------------------------------
 
-registry = AppRegistry(
-    registry_path=os.environ.get("APP_REGISTRY_PATH", "app-registry.yaml"),
-    defaults_path=os.environ.get("APP_DEFAULTS_PATH", "app-defaults.yaml"),
-    product=getattr(settings, "APPLICATION_BRAND", "common"),
-)
+registry = get_registry()
 
 _kube_client: KubeClient | None = None
 

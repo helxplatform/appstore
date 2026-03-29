@@ -44,23 +44,13 @@ DEBUG = bool(DEBUG_STRING)
 
 # stub, local, dev, val, prod.
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
-TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
 
 # Needs to be JSON-encoded since expressions can contain basically any character that would be used as a delimiter.
 AUTO_WHITELIST_PATTERNS = json.loads(os.environ.get("AUTO_WHITELIST_PATTERNS", "[]"))
 
-# Variables used for an external Tycho app registry.
-# ToDo: Consider setting the default value of TYCHO_APP_REGISTRY_REPO to
-# "https://github.com/helxplatform/helx-apps/raw" and remove any other similar
-# variable.  Maybe don't set and raise a fatal error if not set (still remove
-# other similar variables).
-EXTERNAL_TYCHO_APP_REGISTRY_ENABLED = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_ENABLED", "false").lower()
-EXTERNAL_TYCHO_APP_REGISTRY_REPO = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_REPO", "")
-# Make sure TYCHO_APP_REGISTRY_REPO ends with "/" or suffix is removed by urljoin.
-if EXTERNAL_TYCHO_APP_REGISTRY_REPO != "":
-    EXTERNAL_TYCHO_APP_REGISTRY_REPO += "/" if not EXTERNAL_TYCHO_APP_REGISTRY_REPO.endswith("/") else ""
-EXTERNAL_TYCHO_APP_REGISTRY_BRANCH = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_BRANCH", "master")
-EXTERNAL_TYCHO_APP_REGISTRY_APP_SPECS_DIR = os.environ.get("EXTERNAL_TYCHO_APP_REGISTRY_APP_SPECS_DIR", "app-specs")
+# App registry configuration.
+# APP_REGISTRY_PATH and APP_DEFAULTS_PATH are read by registry.get_registry()
+# from the environment at startup.
 DOCKSTORE_APP_SPECS_DIR_URL = os.environ.get("DOCKSTORE_APP_SPECS_DIR_URL")
 
 # DJANGO and SAML login toggle flags, lower cased for ease of comparison
@@ -106,7 +96,6 @@ LOCAL_APPS = [
     "frontend",
     "middleware",
     "product",
-    "tycho",
 ]
 
 ACCOUNT_EMAIL_REQUIRED = True
@@ -398,7 +387,15 @@ LOGGING = {
             "handlers": ["console"] + (["syslog"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },
-        "tycho": {
+        "registry": {
+            "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
+            "level": LOG_LEVEL,
+        },
+        "kube": {
+            "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
+            "level": LOG_LEVEL,
+        },
+        "appspec": {
             "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },

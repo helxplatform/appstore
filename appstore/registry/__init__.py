@@ -148,9 +148,44 @@ class AppRegistry:
         )
 
 
+_registry_instance: AppRegistry | None = None
+
+
+def get_registry() -> AppRegistry:
+    """Return the process-wide AppRegistry singleton.
+
+    Reads configuration from environment variables / Django settings on
+    first call; subsequent calls return the cached instance.
+
+    Environment variables:
+        ``APP_REGISTRY_PATH`` — path to ``app-registry.yaml``
+        ``APP_DEFAULTS_PATH`` — path to ``app-defaults.yaml``
+
+    Falls back to Django ``settings.APPLICATION_BRAND`` for the product
+    context, defaulting to ``"common"``.
+    """
+    global _registry_instance
+    if _registry_instance is not None:
+        return _registry_instance
+
+    try:
+        from django.conf import settings as django_settings
+        product = getattr(django_settings, "APPLICATION_BRAND", "common")
+    except Exception:
+        product = os.environ.get("APPLICATION_BRAND", "common")
+
+    _registry_instance = AppRegistry(
+        registry_path=os.environ.get("APP_REGISTRY_PATH", "app-registry.yaml"),
+        defaults_path=os.environ.get("APP_DEFAULTS_PATH", "app-defaults.yaml"),
+        product=product,
+    )
+    return _registry_instance
+
+
 __all__ = [
     "AppRegistry",
     "ResolvedApp",
     "RegistryError",
     "SpecLoadError",
+    "get_registry",
 ]
