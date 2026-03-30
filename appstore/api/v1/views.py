@@ -45,10 +45,8 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Module-level singletons: AppRegistry (catalog) and Kube clients (runtime)
+# Lazy singletons: created on first request, not at import time.
 # ---------------------------------------------------------------------------
-
-registry = get_registry()
 
 _kube_client: KubeClient | None = None
 
@@ -101,8 +99,8 @@ def extract_app_resources(app_id: str) -> tuple[Resources, Resources]:
 
     Returns (minimum_resources, maximum_resources).
     """
-    app = registry.get_app(app_id)
-    compose = registry.get_spec(app_id)
+    app = get_registry().get_app(app_id)
+    compose = get_registry().get_spec(app_id)
     compose_app = parse_compose(compose, ext=app.ext)
 
     svc = compose_app.get_service(app_id)
@@ -307,7 +305,7 @@ class AppViewSet(viewsets.GenericViewSet):
         """Provide all available apps."""
         apps = {}
 
-        for resolved_app in registry.list_apps():
+        for resolved_app in get_registry().list_apps():
             try:
                 minimum, maximum = extract_app_resources(resolved_app.app_id)
                 app_obj = self._app_to_response(resolved_app, minimum, maximum)
@@ -330,7 +328,7 @@ class AppViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, app_id: Optional[str] = None):
         """Provide app details."""
-        resolved_app = registry.get_app(app_id)
+        resolved_app = get_registry().get_app(app_id)
         minimum, maximum = extract_app_resources(app_id)
         app_obj = self._app_to_response(resolved_app, minimum, maximum)
         logger.debug(f"app:\n${app_obj}")
@@ -374,7 +372,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """Convert an InstanceStatus to the API Instance model."""
         app_name = ist.app_name or ""
         try:
-            resolved = registry.get_app(app_name)
+            resolved = get_registry().get_app(app_name)
             name = resolved.name
             docs = resolved.docs_url
         except KeyError:
@@ -431,7 +429,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 logger.debug(f"\nActive instance type:\n{app_name}\n")
 
                 try:
-                    registry.get_app(app_name)
+                    get_registry().get_app(app_name)
                 except KeyError:
                     continue
 
@@ -494,7 +492,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         instance_id = uuid.uuid4().hex[:32]
         inst_name = f"{app_id}-{instance_id}"
 
-        helxapp_spec = registry.build_helxapp(app_id)
+        helxapp_spec = get_registry().build_helxapp(app_id)
 
         # Per-user variable bindings for ${varname} substitution
         inst_vars = {
@@ -504,7 +502,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
             "host": host,
         }
 
-        helxinst_spec = registry.build_helxinst(
+        helxinst_spec = get_registry().build_helxinst(
             app_id,
             username,
             resource_request={
@@ -550,7 +548,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 status=drf_status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        resolved_app = registry.get_app(app_id)
+        resolved_app = get_registry().get_app(app_id)
         s = InstanceSpec(
             username=username,
             app_id=app_id,
@@ -691,7 +689,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         if "gpu" in data:
             resource_dict["gpu"] = str(data["gpu"])
 
-        helxinst_spec = registry.build_helxinst(
+        helxinst_spec = get_registry().build_helxinst(
             app_id,
             username,
             resource_request=resource_dict if resource_dict else None,
