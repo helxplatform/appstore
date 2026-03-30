@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 Label constants and helpers aligned with helxapp-controller taxonomy.
 
