@@ -21,7 +21,8 @@ from rest_framework import status
 from allauth import socialaccount
 
 from appspec import parse_compose
-from kube import KubeClient, HelxAppManager, HelxInstManager, StatusQuery
+from kube import KubeClient, HelxAppManager, HelxInstManager, HelxUserManager, StatusQuery
+from kube.models import HelxUserSpec
 from registry import get_registry
 from core.models import IrodAuthorizedUser, UserIdentityToken
 
@@ -67,6 +68,11 @@ def _get_helxapp_mgr() -> HelxAppManager:
 def _get_helxinst_mgr() -> HelxInstManager:
     kc = _get_kube()
     return HelxInstManager(kc.custom, kc.namespace)
+
+
+def _get_helxuser_mgr() -> HelxUserManager:
+    kc = _get_kube()
+    return HelxUserManager(kc.custom, kc.namespace)
 
 
 def _get_status_query() -> StatusQuery:
@@ -516,6 +522,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # Submit to Kubernetes
         try:
+            _get_helxuser_mgr().ensure(username, HelxUserSpec())
             _get_helxapp_mgr().ensure(app_id, helxapp_spec)
             _get_helxinst_mgr().create(inst_name, helxinst_spec)
         except Exception as e:
