@@ -232,7 +232,7 @@ def parse_probe(raw: dict | str | None) -> ProbeSpec | None:
         return ProbeSpec(
             probe_type="httpGet",
             path=http.get("path"),
-            port=int(http["port"]) if "port" in http else None,
+            port=_parse_port_or_template(http.get("port")),
             http_headers=http.get("httpHeaders"),
             delay=delay,
             period=period,
@@ -242,7 +242,7 @@ def parse_probe(raw: dict | str | None) -> ProbeSpec | None:
         tcp = raw["tcpSocket"]
         return ProbeSpec(
             probe_type="tcpSocket",
-            port=int(tcp["port"]),
+            port=_parse_port_or_template(tcp.get("port")),
             delay=delay,
             period=period,
             threshold=threshold,
@@ -254,6 +254,23 @@ def parse_probe(raw: dict | str | None) -> ProbeSpec | None:
 # -----------------------------------------------------------------------
 # Internal helpers
 # -----------------------------------------------------------------------
+
+
+def _parse_port_or_template(val) -> int | str | None:
+    """Parse a port value that may be an int, numeric string, or Jinja2 template.
+
+    Template strings like ``{{ system_port }}`` are preserved as-is for
+    later resolution at instance launch time.
+    """
+    if val is None:
+        return None
+    s = str(val)
+    if "{{" in s:
+        return s
+    try:
+        return int(s)
+    except ValueError:
+        return s
 
 
 def _parse_command_or_entrypoint(svc: dict) -> list[str] | None:

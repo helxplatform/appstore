@@ -43,7 +43,7 @@ class ProbeSpec:
 
     # httpGet
     path: str | None = None
-    port: int | None = None
+    port: int | str | None = None  # may be a Jinja2 template at parse time
     http_headers: list[dict] | None = None
 
     # tcpSocket reuses port field
