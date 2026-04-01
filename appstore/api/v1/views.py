@@ -510,7 +510,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         helxinst_spec = get_registry().build_helxinst(
             app_id,
-            username,
+            username.lower(),
             resource_request={
                 "cpu": str(resource_request.cpus),
                 "memory": resource_request.memory,
@@ -698,7 +698,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         helxinst_spec = get_registry().build_helxinst(
             app_id,
-            username,
+            username.lower(),
             resource_request=resource_dict if resource_dict else None,
         )
 
