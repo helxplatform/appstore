@@ -5,7 +5,28 @@ from __future__ import annotations
 import os
 
 import yaml
-from jinja2 import Template
+from jinja2 import Environment, Undefined
+
+
+class _KeepUndefined(Undefined):
+    """Render undefined Jinja2 variables as empty strings.
+
+    Compose specs may reference variables (``{{ azure_registry }}``, etc.)
+    that are only meaningful at deploy time.  Rather than crashing on
+    parse, we treat them as blank so the YAML is still structurally valid.
+    """
+
+    def __str__(self):
+        return ""
+
+    def __iter__(self):
+        return iter([])
+
+    def __bool__(self):
+        return False
+
+
+_jinja_env = Environment(undefined=_KeepUndefined)
 
 
 class RegistryLoader:
@@ -21,11 +42,12 @@ class RegistryLoader:
 
         The double-pass is intentional: the raw file may contain Jinja2
         expressions like ``{{ helx_registry }}``.  We render those first,
-        then parse the result as YAML.
+        then parse the result as YAML.  Unknown variables are rendered as
+        empty strings so the spec is still structurally parseable.
         """
         with open(spec_path) as f:
             raw = f.read()
-        rendered = Template(raw).render(settings)
+        rendered = _jinja_env.from_string(raw).render(settings)
         return yaml.safe_load(rendered) or {}
 
     def load_settings(self, spec_path: str) -> str:

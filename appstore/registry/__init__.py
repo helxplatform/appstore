@@ -93,8 +93,20 @@ class AppRegistry:
         app = self.get_app(app_id)
         if app.spec_obj is not None:
             return app.spec_obj
+
+        # Build template context: registry settings + per-app variables.
+        # Compose specs may use Jinja2 macros like {{ system_port }},
+        # {{ helx_registry }}, etc.
+        context = dict(self.settings)
+        if app.services:
+            # system_port = first service port (matches legacy tycho behaviour)
+            first_port = next(iter(app.services.values()), None)
+            context["system_port"] = first_port if first_port is not None else 8000
+        else:
+            context["system_port"] = 8000
+
         try:
-            spec = self.loader.load_spec(app.spec_path, self.settings)
+            spec = self.loader.load_spec(app.spec_path, context)
         except FileNotFoundError as exc:
             raise SpecLoadError(
                 f"Spec file not found for {app_id!r}: {app.spec_path}",
