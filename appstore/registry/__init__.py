@@ -158,8 +158,8 @@ def get_registry() -> AppRegistry:
     first call; subsequent calls return the cached instance.
 
     Environment variables:
-        ``APP_REGISTRY_PATH`` — path to ``app-registry.yaml``
-        ``APP_DEFAULTS_PATH`` — path to ``app-defaults.yaml``
+        ``APP_REGISTRY_PATH`` — directory containing ``app-registry.yaml``
+            and the ``app-specs/`` subdirectory (default: ``"."``).
 
     Falls back to Django ``settings.APPLICATION_BRAND`` for the product
     context, defaulting to ``"common"``.
@@ -174,9 +174,10 @@ def get_registry() -> AppRegistry:
     except Exception:
         product = os.environ.get("APPLICATION_BRAND", "common")
 
+    registry_dir = os.environ.get("APP_REGISTRY_PATH", ".")
     _registry_instance = AppRegistry(
-        registry_path=os.environ.get("APP_REGISTRY_PATH", "app-registry.yaml"),
-        defaults_path=os.environ.get("APP_DEFAULTS_PATH", "app-defaults.yaml"),
+        registry_path=os.path.join(registry_dir, "app-registry.yaml"),
+        defaults_path=os.path.join(registry_dir, "app-defaults.yaml"),
         product=product,
     )
     return _registry_instance

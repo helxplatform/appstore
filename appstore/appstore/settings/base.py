@@ -49,8 +49,8 @@ DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 AUTO_WHITELIST_PATTERNS = json.loads(os.environ.get("AUTO_WHITELIST_PATTERNS", "[]"))
 
 # App registry configuration.
-# APP_REGISTRY_PATH and APP_DEFAULTS_PATH are read by registry.get_registry()
-# from the environment at startup.
+# APP_REGISTRY_PATH (directory containing app-registry.yaml and app-specs/)
+# is read by registry.get_registry() from the environment at first request.
 DOCKSTORE_APP_SPECS_DIR_URL = os.environ.get("DOCKSTORE_APP_SPECS_DIR_URL")
 
 # DJANGO and SAML login toggle flags, lower cased for ease of comparison

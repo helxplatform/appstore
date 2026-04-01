@@ -30,7 +30,9 @@ Transforms applied:
   - ``securityContext.uid/gid`` → ``runAsUser/runAsGroup``
   - ``app-defaults.yaml`` merged into every app (no separate file in output)
   - Contexts pruned to only the target context and its ancestors
-  - Only app-spec directories for apps in the resolved context are copied
+  - Apps pruned: only apps the terminal context references (via ``apps:``
+    keys or bare-key overrides) are kept; unreferenced apps are removed
+    from ancestor contexts and their app-spec directories are not copied
 
 Usage::
 
@@ -109,7 +111,7 @@ def migrate_app(app_id: str, app: dict) -> dict:
 # Context migration
 # -----------------------------------------------------------------------
 
-_CTX_RESERVED = {"extends", "apps", "name", "description", "mixin"}
+_CTX_RESERVED = frozenset({"extends", "apps", "name", "description", "mixin"})
 
 
 def migrate_context(name: str, ctx: dict) -> dict:
@@ -216,6 +218,69 @@ def collect_app_ids(contexts: dict, context_name: str) -> set[str]:
 
 
 # -----------------------------------------------------------------------
+# Terminal-context app resolution and pruning
+# -----------------------------------------------------------------------
+
+def resolve_terminal_apps(
+    contexts: dict[str, dict],
+    context_name: str,
+) -> set[str]:
+    """Determine the canonical set of app IDs for a terminal context.
+
+    Looks at the terminal context's own ``apps:`` keys **and** bare-key
+    overrides (non-reserved keys that are dicts).  These are the apps
+    the terminal context explicitly references — everything else in
+    ancestor contexts is noise from sibling products.
+
+    If the terminal context has no explicit app references at all, falls
+    back to :func:`collect_app_ids` (keep everything from ancestors).
+    """
+    ctx = contexts.get(context_name, {})
+    wanted: set[str] = set()
+
+    # Apps declared under the ``apps:`` key
+    wanted.update(ctx.get("apps", {}).keys())
+
+    # Bare-key per-app overrides (e.g. ``jupyter-ds: {securityContext: …}``)
+    for key, val in ctx.items():
+        if key not in _CTX_RESERVED and isinstance(val, dict):
+            wanted.add(key)
+
+    if wanted:
+        return wanted
+
+    # Terminal context has no explicit app references — keep all inherited
+    return collect_app_ids(contexts, context_name)
+
+
+def prune_contexts_to_apps(
+    contexts: dict[str, dict],
+    wanted_apps: set[str],
+) -> dict[str, dict]:
+    """Remove apps and bare-key overrides not in *wanted_apps*.
+
+    Returns a new dict; the originals are not mutated.
+    """
+    result = copy.deepcopy(contexts)
+    for ctx_name, ctx in result.items():
+        # Prune apps dict
+        if "apps" in ctx:
+            ctx["apps"] = {
+                aid: adef
+                for aid, adef in ctx["apps"].items()
+                if aid in wanted_apps
+            }
+
+        # Prune bare-key overrides
+        for key in list(ctx.keys()):
+            if key not in _CTX_RESERVED and isinstance(ctx[key], dict):
+                if key not in wanted_apps:
+                    del ctx[key]
+
+    return result
+
+
+# -----------------------------------------------------------------------
 # Top-level migration
 # -----------------------------------------------------------------------
 
@@ -272,6 +337,15 @@ def migrate_registry(
         )
         v1_contexts = {k: v for k, v in v1_contexts.items() if k in keep}
 
+        # Prune apps to only those the terminal context references
+        wanted_apps = resolve_terminal_apps(v1_contexts, context)
+        logger.info(
+            "Terminal context %r references apps: %s",
+            context,
+            ", ".join(sorted(wanted_apps)),
+        )
+        v1_contexts = prune_contexts_to_apps(v1_contexts, wanted_apps)
+
     v2["contexts"] = {
         name: migrate_context(name, ctx)
         for name, ctx in v1_contexts.items()
@@ -326,7 +400,10 @@ def migrate_directory(
     if defaults:
         v1_contexts = merge_defaults_into_contexts(v1_contexts, defaults)
     if context:
-        app_ids = collect_app_ids(v1_contexts, context)
+        # Prune to ancestor contexts first, then resolve terminal apps
+        keep = collect_ancestors(v1_contexts, context)
+        pruned_contexts = {k: v for k, v in v1_contexts.items() if k in keep}
+        app_ids = resolve_terminal_apps(pruned_contexts, context)
     else:
         # All apps across all contexts
         app_ids = set()
