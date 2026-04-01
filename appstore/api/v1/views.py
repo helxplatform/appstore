@@ -522,7 +522,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # Submit to Kubernetes
         try:
-            _get_helxuser_mgr().ensure(username, HelxUserSpec())
+            _get_helxuser_mgr().ensure(username.lower(), HelxUserSpec())
             _get_helxapp_mgr().ensure(app_id, helxapp_spec)
             _get_helxinst_mgr().create(inst_name, helxinst_spec)
         except Exception as e:
