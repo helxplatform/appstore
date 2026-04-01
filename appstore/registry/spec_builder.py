@@ -55,11 +55,22 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         else:
             rb = None
 
+        # Merge compose env with standard per-instance vars (as controller
+        # placeholders).  The controller substitutes ${varname} at launch.
+        env = dict(svc.environment)
+        env.setdefault("NB_PREFIX", "${NB_PREFIX}")
+        env.setdefault("FB_BASEURL", "${FB_BASEURL}")
+        env.setdefault("GUID", "${GUID}")
+        env.setdefault("USER_NAME", "${USER_NAME}")
+        env.setdefault("USER", "${USER}")
+        env.setdefault("ACCESS_TOKEN", "${access_token}")
+        env.setdefault("HOST", "${host}")
+
         svc_specs.append(AppServiceSpec(
             name=svc.name,
             image=svc.image,
             command=svc.command,
-            environment=svc.environment,
+            environment=env,
             ports=ports,
             volumes=volumes,
             security_context=app.security_context,

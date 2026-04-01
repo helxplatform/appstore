@@ -500,12 +500,21 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         helxapp_spec = get_registry().build_helxapp(app_id)
 
-        # Per-user variable bindings for ${varname} substitution
+        # Per-user variable bindings for ${varname} substitution.
+        # The controller injects these into pods as environment variables
+        # and substitutes ${varname} in HelxApp service templates.
+        proxy_path = f"/private/{app_id}/{username}/{instance_id}"
         inst_vars = {
             "username": username,
             "identifier": instance_id,
             "access_token": str(identity_token.token),
             "host": host,
+            "system_name": app_id,
+            "NB_PREFIX": proxy_path,
+            "FB_BASEURL": proxy_path,
+            "GUID": instance_id,
+            "USER_NAME": username,
+            "USER": username,
         }
 
         helxinst_spec = get_registry().build_helxinst(
