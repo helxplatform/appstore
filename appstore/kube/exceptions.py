@@ -8,6 +8,11 @@ class KubeError(Exception):
         super().__init__(message)
         self.details = details
 
+    def __str__(self):
+        if self.details:
+            return f"{self.args[0]}: {self.details}"
+        return self.args[0]
+
 
 class AppError(KubeError):
     """Raised when a HelxApp operation fails."""

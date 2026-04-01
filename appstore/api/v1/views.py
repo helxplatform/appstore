@@ -519,7 +519,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
             _get_helxapp_mgr().ensure(app_id, helxapp_spec)
             _get_helxinst_mgr().create(inst_name, helxinst_spec)
         except Exception as e:
-            logger.error(f"Failed to create CRDs for {app_id}, user {username}: {e}")
+            logger.error(f"Failed to create CRDs for {app_id}, user {username}: {type(e).__name__}: {e}")
             try:
                 identity_token.delete()
             except Exception:
