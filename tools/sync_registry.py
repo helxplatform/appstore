@@ -159,7 +159,7 @@ def sync(
 
 def _run_migration(target: str, specs_dir: str) -> None:
     """Run the v1→v2 migration on the registry file in *target*."""
-    from tools.migrate_registry import migrate_registry, migrate_defaults
+    from tools.migrate_registry import migrate_registry
 
     import yaml
 
@@ -176,20 +176,22 @@ def _run_migration(target: str, specs_dir: str) -> None:
         logger.info("Registry already appears to be v2 format, skipping migration")
         return
 
-    v2 = migrate_registry(v1, spec_dir=specs_dir)
+    # Load and bake in defaults if present
+    defaults = None
+    defaults_path = os.path.join(target, "app-defaults.yaml")
+    if os.path.isfile(defaults_path):
+        with open(defaults_path) as f:
+            defaults = yaml.safe_load(f) or {}
+
+    v2 = migrate_registry(v1, defaults=defaults, spec_dir=specs_dir)
     with open(reg_path, "w") as f:
         yaml.dump(v2, f, default_flow_style=False, sort_keys=False)
     logger.info("Migrated %s to v2 format", reg_path)
 
-    # Migrate defaults if present
-    defaults_path = os.path.join(target, "app-defaults.yaml")
-    if os.path.isfile(defaults_path):
-        with open(defaults_path) as f:
-            v1_defaults = yaml.safe_load(f) or {}
-        v2_defaults = migrate_defaults(v1_defaults)
-        with open(defaults_path, "w") as f:
-            yaml.dump(v2_defaults, f, default_flow_style=False, sort_keys=False)
-        logger.info("Migrated %s to v2 format", defaults_path)
+    # Remove defaults file — values are now baked into the registry
+    if defaults is not None:
+        os.remove(defaults_path)
+        logger.info("Removed %s (defaults baked into registry)", defaults_path)
 
 
 # -----------------------------------------------------------------------

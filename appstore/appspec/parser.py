@@ -47,7 +47,7 @@ def parse_service(
     command = _parse_command_or_entrypoint(svc)
     environment = parse_environment(svc.get("environment", {}))
     ports = parse_ports(svc.get("ports", []))
-    expose = [int(p) for p in svc.get("expose", [])]
+    expose = [int(p) for p in svc.get("expose", []) if "{{" not in str(p)]
     volumes = parse_volumes(svc.get("volumes", []))
     depends_on = list(svc.get("depends_on", []))
 
@@ -85,14 +85,22 @@ def parse_service(
 
 
 def parse_ports(raw_ports: list) -> list[int]:
-    """Extract container ports from compose port entries."""
+    """Extract container ports from compose port entries.
+
+    Skips entries that contain un-rendered Jinja2 templates (``{{ … }}``).
+    """
     result = []
     for entry in raw_ports:
         s = str(entry)
-        if ":" in s:
-            result.append(int(s.rsplit(":", 1)[1]))
-        else:
-            result.append(int(s))
+        if "{{" in s:
+            continue
+        try:
+            if ":" in s:
+                result.append(int(s.rsplit(":", 1)[1]))
+            else:
+                result.append(int(s))
+        except ValueError:
+            continue
     return result
 
 
