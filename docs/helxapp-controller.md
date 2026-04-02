@@ -77,10 +77,9 @@ metadata:
 spec:
   appName: jupyterlab
   userName: jeffw
-  vars:
-    username: jeffw
-    identifier: a1b2c3d4
-    access_token: "eyJ..."
+  environment:
+    WORKSPACE_ID: "ws-42"
+    NB_PREFIX: "/custom"
   resources:
     main:
       request: { cpu: "2", memory: "1G" }
@@ -94,7 +93,7 @@ spec:
 |-------|-------------|
 | `appName` | Name (or `namespace/name`) of the HelxApp to instantiate |
 | `userName` | Name (or `namespace/name`) of the HelxUser |
-| `vars` | Per-instance variable bindings (map of string to string). The controller substitutes `${varname}` references in the HelxApp template (environment, command, volumes) with these values. Populated by the appstore from the user's session context. See `app-spec-module-spec.md` §2.9 for the variable vocabulary and substitution protocol. |
+| `environment` | Instance-level env vars; merged with app-level vars (instance takes precedence on overlap) |
 | `resources` | Map of service name to `{request, limit}` resource specifications |
 | `securityContext` | Optional override; takes highest priority (see [Security Context Resolution](#security-context-resolution)) |
 
@@ -153,13 +152,9 @@ The controller maintains bidirectional associations between the three CRD types 
 When a complete triple exists, the controller:
 
 1. Transforms `HelxApp.Spec.Services` into template data structures
-2. **Substitutes `${varname}` references** — walks string values in
-   the HelxApp spec (environment, command, volumes) and replaces each
-   `${varname}` with the corresponding value from `HelxInst.Spec.Vars`.
-   This is a simple string replacement, not a template engine.
-3. Builds a `System` context (app name, user name, UUID, environment, security context, volumes)
-4. Renders Go templates (`deployment.tmpl`, `pvc.tmpl`, `service.tmpl`) with **double-pass** rendering — the first pass produces YAML, the second re-renders the YAML itself as a template to resolve expressions like `{{ .system.UserName }}` in field values
-5. Creates or patches Kubernetes objects via `CreateOrUpdateResource`
+2. Builds a `System` context (app name, user name, UUID, environment, security context, volumes)
+3. Renders Go templates (`deployment.tmpl`, `pvc.tmpl`, `service.tmpl`) with **double-pass** rendering — the first pass produces YAML, the second re-renders the YAML itself as a template to resolve expressions like `{{ .system.UserName }}` in field values
+4. Creates or patches Kubernetes objects via `CreateOrUpdateResource`
 
 ### Produced objects
 
@@ -477,7 +472,8 @@ in API group helx.renci.org/v1.
 
 ### CRDs
 - HelxApp: application template (images, ports, env, volumes, security context)
-- HelxInst: per-user instance request referencing an app + user; triggers workload creation
+- HelxInst: per-user instance request referencing an app + user; triggers workload creation.
+  Has its own environment map — merged with app-level env (instance wins on overlap).
 - HelxUser: user record; optional userHandle URL for security context
 
 ### Core behavior

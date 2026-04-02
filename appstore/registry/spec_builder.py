@@ -55,22 +55,11 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         else:
             rb = None
 
-        # Merge compose env with standard per-instance vars (as controller
-        # placeholders).  The controller substitutes ${varname} at launch.
-        env = dict(svc.environment)
-        env.setdefault("NB_PREFIX", "${NB_PREFIX}")
-        env.setdefault("FB_BASEURL", "${FB_BASEURL}")
-        env.setdefault("GUID", "${GUID}")
-        env.setdefault("USER_NAME", "${USER_NAME}")
-        env.setdefault("USER", "${USER}")
-        env.setdefault("ACCESS_TOKEN", "${access_token}")
-        env.setdefault("HOST", "${host}")
-
         svc_specs.append(AppServiceSpec(
             name=svc.name,
             image=svc.image,
             command=svc.command,
-            environment=env,
+            environment=svc.environment,
             ports=ports,
             volumes=volumes,
             security_context=app.security_context,
@@ -89,7 +78,7 @@ def build_helxinst_spec(
     username: str,
     resource_request: dict | None = None,
     security_context: SecurityContext | None = None,
-    vars: dict[str, str] | None = None,
+    environment: dict[str, str] | None = None,
 ) -> HelxInstSpec:
     """Build a HelxInst spec for a user's launch request.
 
@@ -99,9 +88,9 @@ def build_helxinst_spec(
         ``{"cpu": "2", "memory": "4Gi", "gpu": "1"}``.
     :param security_context: Instance-level override; falls back to
         app-level if not provided.
-    :param vars: Per-user variable bindings, e.g.
-        ``{"username": "alice", "identifier": "abc123"}``.
-        The controller substitutes ``${varname}`` in the HelxApp template.
+    :param environment: Per-instance environment variables (e.g.
+        ``NB_PREFIX``, ``GUID``, ``ACCESS_TOKEN``).  Merged with
+        app-level env at deploy time; instance values take precedence.
     """
     resources: dict[str, ContainerResources] = {}
     if resource_request:
@@ -122,5 +111,5 @@ def build_helxinst_spec(
         user_name=username,
         resources=resources,
         security_context=sc,
-        vars=vars,
+        environment=environment,
     )

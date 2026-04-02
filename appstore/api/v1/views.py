@@ -500,21 +500,17 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         helxapp_spec = get_registry().build_helxapp(app_id)
 
-        # Per-user variable bindings for ${varname} substitution.
-        # The controller injects these into pods as environment variables
-        # and substitutes ${varname} in HelxApp service templates.
+        # Per-instance environment variables.  The controller merges these
+        # with HelxApp-level env (instance values take precedence).
         proxy_path = f"/private/{app_id}/{username}/{instance_id}"
-        inst_vars = {
-            "username": username,
-            "identifier": instance_id,
-            "access_token": str(identity_token.token),
-            "host": host,
-            "system_name": app_id,
+        inst_env = {
             "NB_PREFIX": proxy_path,
             "FB_BASEURL": proxy_path,
             "GUID": instance_id,
             "USER_NAME": username,
             "USER": username,
+            "ACCESS_TOKEN": str(identity_token.token),
+            "HOST": host,
         }
 
         helxinst_spec = get_registry().build_helxinst(
@@ -526,7 +522,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 "gpu": str(resource_request.gpus),
                 "ephemeral_storage": resource_request.ephemeralStorage or None,
             },
-            vars=inst_vars,
+            environment=inst_env,
         )
 
         # Submit to Kubernetes

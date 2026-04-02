@@ -148,15 +148,15 @@ class HelxInstSpec:
     user_name: str
     resources: dict[str, ContainerResources] = field(default_factory=dict)
     security_context: SecurityContext | None = None
-    vars: dict[str, str] | None = None
+    environment: dict[str, str] | None = None
 
     def to_dict(self) -> dict:
         d: dict = {
             "appName": self.app_name,
             "userName": self.user_name,
         }
-        if self.vars:
-            d["vars"] = self.vars
+        if self.environment:
+            d["environment"] = self.environment
         if self.resources:
             d["resources"] = {
                 name: cr.to_dict() for name, cr in self.resources.items()
