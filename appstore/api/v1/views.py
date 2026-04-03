@@ -372,7 +372,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
     def get_queryset(self):
         """Return InstanceStatus objects for the current user."""
-        return _get_status_query().by_username(self.request.user.username)
+        return _get_status_query().by_username(self.request.user.username.lower())
 
     def _instance_from_status(self, ist, username, host):
         """Convert an InstanceStatus to the API Instance model."""
@@ -496,26 +496,27 @@ class InstanceViewSet(viewsets.GenericViewSet):
         # Build CRD specs
         host = get_host(request)
         instance_id = uuid.uuid4().hex[:32]
+        k8s_user = username.lower()
         inst_name = f"{app_id}-{instance_id}"
 
         helxapp_spec = get_registry().build_helxapp(app_id)
 
         # Per-instance environment variables.  The controller merges these
         # with HelxApp-level env (instance values take precedence).
-        proxy_path = f"/private/{app_id}/{username}/{instance_id}"
+        proxy_path = f"/private/{app_id}/{k8s_user}/{instance_id}"
         inst_env = {
             "NB_PREFIX": proxy_path,
             "FB_BASEURL": proxy_path,
             "GUID": instance_id,
-            "USER_NAME": username,
-            "USER": username,
+            "USER_NAME": k8s_user,
+            "USER": k8s_user,
             "ACCESS_TOKEN": str(identity_token.token),
             "HOST": host,
         }
 
         helxinst_spec = get_registry().build_helxinst(
             app_id,
-            username.lower(),
+            k8s_user,
             resource_request={
                 "cpu": str(resource_request.cpus),
                 "memory": resource_request.memory,
@@ -527,7 +528,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # Submit to Kubernetes
         try:
-            k8s_user = username.lower()
             stdnfs_pvc = os.environ.get("STDNFS_PVC", "stdnfs")
             parent_dir = os.environ.get("PARENT_DIR", "home")
             home_path = f"/{parent_dir}/{k8s_user}"
@@ -648,7 +648,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
             ist = statuses[0]
             logger.debug("service username: " + str(ist.username))
             logger.debug("request username: " + str(request.user.username))
-            if ist.username == request.user.username:
+            if ist.username == request.user.username.lower():
                 logger.info(f"Terminating app id {sid} for user {request.user.username}")
 
                 # Find the HelxInst CR name from the deployment name pattern
