@@ -168,14 +168,26 @@ class HelxInstSpec:
 
 @dataclass
 class HelxUserSpec:
-    """Spec for a HelxUser CRD."""
+    """Spec for a HelxUser CRD.
+
+    Fields map to the helxapp-controller HelxUser spec:
+      - userHandle: optional URL for security-context resolution
+      - environment: user-level env vars (merged between app and instance)
+      - volumes: user-level volumes (volume DSL strings, mounted on all containers)
+    """
 
     user_handle: str | None = None
+    environment: dict[str, str] | None = None
+    volumes: dict[str, str] | None = None
 
     def to_dict(self) -> dict:
         d: dict = {}
         if self.user_handle:
             d["userHandle"] = self.user_handle
+        if self.environment:
+            d["environment"] = self.environment
+        if self.volumes:
+            d["volumes"] = self.volumes
         return d
 
 

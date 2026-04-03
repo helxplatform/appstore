@@ -527,7 +527,19 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # Submit to Kubernetes
         try:
-            _get_helxuser_mgr().ensure(username.lower(), HelxUserSpec())
+            k8s_user = username.lower()
+            stdnfs_pvc = os.environ.get("STDNFS_PVC", "stdnfs")
+            parent_dir = os.environ.get("PARENT_DIR", "home")
+            home_path = f"/{parent_dir}/{k8s_user}"
+            user_spec = HelxUserSpec(
+                environment={
+                    "HOME": home_path,
+                },
+                volumes={
+                    "home": f"{stdnfs_pvc}:{home_path}#{k8s_user}",
+                },
+            )
+            _get_helxuser_mgr().ensure(k8s_user, user_spec)
             _get_helxapp_mgr().ensure(app_id, helxapp_spec)
             _get_helxinst_mgr().create(inst_name, helxinst_spec)
         except Exception as e:

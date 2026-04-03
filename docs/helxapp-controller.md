@@ -93,7 +93,7 @@ spec:
 |-------|-------------|
 | `appName` | Name (or `namespace/name`) of the HelxApp to instantiate |
 | `userName` | Name (or `namespace/name`) of the HelxUser |
-| `environment` | Instance-level env vars; merged with app-level vars (instance takes precedence on overlap) |
+| `environment` | Instance-level env vars; highest precedence in the three-way merge (app < user < inst) |
 | `resources` | Map of service name to `{request, limit}` resource specifications |
 | `securityContext` | Optional override; takes highest priority (see [Security Context Resolution](#security-context-resolution)) |
 
@@ -106,7 +106,7 @@ spec:
 
 ### HelxUser — user record
 
-Represents a platform user. Optional `userHandle` URL provides security context via HTTP.
+Represents a platform user. Can carry user-level environment variables and volumes that apply across all instances for that user.
 
 ```yaml
 apiVersion: helx.renci.org/v1
@@ -115,11 +115,21 @@ metadata:
   name: jeffw
 spec:
   userHandle: "http://ldap-service/user/jeffw"
+  environment:
+    LDAP_USER: "jeffw"
+  volumes:
+    home: "jeffw-home:/home/jeffw,rwx,retain"
 ```
 
 | Field | Description |
 |-------|-------------|
 | `userHandle` | Optional URL; HTTP GET returns JSON with `runAsUser`, `runAsGroup`, `fsGroup`, `supplementalGroups` |
+| `environment` | User-level env vars; merged between app-level and instance-level (see precedence below) |
+| `volumes` | User-level volumes (same DSL as HelxApp); mounted on all containers, PVCs created for `pvc://` scheme |
+
+**Environment merge precedence** (most specific wins): HelxApp service env < HelxUser env < HelxInst env.
+
+**Volume merge**: App volumes are per-service. User volumes are added to every container in the deployment alongside the app volumes.
 
 ### Relationship diagram
 
@@ -474,7 +484,8 @@ in API group helx.renci.org/v1.
 - HelxApp: application template (images, ports, env, volumes, security context)
 - HelxInst: per-user instance request referencing an app + user; triggers workload creation.
   Has its own environment map — merged with app-level env (instance wins on overlap).
-- HelxUser: user record; optional userHandle URL for security context
+- HelxUser: user record; optional userHandle URL for security context.
+  Has environment and volumes fields — merged with app/inst (app < user < inst precedence).
 
 ### Core behavior
 The three CRDs arrive independently and in any order. The controller maintains
