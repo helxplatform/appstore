@@ -59,6 +59,8 @@ spec:
 | `services[].image` | Image reference, optionally followed by `,key=value` options (e.g. `,Always` sets `imagePullPolicy`) |
 | `services[].command[]` | Entrypoint override; may contain Go template expressions like `{{ .system.UserName }}` |
 | `services[].environment` | Map of env vars; values may contain Go template expressions |
+| `services[].secretsFrom` | List of Secret names; all keys injected as env vars via `envFrom` |
+| `services[].configMapsFrom` | List of ConfigMap names; all keys injected as env vars via `envFrom` |
 | `services[].init` | If `true`, runs as an init container |
 | `services[].ports[]` | `containerPort`/`port` pairs; a non-zero `port` triggers Service creation |
 | `services[].resourceBounds` | Advisory min/max per resource type |
@@ -94,6 +96,8 @@ spec:
 | `appName` | Name (or `namespace/name`) of the HelxApp to instantiate |
 | `userName` | Name (or `namespace/name`) of the HelxUser |
 | `environment` | Instance-level env vars; highest precedence in the three-way merge (app < user < inst) |
+| `secretsFrom` | List of Secret names; all keys injected as env vars via `envFrom` |
+| `configMapsFrom` | List of ConfigMap names; all keys injected as env vars via `envFrom` |
 | `resources` | Map of service name to `{request, limit}` resource specifications |
 | `securityContext` | Optional override; takes highest priority (see [Security Context Resolution](#security-context-resolution)) |
 
@@ -125,9 +129,13 @@ spec:
 |-------|-------------|
 | `userHandle` | Optional URL; HTTP GET returns JSON with `runAsUser`, `runAsGroup`, `fsGroup`, `supplementalGroups` |
 | `environment` | User-level env vars; merged between app-level and instance-level (see precedence below) |
+| `secretsFrom` | List of Secret names; all keys injected as env vars via `envFrom` |
+| `configMapsFrom` | List of ConfigMap names; all keys injected as env vars via `envFrom` |
 | `volumes` | User-level volumes (same DSL as HelxApp); mounted on all containers, PVCs created for `pvc://` scheme |
 
 **Environment merge precedence** (most specific wins): HelxApp service env < HelxUser env < HelxInst env.
+
+**envFrom merge**: `secretsFrom` and `configMapsFrom` lists from all three CRDs are combined (deduplicated by name). This injects all key-value pairs from the referenced Secrets/ConfigMaps as environment variables.
 
 **Volume merge**: App volumes are per-service. User volumes are added to every container in the deployment alongside the app volumes.
 

@@ -62,7 +62,7 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
             environment=svc.environment,
             ports=ports,
             volumes=volumes,
-            secrets=svc.secrets,
+            secrets_from=svc.secrets,
             security_context=app.security_context,
             resource_bounds=rb,
         ))

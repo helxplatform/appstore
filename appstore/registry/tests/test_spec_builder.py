@@ -86,7 +86,7 @@ class TestBuildHelxappSpec:
         names = {s.name for s in spec.services}
         assert names == {"jupyter", "sidecar"}
 
-    def test_with_secrets(self):
+    def test_secrets_become_secrets_from(self):
         compose = {
             "services": {
                 "jupyter": {
@@ -101,9 +101,9 @@ class TestBuildHelxappSpec:
         }
         app = _app()
         spec = build_helxapp_spec(app, compose)
-        assert spec.services[0].secrets == ["db-creds"]
+        assert spec.services[0].secrets_from == ["db-creds"]
 
-    def test_secrets_in_to_dict(self):
+    def test_secrets_from_in_to_dict(self):
         compose = {
             "services": {
                 "jupyter": {
@@ -118,12 +118,12 @@ class TestBuildHelxappSpec:
         app = _app()
         spec = build_helxapp_spec(app, compose)
         d = spec.to_dict()
-        assert d["services"][0]["secrets"] == ["pgadmin-env"]
+        assert d["services"][0]["secretsFrom"] == ["pgadmin-env"]
 
-    def test_no_secrets_omitted_from_dict(self):
+    def test_no_secrets_omits_secrets_from(self):
         spec = build_helxapp_spec(_app(), _compose())
         d = spec.to_dict()
-        assert "secrets" not in d["services"][0]
+        assert "secretsFrom" not in d["services"][0]
 
 
 class TestBuildHelxinstSpec:
