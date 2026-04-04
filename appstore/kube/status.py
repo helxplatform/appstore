@@ -29,8 +29,16 @@ class StatusQuery:
         self._ns = namespace
 
     def by_instance_id(self, instance_id: str) -> list[InstanceStatus]:
-        """Get status for a specific instance UUID."""
-        return self._list(L.selector_by_id(instance_id))
+        """Get status for a specific appstore instance ID.
+
+        The helxapp-controller assigns its own UUID (``helx.renci.org/id``),
+        which differs from the appstore's instance ID.  The appstore ID is
+        embedded in the ``helx.renci.org/instance-name`` label as the suffix
+        after ``{app_id}-``.  We query all managed deployments and filter
+        client-side.
+        """
+        all_managed = self._list(L.selector_all_managed())
+        return [s for s in all_managed if s.instance_id == instance_id]
 
     def by_username(self, username: str) -> list[InstanceStatus]:
         """Get status for all instances belonging to a user."""
@@ -68,18 +76,29 @@ class StatusQuery:
                 if c.resources and c.resources.limits:
                     resource_usage[c.name] = dict(c.resources.limits)
 
+            # Derive the appstore instance_id from the instance-name label.
+            # The controller's helx.renci.org/id is its own UUID, not ours.
+            # The instance-name label is the HelxInst CR name: "{app_id}-{instance_id}".
+            inst_name_label = labels.get(L.INSTANCE_NAME, "")
+            app_name = labels.get(L.APP_NAME, "")
+            if app_name and inst_name_label.startswith(app_name + "-"):
+                instance_id = inst_name_label[len(app_name) + 1:]
+            else:
+                # Fallback: use the full instance-name or controller UUID
+                instance_id = inst_name_label or labels.get(L.ID, "")
+
             results.append(
                 InstanceStatus(
                     name=item.metadata.name,
-                    instance_id=labels.get(L.ID, ""),
-                    app_name=labels.get(L.APP_NAME),
+                    instance_id=instance_id,
+                    app_name=app_name,
                     username=labels.get(L.USERNAME),
                     creation_time=time_str,
                     is_ready=(ready == desired and desired > 0),
                     replicas=desired,
                     ready_replicas=ready,
                     resource_usage=resource_usage,
-                    workspace_name=labels.get(L.APP_NAME, ""),
+                    workspace_name=app_name,
                 )
             )
         return results

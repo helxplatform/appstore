@@ -21,13 +21,24 @@ def query(mock_api):
     return StatusQuery(apps_api=mock_api, namespace="test-ns")
 
 
-def _make_deployment(name, uuid, username, app_name="jupyter", ready=True):
+def _make_deployment(
+    name, controller_uuid, username, app_name="jupyter",
+    instance_name=None, ready=True,
+):
+    """Build a mock Deployment object.
+
+    :param controller_uuid: The UUID assigned by the controller (helx.renci.org/id).
+    :param instance_name: The HelxInst CR name (helx.renci.org/instance-name).
+        Defaults to ``name`` if not provided.
+    """
     item = MagicMock()
     item.metadata.name = name
     item.metadata.labels = {
-        L.ID: uuid,
+        L.ID: controller_uuid,
         L.USERNAME: username,
         L.APP_NAME: app_name,
+        L.INSTANCE_NAME: instance_name or name,
+        L.EXECUTOR: L.EXECUTOR_VALUE,
     }
     item.metadata.creation_timestamp = datetime(
         2026, 3, 28, 12, 0, 0, tzinfo=timezone.utc
@@ -42,29 +53,74 @@ def _make_deployment(name, uuid, username, app_name="jupyter", ready=True):
     return item
 
 
-class TestByInstanceId:
-    def test_returns_status(self, query, mock_api):
-        dep = _make_deployment("app-abc", "abc", "alice")
+class TestInstanceIdExtraction:
+    """The appstore instance_id is derived from the INSTANCE_NAME label,
+    not from the controller's helx.renci.org/id UUID."""
+
+    def test_extracts_from_instance_name(self, query, mock_api):
+        dep = _make_deployment(
+            "jupyter-abc123-deploy", "ctrl-uuid-999",
+            "alice", app_name="jupyter",
+            instance_name="jupyter-abc123",
+        )
         mock_api.list_namespaced_deployment.return_value.items = [dep]
+
+        results = query.by_username("alice")
+        assert len(results) == 1
+        assert results[0].instance_id == "abc123"
+
+    def test_fallback_to_instance_name_when_no_app_prefix(self, query, mock_api):
+        dep = _make_deployment(
+            "deploy-x", "ctrl-uuid", "alice",
+            app_name="", instance_name="deploy-x",
+        )
+        mock_api.list_namespaced_deployment.return_value.items = [dep]
+
+        results = query.by_username("alice")
+        assert results[0].instance_id == "deploy-x"
+
+
+class TestByInstanceId:
+    def test_filters_by_appstore_instance_id(self, query, mock_api):
+        deps = [
+            _make_deployment(
+                "jupyter-abc-deploy", "ctrl-1", "alice",
+                instance_name="jupyter-abc",
+            ),
+            _make_deployment(
+                "jupyter-xyz-deploy", "ctrl-2", "alice",
+                instance_name="jupyter-xyz",
+            ),
+        ]
+        mock_api.list_namespaced_deployment.return_value.items = deps
 
         results = query.by_instance_id("abc")
         assert len(results) == 1
         assert results[0].instance_id == "abc"
-        assert results[0].is_ready is True
-        assert results[0].username == "alice"
-        assert results[0].app_name == "jupyter"
 
+        # Queries all managed deployments (not by helx.renci.org/id)
         mock_api.list_namespaced_deployment.assert_called_with(
             namespace="test-ns",
-            label_selector="helx.renci.org/id=abc",
+            label_selector=f"executor={L.EXECUTOR_VALUE}",
         )
+
+    def test_returns_empty_when_not_found(self, query, mock_api):
+        mock_api.list_namespaced_deployment.return_value.items = []
+        results = query.by_instance_id("nonexistent")
+        assert results == []
 
 
 class TestByUsername:
     def test_returns_all_user_instances(self, query, mock_api):
         deps = [
-            _make_deployment("app1", "id1", "alice"),
-            _make_deployment("app2", "id2", "alice"),
+            _make_deployment(
+                "jupyter-id1-deploy", "ctrl-1", "alice",
+                instance_name="jupyter-id1",
+            ),
+            _make_deployment(
+                "jupyter-id2-deploy", "ctrl-2", "alice",
+                instance_name="jupyter-id2",
+            ),
         ]
         mock_api.list_namespaced_deployment.return_value.items = deps
 
@@ -78,10 +134,13 @@ class TestByUsername:
 
 class TestNotReady:
     def test_not_ready_deployment(self, query, mock_api):
-        dep = _make_deployment("app-x", "x", "bob", ready=False)
+        dep = _make_deployment(
+            "jupyter-x-deploy", "ctrl-x", "bob",
+            instance_name="jupyter-x", ready=False,
+        )
         mock_api.list_namespaced_deployment.return_value.items = [dep]
 
-        results = query.by_instance_id("x")
+        results = query.by_username("bob")
         assert results[0].is_ready is False
 
 

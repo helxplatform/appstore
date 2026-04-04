@@ -632,8 +632,11 @@ class InstanceViewSet(viewsets.GenericViewSet):
             instance = self.get_instance(sid, username, host)
             if instance is not None:
                 return Response({'is_ready': instance.is_ready})
+            # Deployment may not exist yet — controller hasn't reconciled.
+            # Return not-ready rather than 404 so the UI keeps polling.
+            logger.debug(f"Instance {sid} not found yet, returning is_ready=false")
+            return Response({'is_ready': False})
 
-        logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
 
     def destroy(self, request, sid=None):
