@@ -12,6 +12,7 @@ See [docs/execution-model.md](docs/execution-model.md) for the full artifact gen
 - [Operator Behavior](#operator-behavior)
 - [Volume DSL](#volume-dsl)
 - [Security Context Resolution](#security-context-resolution)
+- [Ambassador Mapping](#ambassador-mapping)
 - [Deployment](#deployment)
 - [RBAC Model](#rbac-model)
 - [Development](#development)
@@ -66,6 +67,7 @@ spec:
 | `services[].resourceBounds` | Advisory min/max per resource type |
 | `services[].securityContext` | Per-container UID/GID/FSGroup/supplementalGroups |
 | `services[].volumes` | Map of `volumeId` to volume DSL string (see [Volume DSL](#volume-dsl)) |
+| `services[].ambassador` | Optional [Ambassador mapping](#ambassador-mapping) configuration for the Service |
 
 ### HelxInst — instance request
 
@@ -260,6 +262,44 @@ The pod security context is resolved in priority order:
 3. **Omitted** — no security context on the pod spec
 
 Per-service security contexts from `HelxApp.Spec.Services[].SecurityContext` are applied at the container level, independent of the pod-level context.
+
+---
+
+## Ambassador Mapping
+
+Services can be annotated for [Ambassador](https://www.getambassador.io/) ingress routing by setting the `ambassador` field on a HelxApp service. When present, the controller adds a `getambassador.io/config` annotation to the generated Kubernetes Service with an Ambassador v1 Mapping.
+
+```yaml
+apiVersion: helx.renci.org/v1
+kind: HelxApp
+metadata:
+  name: filebrowser
+spec:
+  appClassName: Filebrowser
+  services:
+    - name: main
+      image: wateim/filebrowser:latest
+      ports:
+        - containerPort: 80
+          port: 8080
+      ambassador:
+        prefix: "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/{{ .system.UUID }}/"
+```
+
+| Field | Description |
+|-------|-------------|
+| `ambassador.ambassadorId` | Optional; restricts the mapping to a specific Ambassador instance |
+| `ambassador.prefix` | URL path prefix. Supports Go template expressions (resolved via double-pass rendering). Default: `/private/<AppClassName>/<UserName>/<UUID>/` |
+| `ambassador.proxyRewrite` | Optional; rewrites the upstream path. When set, also adds an `X-Original-Path` response header |
+
+The generated annotation includes:
+- `REMOTE_USER` header set to the instance's user name
+- Retry policy (gateway-error, 10 retries)
+- Timeouts (300s request, 500s idle/connect)
+- WebSocket support enabled
+- `bypass_auth: true`
+
+When `ambassador` is not set on a service, no annotation is added and the Service is rendered as before.
 
 ---
 
@@ -491,7 +531,7 @@ Kubernetes operator (controller-runtime / Kubebuilder) managing three CRDs
 in API group helx.renci.org/v1.
 
 ### CRDs
-- HelxApp: application template (images, ports, env, volumes, security context)
+- HelxApp: application template (images, ports, env, volumes, security context, ambassador mapping)
 - HelxInst: per-user instance request referencing an app + user; triggers workload creation.
   Has its own environment map — merged with app-level env (instance wins on overlap).
 - HelxUser: user record; optional userHandle URL for security context.

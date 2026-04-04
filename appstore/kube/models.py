@@ -87,6 +87,30 @@ class PortSpec:
 
 
 @dataclass
+class AmbassadorSpec:
+    """Ambassador ingress-routing config for a HelxApp service.
+
+    The controller annotates the generated Kubernetes Service with a
+    ``getambassador.io/config`` annotation that creates an Ambassador v1
+    Mapping.  Go template expressions in ``prefix`` are resolved at
+    deployment time (double-pass rendering), so ``{{ .system.* }}``
+    variables such as ``AppClassName`` and ``UserName`` are available.
+    """
+
+    prefix: str
+    ambassador_id: str | None = None
+    proxy_rewrite: str | None = None
+
+    def to_dict(self) -> dict:
+        d: dict = {"prefix": self.prefix}
+        if self.ambassador_id:
+            d["ambassadorId"] = self.ambassador_id
+        if self.proxy_rewrite:
+            d["proxyRewrite"] = self.proxy_rewrite
+        return d
+
+
+@dataclass
 class AppServiceSpec:
     """One service (container) within a HelxApp spec."""
 
@@ -100,6 +124,7 @@ class AppServiceSpec:
     init: bool = False
     resource_bounds: dict | None = None
     security_context: SecurityContext | None = None
+    ambassador: AmbassadorSpec | None = None
 
     def to_dict(self) -> dict:
         d: dict = {"name": self.name, "image": self.image}
@@ -122,6 +147,8 @@ class AppServiceSpec:
             d["resourceBounds"] = self.resource_bounds
         if self.security_context:
             d["securityContext"] = self.security_context.to_dict()
+        if self.ambassador:
+            d["ambassador"] = self.ambassador.to_dict()
         return d
 
 

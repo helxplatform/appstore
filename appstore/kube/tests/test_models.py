@@ -3,6 +3,7 @@
 import pytest
 
 from kube.models import (
+    AmbassadorSpec,
     AppServiceSpec,
     ContainerResources,
     HelxAppSpec,
@@ -115,6 +116,59 @@ class TestHelxAppSpec:
         spec = AppServiceSpec(name="app", image="nginx")
         d = spec.to_dict()
         assert "secretsFrom" not in d
+
+    def test_service_with_ambassador(self):
+        spec = AppServiceSpec(
+            name="main",
+            image="app:latest",
+            ambassador=AmbassadorSpec(
+                prefix="/private/MyApp/alice/",
+            ),
+        )
+        d = spec.to_dict()
+        assert d["ambassador"] == {"prefix": "/private/MyApp/alice/"}
+
+    def test_service_ambassador_with_id_and_rewrite(self):
+        spec = AppServiceSpec(
+            name="main",
+            image="app:latest",
+            ambassador=AmbassadorSpec(
+                prefix="/private/MyApp/alice/",
+                ambassador_id="edge-stack",
+                proxy_rewrite="/",
+            ),
+        )
+        d = spec.to_dict()
+        assert d["ambassador"]["ambassadorId"] == "edge-stack"
+        assert d["ambassador"]["proxyRewrite"] == "/"
+
+    def test_service_no_ambassador_omitted(self):
+        spec = AppServiceSpec(name="app", image="nginx")
+        d = spec.to_dict()
+        assert "ambassador" not in d
+
+
+class TestAmbassadorSpec:
+    def test_minimal(self):
+        a = AmbassadorSpec(prefix="/private/app/user/")
+        assert a.to_dict() == {"prefix": "/private/app/user/"}
+
+    def test_full(self):
+        a = AmbassadorSpec(
+            prefix="/private/app/user/",
+            ambassador_id="edge-stack",
+            proxy_rewrite="/",
+        )
+        d = a.to_dict()
+        assert d["prefix"] == "/private/app/user/"
+        assert d["ambassadorId"] == "edge-stack"
+        assert d["proxyRewrite"] == "/"
+
+    def test_optional_fields_omitted(self):
+        a = AmbassadorSpec(prefix="/private/app/user/")
+        d = a.to_dict()
+        assert "ambassadorId" not in d
+        assert "proxyRewrite" not in d
 
 
 

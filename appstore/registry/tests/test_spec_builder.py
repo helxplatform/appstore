@@ -125,6 +125,38 @@ class TestBuildHelxappSpec:
         d = spec.to_dict()
         assert "secretsFrom" not in d["services"][0]
 
+    def test_ambassador_added_for_service_with_port(self):
+        spec = build_helxapp_spec(_app(), _compose())
+        svc = spec.services[0]
+        assert svc.ambassador is not None
+        assert "{{ .system.AppClassName }}" in svc.ambassador.prefix
+        assert "{{ .system.UserName }}" in svc.ambassador.prefix
+
+    def test_ambassador_in_to_dict(self):
+        spec = build_helxapp_spec(_app(), _compose())
+        d = spec.to_dict()
+        assert "ambassador" in d["services"][0]
+        assert d["services"][0]["ambassador"]["prefix"].startswith("/private/")
+
+    def test_ambassador_only_on_first_service_with_port(self):
+        compose = {
+            "services": {
+                "main": {"image": "app:latest", "ports": ["8888"]},
+                "sidecar": {"image": "sidecar:latest", "ports": ["9090"]},
+            }
+        }
+        app = _app(services={"main": 8888, "sidecar": 9090})
+        spec = build_helxapp_spec(app, compose)
+        services_by_name = {s.name: s for s in spec.services}
+        assert services_by_name["main"].ambassador is not None
+        assert services_by_name["sidecar"].ambassador is None
+
+    def test_no_ambassador_for_service_without_port(self):
+        compose = {"services": {"worker": {"image": "worker:latest"}}}
+        app = _app(services={})
+        spec = build_helxapp_spec(app, compose)
+        assert spec.services[0].ambassador is None
+
 
 class TestBuildHelxinstSpec:
     def test_basic(self):

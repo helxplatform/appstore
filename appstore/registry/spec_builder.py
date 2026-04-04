@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import os
+
 from appspec import parse_compose, to_k8s_resources, bounds_to_resource_bounds
 from kube.models import (
+    AmbassadorSpec,
     AppServiceSpec,
     ContainerResources,
     HelxAppSpec,
@@ -14,6 +17,12 @@ from kube.models import (
 )
 from registry.models import ResolvedApp
 
+# Standard ambassador prefix — routes /private/<app>/<user>/ to this service.
+# Uses Go template expressions resolved by the controller at deployment time.
+_AMBASSADOR_PREFIX = (
+    "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/"
+)
+
 
 def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
     """Convert a resolved app + its docker-compose into a HelxAppSpec.
@@ -23,6 +32,8 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
     """
     compose_app = parse_compose(compose_spec, ext=app.ext)
     svc_specs: list[AppServiceSpec] = []
+    ambassador_id = os.environ.get("AMBASSADOR_ID") or None
+    ambassador_assigned = False
 
     for svc in compose_app.services:
         # Map ports: overlay the registry-level port as the service port
@@ -55,6 +66,18 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         else:
             rb = None
 
+        # Ambassador: attach mapping to the first service that generates a
+        # Kubernetes Service (non-zero port).  Subsequent services are
+        # sidecars and do not need their own ambassador mapping.
+        ambassador = None
+        has_service_port = any(p.port for p in ports)
+        if has_service_port and not ambassador_assigned:
+            ambassador = AmbassadorSpec(
+                prefix=_AMBASSADOR_PREFIX,
+                ambassador_id=ambassador_id,
+            )
+            ambassador_assigned = True
+
         svc_specs.append(AppServiceSpec(
             name=svc.name,
             image=svc.image,
@@ -65,6 +88,7 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
             secrets_from=svc.secrets,
             security_context=app.security_context,
             resource_bounds=rb,
+            ambassador=ambassador,
         ))
 
     return HelxAppSpec(
