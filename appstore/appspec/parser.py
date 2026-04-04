@@ -27,9 +27,11 @@ def parse_compose(spec: dict, ext: dict | None = None) -> ComposeApp:
 
     probes = ext.get("kube", {}) if ext else {}
 
+    top_secrets = parse_top_level_secrets(spec.get("secrets", {}))
+
     services = []
     for name, svc_dict in services_dict.items():
-        services.append(parse_service(name, svc_dict, probes))
+        services.append(parse_service(name, svc_dict, probes, top_secrets))
 
     helx_vars = spec.get("x-helx-vars", [])
 
@@ -37,7 +39,8 @@ def parse_compose(spec: dict, ext: dict | None = None) -> ComposeApp:
 
 
 def parse_service(
-    name: str, svc: dict, probes: dict | None = None
+    name: str, svc: dict, probes: dict | None = None,
+    top_secrets: set[str] | None = None,
 ) -> ComposeService:
     """Parse a single service dict."""
     image = svc.get("image")
@@ -50,6 +53,7 @@ def parse_service(
     expose = [int(p) for p in svc.get("expose", []) if "{{" not in str(p)]
     volumes = parse_volumes(svc.get("volumes", []))
     depends_on = list(svc.get("depends_on", []))
+    secrets = parse_service_secrets(svc.get("secrets", []), top_secrets)
 
     # Resources: prefer x-helx-resources over deploy.resources
     helx_res = svc.get("x-helx-resources")
@@ -79,6 +83,7 @@ def parse_service(
         requests=requests,
         resource_bounds=resource_bounds,
         depends_on=depends_on,
+        secrets=secrets,
         liveness_probe=liveness_probe,
         readiness_probe=readiness_probe,
     )
@@ -249,6 +254,42 @@ def parse_probe(raw: dict | str | None) -> ProbeSpec | None:
         )
 
     raise ParseError(f"Cannot determine probe type from: {raw!r}")
+
+
+def parse_top_level_secrets(raw: dict) -> set[str]:
+    """Parse the top-level ``secrets:`` block.
+
+    Returns a set of secret names that are declared as ``external: true``.
+    Non-external secrets are ignored (they have no K8s equivalent).
+    """
+    result: set[str] = set()
+    for name, defn in raw.items():
+        if isinstance(defn, dict) and defn.get("external"):
+            result.add(name)
+    return result
+
+
+def parse_service_secrets(
+    raw: list, top_secrets: set[str] | None = None,
+) -> list[str]:
+    """Parse a service-level ``secrets:`` list.
+
+    Supports docker-compose short syntax (plain string) and long syntax
+    (dict with ``source`` key).  Only secrets declared as external at the
+    top level are included; undeclared names are silently skipped.
+    """
+    top = top_secrets or set()
+    result: list[str] = []
+    for entry in raw:
+        if isinstance(entry, str):
+            name = entry
+        elif isinstance(entry, dict):
+            name = entry.get("source", "")
+        else:
+            continue
+        if name and name in top:
+            result.append(name)
+    return result
 
 
 # -----------------------------------------------------------------------

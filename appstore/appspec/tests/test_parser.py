@@ -10,6 +10,8 @@ from appspec.parser import (
     parse_probe,
     parse_resources,
     parse_service,
+    parse_service_secrets,
+    parse_top_level_secrets,
     parse_volumes,
 )
 from appspec.exceptions import ParseError
@@ -353,3 +355,111 @@ class TestHelxVars:
         spec = _compose(("web", _svc(environment={"NB_USER": "${username}"})))
         app = parse_compose(spec)
         assert app.services[0].environment["NB_USER"] == "${username}"
+
+
+# -----------------------------------------------------------------------
+# Secrets
+# -----------------------------------------------------------------------
+
+class TestParseTopLevelSecrets:
+    def test_external(self):
+        raw = {"pgadmin-env": {"external": True}}
+        assert parse_top_level_secrets(raw) == {"pgadmin-env"}
+
+    def test_non_external_ignored(self):
+        raw = {"local-secret": {"file": "./secret.txt"}}
+        assert parse_top_level_secrets(raw) == set()
+
+    def test_mixed(self):
+        raw = {
+            "db-creds": {"external": True},
+            "local": {"file": "./f.txt"},
+            "api-key": {"external": True},
+        }
+        assert parse_top_level_secrets(raw) == {"db-creds", "api-key"}
+
+    def test_empty(self):
+        assert parse_top_level_secrets({}) == set()
+
+
+class TestParseServiceSecrets:
+    def test_short_syntax(self):
+        top = {"pgadmin-env"}
+        assert parse_service_secrets(["pgadmin-env"], top) == ["pgadmin-env"]
+
+    def test_long_syntax(self):
+        top = {"db-creds"}
+        raw = [{"source": "db-creds", "target": "/run/secrets/db"}]
+        assert parse_service_secrets(raw, top) == ["db-creds"]
+
+    def test_undeclared_skipped(self):
+        top = {"pgadmin-env"}
+        assert parse_service_secrets(["pgadmin-env", "unknown"], top) == ["pgadmin-env"]
+
+    def test_empty(self):
+        assert parse_service_secrets([], set()) == []
+
+    def test_no_top_secrets(self):
+        assert parse_service_secrets(["anything"], None) == []
+
+    def test_multiple(self):
+        top = {"a", "b", "c"}
+        assert parse_service_secrets(["a", "c"], top) == ["a", "c"]
+
+
+class TestSecretsIntegration:
+    def test_compose_with_secrets(self):
+        spec = {
+            "services": {
+                "pgadmin": {
+                    "image": "pgadmin4:latest",
+                    "secrets": ["pgadmin-env"],
+                },
+            },
+            "secrets": {
+                "pgadmin-env": {"external": True},
+            },
+        }
+        app = parse_compose(spec)
+        assert app.services[0].secrets == ["pgadmin-env"]
+
+    def test_compose_no_secrets(self):
+        spec = _compose(("web", _svc()))
+        app = parse_compose(spec)
+        assert app.services[0].secrets == []
+
+    def test_compose_multiple_services_selective_secrets(self):
+        spec = {
+            "services": {
+                "web": {
+                    "image": "web:latest",
+                    "secrets": ["db-creds"],
+                },
+                "worker": {
+                    "image": "worker:latest",
+                },
+            },
+            "secrets": {
+                "db-creds": {"external": True},
+            },
+        }
+        app = parse_compose(spec)
+        web = next(s for s in app.services if s.name == "web")
+        worker = next(s for s in app.services if s.name == "worker")
+        assert web.secrets == ["db-creds"]
+        assert worker.secrets == []
+
+    def test_compose_secret_not_external_excluded(self):
+        spec = {
+            "services": {
+                "web": {
+                    "image": "web:latest",
+                    "secrets": ["local-secret"],
+                },
+            },
+            "secrets": {
+                "local-secret": {"file": "./secret.txt"},
+            },
+        }
+        app = parse_compose(spec)
+        assert app.services[0].secrets == []

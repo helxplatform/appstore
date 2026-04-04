@@ -86,6 +86,45 @@ class TestBuildHelxappSpec:
         names = {s.name for s in spec.services}
         assert names == {"jupyter", "sidecar"}
 
+    def test_with_secrets(self):
+        compose = {
+            "services": {
+                "jupyter": {
+                    "image": "jupyter:latest",
+                    "ports": ["8888"],
+                    "secrets": ["db-creds"],
+                },
+            },
+            "secrets": {
+                "db-creds": {"external": True},
+            },
+        }
+        app = _app()
+        spec = build_helxapp_spec(app, compose)
+        assert spec.services[0].secrets == ["db-creds"]
+
+    def test_secrets_in_to_dict(self):
+        compose = {
+            "services": {
+                "jupyter": {
+                    "image": "jupyter:latest",
+                    "secrets": ["pgadmin-env"],
+                },
+            },
+            "secrets": {
+                "pgadmin-env": {"external": True},
+            },
+        }
+        app = _app()
+        spec = build_helxapp_spec(app, compose)
+        d = spec.to_dict()
+        assert d["services"][0]["secrets"] == ["pgadmin-env"]
+
+    def test_no_secrets_omitted_from_dict(self):
+        spec = build_helxapp_spec(_app(), _compose())
+        d = spec.to_dict()
+        assert "secrets" not in d["services"][0]
+
 
 class TestBuildHelxinstSpec:
     def test_basic(self):

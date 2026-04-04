@@ -102,6 +102,20 @@ class TestHelxAppSpec:
         d = spec.to_dict()
         assert d == {"name": "app", "image": "nginx"}
 
+    def test_service_with_secrets(self):
+        spec = AppServiceSpec(
+            name="pgadmin",
+            image="pgadmin4:latest",
+            secrets=["pgadmin-env"],
+        )
+        d = spec.to_dict()
+        assert d["secrets"] == ["pgadmin-env"]
+
+    def test_service_secrets_empty_omitted(self):
+        spec = AppServiceSpec(name="app", image="nginx", secrets=[])
+        d = spec.to_dict()
+        assert "secrets" not in d
+
 
 class TestHelxInstSpec:
     def test_to_dict_full(self):

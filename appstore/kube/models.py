@@ -96,6 +96,7 @@ class AppServiceSpec:
     environment: dict[str, str] = field(default_factory=dict)
     ports: list[PortSpec] = field(default_factory=list)
     volumes: dict[str, str] = field(default_factory=dict)
+    secrets: list[str] = field(default_factory=list)
     init: bool = False
     resource_bounds: dict | None = None
     security_context: SecurityContext | None = None
@@ -113,6 +114,8 @@ class AppServiceSpec:
             ]
         if self.volumes:
             d["volumes"] = self.volumes
+        if self.secrets:
+            d["secrets"] = list(self.secrets)
         if self.init:
             d["init"] = True
         if self.resource_bounds:

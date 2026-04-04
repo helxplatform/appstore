@@ -96,6 +96,7 @@ class ComposeService:
     requests: ComposeResources = field(default_factory=ComposeResources)
     resource_bounds: ResourceBounds | None = None
     depends_on: list[str] = field(default_factory=list)
+    secrets: list[str] = field(default_factory=list)
     liveness_probe: ProbeSpec | None = None
     readiness_probe: ProbeSpec | None = None
 

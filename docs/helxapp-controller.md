@@ -212,10 +212,10 @@ Volume entries in `HelxApp.Spec.Services[].Volumes` use a mini-language:
 
 | Segment | Description |
 |---------|-------------|
-| `scheme` | `pvc` (default) or `nfs` |
-| `src` | PVC claim name, or NFS path (`//server/export`) |
+| `scheme` | `pvc` (default), `nfs`, `secret`, or `configmap` |
+| `src` | PVC claim name, NFS path (`//server/export`), Secret name, or ConfigMap name |
 | `mountPath` | Container mount point |
-| `subPath` | Optional subdirectory within the volume |
+| `subPath` | Optional subdirectory (or key name for secrets/configmaps) |
 
 **Options:**
 
@@ -237,6 +237,8 @@ volumes:
   data: "shared-data:/data,size=50Gi,rwx"
   cache: "nfs:///nfs-server/cache:/mnt/cache"
   scratch: "scratch-vol:/tmp/scratch#mysubdir,rwop"
+  creds: "secret://db-credentials:/mnt/creds,ro"
+  cfg: "configmap://app-config:/etc/config#app.conf"
 ```
 
 ---
@@ -507,8 +509,9 @@ is re-rendered as a template to resolve {{ .system.* }} expressions in field val
 
 ### Volume DSL
 [scheme://]src:mountPath[#subPath][,option[=value]...]
-Schemes: pvc (default), nfs
+Schemes: pvc (default), nfs, secret, configmap
 Options: retain, rwx/rox/rwop, size, storageClass, ro
+Secret/configmap volumes reference pre-existing K8s resources (no PVC created).
 
 ### Security context priority
 1. HelxInst.Spec.SecurityContext (explicit override)
