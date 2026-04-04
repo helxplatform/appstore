@@ -1,10 +1,13 @@
 import logging
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 from django.test import TestCase
 from django.contrib.auth.models import User
 
 from rest_framework.test import APIRequestFactory, force_authenticate
 
+from kube.models import InstanceStatus
 
 from .views import (
     AppViewSet,
@@ -76,6 +79,54 @@ class TestInstanceView(TestCase):
         force_authenticate(api_request, user=user)
         response = list_view(api_request)
         self.assertEqual(response.status_code, 200)
+
+    @patch("appstore.api.v1.views.get_registry")
+    @patch("appstore.api.v1.views._get_status_query")
+    def test_logged_in_can_get_instance_list_with_aggregated_memory(
+        self, mock_get_status_query, mock_get_registry
+    ):
+        user = User.objects.get(username=self.username)
+        list_view = self.view.as_view({"get": "list"})
+        api_request = self.factory.get("", HTTP_HOST="example.test")
+        force_authenticate(api_request, user=user)
+
+        mock_status_query = Mock()
+        mock_status_query.by_username.return_value = [
+            InstanceStatus(
+                name="jupyter-abc123",
+                instance_id="abc123",
+                app_name="jupyter",
+                username=user.username.lower(),
+                creation_time="2026-04-04T19:36:54Z",
+                is_ready=True,
+                resource_usage={
+                    "notebook": {
+                        "cpu": "1",
+                        "memory": "2Gi",
+                        "nvidia.com/gpu": "0",
+                    }
+                },
+            )
+        ]
+        mock_get_status_query.return_value = mock_status_query
+
+        mock_registry = Mock()
+        mock_registry.get_app.return_value = SimpleNamespace(
+            name="JupyterLab",
+            docs_url="https://docs.example.test/jupyter",
+        )
+        mock_get_registry.return_value = mock_registry
+
+        response = list_view(api_request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["sid"], "abc123")
+        self.assertEqual(
+            response.data[0]["url"],
+            f"http://example.test/private/jupyter/{user.username}/abc123/",
+        )
+        self.assertTrue(response.data[0]["memory"])
 
     # TODO Add POST and DELETE
 

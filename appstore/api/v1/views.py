@@ -440,13 +440,12 @@ class InstanceViewSet(viewsets.GenericViewSet):
                     continue
 
                 inst = self._instance_from_status(ist, username, host)
-                instances.append(asdict(inst))
+                instances.append(inst)
         else:
             logger.error(f"\nAmbassador seen as host:\n{host}\n")
 
-        serializer = self.get_serializer(data=instances, many=True)
-        serializer.is_valid(raise_exception=True)
-        return Response(serializer.validated_data)
+        serializer = self.get_serializer(instances, many=True)
+        return Response(serializer.data)
 
     def create(self, request):
         """Launch an instance of an app via the helxapp-controller."""
@@ -618,9 +617,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
         if sid is not None:
             instance = self.get_instance(sid, username, host)
             if instance is not None:
-                serializer = self.get_serializer(data=asdict(instance))
-                serializer.is_valid(raise_exception=True)
-                return Response(serializer.validated_data)
+                serializer = self.get_serializer(instance)
+                return Response(serializer.data)
 
         logger.error(f"\n{sid} not found\n")
         return Response(status=drf_status.HTTP_404_NOT_FOUND)
