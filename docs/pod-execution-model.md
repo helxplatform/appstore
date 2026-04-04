@@ -1,6 +1,6 @@
 # AppStore Pod Execution Model
 
-A conceptual guide to the flow that produces Kubernetes Pods when a user launches an application.
+A conceptual guide to the flow that produces Kubernetes workloads when a user launches an application.
 
 ---
 
@@ -23,17 +23,18 @@ HTTP Request
          │
          ▼
 ┌─────────────────────┐
-│  System Model Layer │  parse spec → System + Container objects
+│  CRD Spec Models    │  parse compose → typed HelxApp/HelxInst specs
 └────────┬────────────┘
          │
          ▼
 ┌─────────────────────┐
-│  K8s Emission Layer │  render Jinja2 templates → manifests
+│  Kubernetes CRD     │  create HelxApp + HelxInst custom resources
+│  Creation Layer     │
 └────────┬────────────┘
          │
          ▼
 ┌─────────────────────┐
-│  Kubernetes Client  │  create Deployment, Service, NetworkPolicy
+│  helxapp-controller │  reconcile CRDs → Deployment, Service, etc.
 └─────────────────────┘
          │
          ▼
@@ -44,7 +45,7 @@ HTTP Request
 
 ## Layer 1 — REST API
 
-**Key files:** `appstore/api/v1/views.py`, `appstore/api/v1/models.py`, `appstore/api/v1/serializers.py`
+**Key file:** `appstore/api/v1/views.py`
 
 ### Entry point
 
@@ -52,238 +53,221 @@ HTTP Request
 
 ### What happens here
 
-1. **Deserialize** the request body into an `InstanceSerializer`, which requires `app_id` plus optional resource overrides (`cpus`, `gpus`, `memory`, `ephemeralStorage`).
-2. **Fetch app metadata** from the `TychoContext` singleton (Layer 2) to learn the app's min/max resource bounds.
-3. **Validate resources** — CPU, GPU, memory, and ephemeral storage are each checked against the app's configured limits. Out-of-range values return HTTP 400.
-4. **Build a `ResourceRequest`** that carries both `limits` (hard caps) and `reservations` (scheduler hints). Memory is commonly halved for the reservation to reduce scheduling friction.
-5. **Create a `UserIdentityToken`** — a 256-char random token stored in the DB that the app uses to authenticate callbacks to AppStore.
-6. **Create a `Principal`** wrapping username + token + OAuth access/refresh tokens.
-7. **Call `tycho.start(principal, app_id, resource_request, host, extra_env)`** → Layers 2–5.
-8. **Return an `InstanceSpec`** with the app URL, system ID (`sid`), and resource summary.
+1. **Authenticate** — request user must be logged in; username is normalised to lowercase for all Kubernetes-facing identifiers (RFC 1123 requirement).
+2. **Deserialize** the request body: `app_id` plus optional resource overrides (`cpus`, `gpus`, `memory`, `ephemeralStorage`).
+3. **Fetch app metadata** from the App Registry (Layer 2) to learn the app's min/max resource bounds.
+4. **Validate resources** — CPU, GPU, memory, and ephemeral storage are each checked against the app's configured limits. Out-of-range values return HTTP 400.
+5. **Create a `UserIdentityToken`** — a 256-char random token stored in the DB; injected into the pod so the running app can authenticate callbacks to AppStore.
+6. **Call `kube_client.launch()`** → Layers 2–5.
+7. **Return an `InstanceSpec`** with the app URL (`proxy_path`), instance ID, and resource summary.
 
-### Key data structures
+### proxy_path
 
-| Object | Source | Role |
-|--------|--------|------|
-| `ResourceRequest` | `api/v1/models.py` | Carries limits + reservations |
-| `Principal` | `tycho/context.py` | Carries user identity for pod env vars |
-| `UserIdentityToken` | `core/models.py` | Persisted auth token mapped to running sid |
-| `InstanceSpec` | `api/v1/models.py` | Response: URL, sid, resources |
+The access URL follows the Ambassador route template:
+
+```
+/private/<app_id>/<username>/
+```
+
+Both components are lowercase to match the Go template the controller resolves:
+`/private/{{ .system.AppClassName }}/{{ .system.UserName }}/`
+
+### Readiness polling
+
+`GET /api/v1/instances/<instance_id>/is_ready/` returns `{is_ready: true|false}`.
+When called immediately after launch, the helxapp-controller may not have reconciled yet and no Deployment will exist. In that case the endpoint returns `{is_ready: false}` rather than 404, so callers can poll until ready.
 
 ---
 
 ## Layer 2 — App Registry
 
-**Key file:** `appstore/tycho/context.py`
+**Key files:** `appstore/registry/models.py`, `appstore/registry/loader.py`
 
 ### Role
 
-Translates an `app_id` string into a concrete `docker-compose`-style specification that describes containers, ports, environment variables, and resource defaults.
+Translates an `app_id` string into a `ResolvedApp` — a concrete descriptor containing the app's docker-compose path, icon, description, service port map, and optional security context.
 
-### Context factory
+### Registry loading
+
+On startup, the registry scans a directory tree (configured by `APP_REGISTRY_DIR`) for `docker-compose.yaml` files. Each file corresponds to one app. A sidecar `metadata.yaml` supplies display metadata (name, description, icon, docs URL).
+
+### ResolvedApp
 
 ```python
-# views.py (module level)
-contextFactory = ContextFactory()
-tycho = contextFactory.get(
-    context_type=settings.TYCHO_MODE,          # "live" | "null"
-    product=settings.APPLICATION_BRAND,
-    tycho_config_url=settings.EXTERNAL_TYCHO_APP_REGISTRY_REPO
-)
+@dataclass
+class ResolvedApp:
+    app_id: str           # lowercase slug, becomes K8s resource name component
+    name: str             # display name
+    description: str
+    spec_path: str        # filesystem path to docker-compose.yaml
+    icon_path: str
+    services: dict        # {service_name: port}
+    count: int            # max simultaneous instances (default 1)
+    security_context: SecurityContext | None
+    ext: dict             # x-helx-* extensions from the compose file
 ```
-
-`ContextFactory` is a singleton. In `"null"` mode it returns a stub; in `"live"` mode it returns a `TychoContext`.
-
-### Registry loading (`_grok`)
-
-On startup, `TychoContext._grok()` loads `tycho/conf/app-registry.yaml` (or clones an external Git repo when `EXTERNAL_TYCHO_APP_REGISTRY_ENABLED=true`). The registry maps each `app_id` to:
-
-- A URL for the app's `docker-compose.yaml` (optionally in a remote git repo)
-- Default environment variable settings (`.env` file)
-- Security context defaults (UID, GID, fsGroup)
-- Branding / product context (which apps are visible per product)
-
-### Spec resolution on `start()`
-
-When `TychoContext.start()` is called it:
-
-1. Calls `get_spec(app_id)` → downloads and parses the app's `docker-compose.yaml`.
-2. Calls `get_settings(app_id)` → loads the matching `.env` file into a dict.
-3. Merges the caller's `ResourceRequest` over the spec's own `deploy.resources` stanza.
-4. Injects identity env vars (`access_token`, `refresh_token`, `REMOTE_USER`, `IDENTITY_TOKEN`).
-5. Applies security context (`runAsUser`, `runAsGroup`, `fsGroup`) from registry defaults.
-6. Passes the fully assembled request dict to `TychoClient.start()` (Layer 3).
 
 ---
 
-## Layer 3 — System Model
+## Layer 3 — CRD Spec Models
 
-**Key file:** `appstore/tycho/model.py`
+**Key files:** `appstore/appspec/`, `appstore/registry/spec_builder.py`, `appstore/kube/models.py`
 
 ### Role
 
-Converts the raw dict (docker-compose YAML + merged config) into typed Python objects that the template engine (Layer 4) can consume without any further string manipulation.
+Parses the docker-compose YAML into typed Python objects, then converts them into `HelxAppSpec` and `HelxInstSpec` data classes that map directly to the CRD schema expected by helxapp-controller.
 
-### Parsing (`System.parse`)
+### appspec — compose parsing
 
-`System.parse(spec_dict)` iterates over `services` in the docker-compose structure and constructs:
+`appspec.parse_compose(compose_dict, ext)` parses a docker-compose structure into a `ComposeApp`:
 
 ```
-System
-├── identifier      — UUID generated at parse time (the "tycho-guid" label)
-├── name            — "<app_id>-<short_uuid>"
-├── namespace       — from settings.NAMESPACE
-├── serviceaccount  — K8s service account for the pod
-├── security_context — {run_as_user, run_as_group, fs_group}
-├── env             — merged environment variables dict
-├── volumes         — PVC mount specifications
-└── containers[]
+ComposeApp
+└── services: list[ComposeService]
     ├── name
     ├── image
-    ├── command
-    ├── env         — container-level overrides
-    ├── limits      — {cpus, memory, gpus, ephemeral_storage}
-    ├── requests    — {cpus, memory}
-    ├── ports
-    ├── liveness_probe
-    └── readiness_probe
+    ├── command: list[str] | None
+    ├── environment: dict[str, str]
+    ├── ports: list[int]            # container port numbers
+    ├── volumes: list[VolumeMount]
+    ├── secrets: list[str]          # names of declared external secrets
+    ├── limits / requests           # from deploy.resources
+    └── resource_bounds             # from x-helx-resources extension
 ```
 
-The `System.identifier` UUID becomes the `tycho-guid` Kubernetes label that ties every K8s resource created for this launch together.
+Environment variables may be a YAML list (`KEY=VALUE`) or dict; the parser normalises both to `dict[str, str]`.
+
+Secrets follow docker-compose syntax:
+
+```yaml
+services:
+  pgadmin:
+    secrets:
+      - pgadmin-env          # short form
+secrets:
+  pgadmin-env:
+    external: true           # only external secrets are supported
+```
+
+Only secrets declared `external: true` at the top level are propagated.
+Per-service secret names land in `ComposeService.secrets` and are passed through as `secretsFrom` on the CRD, which the controller maps via Kubernetes `envFrom`.
+
+### spec_builder — compose → CRD
+
+`build_helxapp_spec(app, compose_dict)` → `HelxAppSpec`
+
+- Maps `ComposeService.ports` → `PortSpec(container_port, port)`.
+  The `port` (Service port) comes from `ResolvedApp.services`; the first service with a non-zero Service port gets an `AmbassadorSpec` attached.
+- Maps `ComposeService.volumes` → volume DSL strings (`[scheme://]src:mountPath[,options]`).
+- Maps `ComposeService.secrets` → `AppServiceSpec.secrets_from` → `"secretsFrom"` in CRD.
+- Carries `ResolvedApp.security_context` down to every `AppServiceSpec`.
+
+`build_helxinst_spec(app, username, resource_request, security_context)` → `HelxInstSpec`
+
+- Wraps the per-user resource request into `ContainerResources(request, limit)` for each declared service.
+- Instance-level security context overrides app-level security context.
+
+### kube/models — typed CRD schema
+
+| Class | Maps to |
+|-------|---------|
+| `HelxAppSpec` | HelxApp CRD `.spec` |
+| `HelxInstSpec` | HelxInst CRD `.spec` |
+| `HelxUserSpec` | HelxUser CRD `.spec` |
+| `AppServiceSpec` | `services[]` entry in HelxApp spec |
+| `PortSpec` | `services[].ports[]` |
+| `AmbassadorSpec` | `services[].ambassador` |
+| `ResourceSpec` | CPU/memory/GPU/storage quantities |
+| `ContainerResources` | request+limit pair per container |
+| `SecurityContext` | pod/container security context |
+
+Every model implements `to_dict()` which produces the camelCase JSON expected by the controller (e.g. `run_as_user` → `"runAsUser"`, `secrets_from` → `"secretsFrom"`).
 
 ---
 
-## Layer 4 — Kubernetes Emission (Templates)
+## Layer 4 — Kubernetes CRD Creation
 
-**Key files:** `appstore/tycho/template/pod.yaml`, `appstore/tycho/template/service.yaml`
-
-### Role
-
-Jinja2 templates render the `System` object into raw Kubernetes manifest YAML. No Kubernetes client code lives in these templates — they are pure data declarations.
-
-### Pod template highlights (`pod.yaml`)
-
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: {{ system.name }}
-  labels:
-    username: {{ system.username }}
-    tycho-guid: {{ system.identifier }}
-    executor: tycho
-spec:
-  serviceAccountName: {{ system.serviceaccount }}
-  securityContext:
-    runAsUser:  {{ system.security_context.run_as_user }}
-    runAsGroup: {{ system.security_context.run_as_group }}
-    fsGroup:    {{ system.security_context.fs_group }}
-
-  # Optional init container (when CREATE_HOME_DIRS=true)
-  initContainers:
-    - name: volume-tasks
-      image: busybox
-      command: ["sh", "-c", "mkdir -p ..."]  # home dir setup
-      volumeMounts: [...]
-
-  containers:
-    - name:  {{ container.name }}
-      image: {{ container.image }}
-      env:
-        - {name: REMOTE_USER,     value: {{ system.username }}}
-        - {name: IDENTITY_TOKEN,  value: {{ token }}}
-        # ... app-specific env vars ...
-      resources:
-        limits:
-          cpu:              {{ container.limits.cpus }}
-          memory:           {{ container.limits.memory }}
-          nvidia.com/gpu:   {{ container.limits.gpus }}
-        requests:
-          cpu:    {{ container.requests.cpus }}
-          memory: {{ container.requests.memory }}
-      ports: [...]
-      volumeMounts: [...]
-      livenessProbe:  {{ container.liveness_probe }}
-      readinessProbe: {{ container.readiness_probe }}
-
-  volumes:
-    - name: stdnfs     # user home PVC
-      persistentVolumeClaim:
-        claimName: {{ pvc_name }}
-```
-
-### Service template highlights (`service.yaml`)
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ service.name }}
-  labels:
-    tycho-guid: {{ system.identifier }}
-  annotations:
-    # Ambassador ingress mapping (when ambassador is enabled)
-    getambassador.io/config: |
-      prefix: /private/{{ app }}/{{ user }}/{{ sid }}/
-      service: {{ system.name }}:{{ system.system_port }}
-spec:
-  type: ClusterIP      # LoadBalancer when Ambassador is absent
-  selector:
-    name: {{ system.name }}
-  ports:
-    - port:       {{ container.ports[0] }}
-      targetPort: {{ container.ports[0] }}
-```
-
----
-
-## Layer 5 — Kubernetes Client
-
-**Key file:** `appstore/tycho/kube.py`
+**Key file:** `appstore/kube/client.py`
 
 ### Role
 
-`KubernetesCompute.start(system)` takes the rendered YAML strings, deserializes them into `kubernetes.client` objects, and issues API calls to the cluster.
+Creates the three CRD objects that helxapp-controller watches: `HelxApp`, `HelxInst`, and optionally `HelxUser`.
 
 ### Execution sequence
 
 ```
-KubernetesCompute.start(system)
+KubeClient.launch(app, username, resource_request, identity_token, env)
 │
-├─ 1. Configure k8s client
-│      Load in-cluster config (or kubeconfig for dev)
+├─ 1. build_helxapp_spec(app, compose_dict)
+│      Produce HelxAppSpec (service definitions, ambassador, secrets)
 │
-├─ 2. Pre-flight checks
-│      - Confirm Ambassador service exists (affects Service type)
-│      - Confirm PVCs exist
-│      - Load env secrets from <system>-env ConfigMap if present
+├─ 2. apply_helxapp(namespace, app_id, helxapp_spec.to_dict())
+│      kubectl apply HelxApp/<app_id>
+│      (HelxApp is cluster-scoped; one per app_id, shared across users)
 │
-├─ 3. Render pod.yaml → pod_manifest (YAML string)
-│      system.render("pod.yaml")
+├─ 3. build_helxinst_spec(app, username, resource_request, security_context)
+│      Produce HelxInstSpec (user + resource overrides)
 │
-├─ 4. Convert Pod → Deployment
-│      pod_to_deployment(system, pod_manifest)
-│      ├─ V1DeploymentSpec(replicas=1, template=pod_template)
-│      ├─ Selector labels: {tycho-guid, username}
-│      └─ extensions_api.create_namespaced_deployment(
-│             body=deployment, namespace=namespace)
-│         ← Kubernetes schedules the Pod
+├─ 4. create_helxinst(namespace, instance_name, helxinst_spec.to_dict())
+│      kubectl create HelxInst/<app_id>-<instance_id>
+│      (HelxInst is namespace-scoped; one per running instance)
 │
-├─ 5. Render service.yaml for each container
-│      api.create_namespaced_service(
-│          body=service_manifest, namespace=namespace)
-│         ← Exposes the Pod on the cluster network
-│
-├─ 6. Optionally create NetworkPolicy
-│      If system.requires_network_policy():
-│        networking_api.create_namespaced_network_policy(...)
-│
-└─ 7. Return {name, sid, containers → {port mappings}}
+└─ 5. Return instance_id for subsequent status queries
 ```
 
-### Why a Deployment rather than a bare Pod?
+`HelxApp` is applied (upserted) because the app definition is shared: multiple users running the same app all reference the same `HelxApp` resource. `HelxInst` is created fresh for each launch.
 
-The rendered template produces a `Pod` spec, but `pod_to_deployment` wraps it in a `Deployment` with `replicas: 1`. This gives Kubernetes control over restarts and rolling updates, and makes querying via label selectors straightforward (`tycho-guid=<uuid>`).
+---
+
+## Layer 5 — helxapp-controller
+
+**Operated separately; not part of this codebase.**
+
+### Role
+
+A Kubernetes operator that watches `HelxApp`, `HelxInst`, and `HelxUser` CRDs and reconciles the desired state into concrete Kubernetes workload objects.
+
+### Reconciliation — what the controller creates per HelxInst
+
+```
+HelxInst created
+      │
+      ▼  (controller reconciles)
+      │
+      ├─ Deployment
+      │    labels:
+      │      helx.renci.org/app-name:      <app_id>
+      │      helx.renci.org/user-name:     <username>      (lowercase)
+      │      helx.renci.org/instance-name: <app_id>-<uuid> (controller UUID)
+      │      helx.renci.org/id:            <controller-uuid>
+      │      executor:                      helxapp-controller
+      │
+      ├─ Service(s)
+      │    One per service with a non-zero port.
+      │    If services[].ambassador is set, annotated with:
+      │      getambassador.io/config:
+      │        prefix: /private/<AppClassName>/<UserName>/
+      │        service: <service-name>:<port>
+      │
+      ├─ envFrom secret injection
+      │    For each name in services[].secretsFrom, the controller adds
+      │    an envFrom[].secretRef to the container, injecting all keys
+      │    from that K8s Secret as environment variables.
+      │
+      └─ (optional) NetworkPolicy, ServiceAccount
+```
+
+### Label-based instance identification
+
+AppStore identifies running instances by reading Deployments labelled `executor=helxapp-controller` in the target namespace. The appstore `instance_id` is recovered from the `helx.renci.org/instance-name` label by stripping the `<app_id>-` prefix:
+
+```
+helx.renci.org/instance-name = "jupyter-a3f9c2"
+app_id = "jupyter"
+instance_id = "a3f9c2"   ← used in AppStore's own DB records
+```
+
+The `helx.renci.org/id` label is the controller's internal UUID and is not the same as AppStore's `instance_id`.
 
 ---
 
@@ -291,23 +275,66 @@ The rendered template produces a `Pod` spec, but `pod_to_deployment` wraps it in
 
 ### Ambassador Ingress
 
-When `settings.AMBASSADOR_SVC_NAME` is configured, the Service manifest includes an `getambassador.io/config` annotation. Ambassador reads this annotation and creates an edge route:
+When `AMBASSADOR_ID` is set, each `HelxAppSpec` service that exposes a port includes an `AmbassadorSpec`:
+
+```python
+AmbassadorSpec(
+    prefix="/private/{{ .system.AppClassName }}/{{ .system.UserName }}/",
+    ambassador_id="edge-stack",   # or None
+)
+```
+
+The controller writes this as an Ambassador v1 Mapping annotation on the generated Service. Ambassador resolves the Go template expressions at deploy time (double-pass rendering), producing per-user routes:
 
 ```
-/private/<app_id>/<username>/<sid>/  →  <service>:<port>
+/private/jupyter/alice/  →  jupyter-svc:8888
 ```
 
-This produces the per-user, per-instance URL returned in the API response.
+AppStore's `proxy_path` is constructed to match this pattern:
+
+```python
+proxy_path = f"/private/{app_id}/{k8s_user}/"
+```
+
+### Secrets / envFrom injection
+
+Secrets that an app needs (e.g. database credentials, API keys) are stored as K8s Secrets in the same namespace. The app's docker-compose declares them under `secrets:` with `external: true`. The controller injects them via `envFrom`:
+
+```yaml
+# docker-compose.yaml
+services:
+  pgadmin:
+    secrets: [pgadmin-env]
+secrets:
+  pgadmin-env:
+    external: true
+
+# becomes in HelxApp CRD:
+services:
+  - name: pgadmin
+    secretsFrom: [pgadmin-env]
+
+# controller renders into pod:
+containers:
+  - name: pgadmin
+    envFrom:
+      - secretRef:
+          name: pgadmin-env
+```
 
 ### PersistentVolume (user home)
 
-`settings.STDNFS_PVC` names a cluster-wide NFS-backed PVC. The pod template mounts it at `PARENT_DIR/SUBPATH_DIR/<username>`, giving each user persistent home storage across app restarts.
+User home directories are provided through volumes declared in the docker-compose spec using the volume DSL:
 
-When `CREATE_HOME_DIRS=true` an `initContainer` runs `busybox mkdir` before the app container starts to ensure the subdirectory exists and has correct permissions.
+```
+[scheme://]source:mountPath[#subPath][,options]
+```
 
-### iRODS Integration
+Supported schemes: `pvc` (default), `nfs`, `secret`, `configmap`.
 
-`IrodAuthorizedUser` (in `core/models.py`) maps a Django username to an iRODS UID. The pod template can inject iRODS credentials into container env vars, enabling apps to access iRODS data grids directly.
+Example: `pvc://stdnfs:/home/user#alice,rw,retain`
+
+The controller mounts the PVC at the specified path using the subPath for per-user isolation.
 
 ### Identity Token Flow
 
@@ -315,9 +342,9 @@ When `CREATE_HOME_DIRS=true` an `initContainer` runs `busybox mkdir` before the 
 Launch request
     │
     ▼  AppStore creates UserIdentityToken (random, 31-day expiry)
-    │  stores {token → sid} mapping in DB
+    │  stores {token → instance_id} mapping in DB
     │
-    ▼  Token injected as IDENTITY_TOKEN env var in pod
+    ▼  Token injected as IDENTITY_TOKEN env var in HelxInst environment
     │
     ▼  App uses IDENTITY_TOKEN on callback requests to AppStore
     │
@@ -325,6 +352,16 @@ Launch request
 ```
 
 This allows the running container to authenticate back to AppStore without carrying OAuth credentials.
+
+### Three-way Environment Merge
+
+The controller merges environment variables from three sources in precedence order (lowest to highest):
+
+1. `HelxApp.spec.services[].environment` — app-level defaults from docker-compose
+2. `HelxUser.spec.environment` — user-level defaults (if a HelxUser CRD exists)
+3. `HelxInst.spec.environment` — instance-level overrides (per-launch values)
+
+AppStore injects `IDENTITY_TOKEN`, `REMOTE_USER`, and `NB_PREFIX` at the HelxInst level so they take precedence.
 
 ---
 
@@ -338,50 +375,53 @@ User Browser / API Client
         ▼
 ┌───────────────────────────────────────────────┐
 │ InstanceViewSet.create()                      │
+│   • Authenticate; normalise username to lower │
 │   • Deserialize + validate resource bounds    │
 │   • Create UserIdentityToken → DB             │
-│   • Build Principal (username + tokens)       │
+│   • Build instance_id                         │
 └──────────────────┬────────────────────────────┘
-                   │ tycho.start(principal, app_id, resource_request)
+                   │ kube_client.launch(app, username, resources, env)
                    ▼
 ┌───────────────────────────────────────────────┐
-│ TychoContext.start()                          │
-│   • get_spec(app_id) → docker-compose YAML    │
-│   • get_settings(app_id) → .env dict          │
-│   • Merge resource request over spec defaults │
-│   • Inject identity env vars                  │
-│   • Build request dict                        │
-└──────────────────┬────────────────────────────┘
-                   │ TychoClient.start(request_dict)
-                   ▼
-┌───────────────────────────────────────────────┐
-│ StartSystemResource.post()                    │
-│   • Validate JSON schema                      │
-│   • System.parse(request) → System object     │
-│     (UUID, containers[], volumes, sec-context)│
-│   • KubernetesCompute.start(system)           │
+│ App Registry                                  │
+│   • Load docker-compose.yaml for app_id       │
+│   • Parse via appspec.parse_compose()         │
+│   • Return ComposeApp                         │
 └──────────────────┬────────────────────────────┘
                    │
                    ▼
 ┌───────────────────────────────────────────────┐
-│ KubernetesCompute.start(system)               │
-│   • system.render("pod.yaml")  → YAML string  │
-│   • pod_to_deployment()        → V1Deployment │
-│   • create_namespaced_deployment()  ← K8s API │
-│   • system.render("service.yaml")  → YAML     │
-│   • create_namespaced_service()     ← K8s API │
-│   • (optional) create_namespaced_network_policy│
-│   • Return {sid, port mappings}               │
+│ spec_builder                                  │
+│   • build_helxapp_spec() → HelxAppSpec        │
+│     - ports, ambassador, volumes, secrets     │
+│   • build_helxinst_spec() → HelxInstSpec      │
+│     - username, resources, identity_token env │
 └──────────────────┬────────────────────────────┘
                    │
                    ▼
-         Kubernetes Deployment
+┌───────────────────────────────────────────────┐
+│ KubeClient                                    │
+│   • apply HelxApp CRD    (app definition)     │
+│   • create HelxInst CRD  (per-user launch)    │
+└──────────────────┬────────────────────────────┘
+                   │ (async — controller reconciles)
+                   ▼
+┌───────────────────────────────────────────────┐
+│ helxapp-controller                            │
+│   • Create Deployment (pod template)          │
+│   • Create Service(s)                         │
+│   • Add Ambassador annotation → ingress route │
+│   • Inject envFrom for secretsFrom entries    │
+└──────────────────┬────────────────────────────┘
+                   │
+                   ▼
+          Kubernetes Deployment
                    │
                    ▼  (scheduler)
               Running Pod
                    │
                    ▼
-         Service → Ambassador → User URL
+         Service → Ambassador → /private/<app>/<user>/
 ```
 
 ---
@@ -390,15 +430,10 @@ User Browser / API Client
 
 | Setting | Default | Effect |
 |---------|---------|--------|
-| `TYCHO_MODE` | `live` | `live` = real K8s; `null` = stub for testing |
-| `NAMESPACE` | `default` | Kubernetes namespace for all resources |
-| `EXTERNAL_TYCHO_APP_REGISTRY_ENABLED` | `false` | Clone app specs from external git repo |
-| `EXTERNAL_TYCHO_APP_REGISTRY_REPO` | — | Git URL for app registry |
-| `CREATE_HOME_DIRS` | `false` | Add init container to create home subdirectory |
-| `STDNFS_PVC` | — | PVC name for user home storage |
-| `PARENT_DIR` / `SUBPATH_DIR` | — | Mount path components for user home |
-| `AMBASSADOR_SVC_NAME` | — | If set, use Ambassador ingress annotations |
-| `APPLICATION_BRAND` | — | Product name; filters which apps are visible |
+| `NAMESPACE` | `default` | Kubernetes namespace for all CRD/workload resources |
+| `APP_REGISTRY_DIR` | — | Filesystem path scanned for app `docker-compose.yaml` files |
+| `AMBASSADOR_ID` | — | If set, included in `AmbassadorSpec.ambassador_id` on each service |
+| `KUBECONFIG` / in-cluster | — | K8s client auth; in-cluster config used automatically in pods |
 
 ---
 
@@ -407,16 +442,14 @@ User Browser / API Client
 | File | Layer | Role |
 |------|-------|------|
 | `appstore/api/v1/views.py` | 1 | `InstanceViewSet` — API entry point |
-| `appstore/api/v1/models.py` | 1 | `ResourceRequest`, `InstanceSpec` |
-| `appstore/api/v1/serializers.py` | 1 | Request validation |
-| `appstore/tycho/context.py` | 2 | `TychoContext`, `ContextFactory` |
-| `appstore/tycho/conf/app-registry.yaml` | 2 | App catalog |
-| `appstore/tycho/conf/tycho.yaml` | 2 | Compute defaults |
-| `appstore/tycho/model.py` | 3 | `System`, `Container` |
-| `appstore/tycho/template/pod.yaml` | 4 | Pod manifest template |
-| `appstore/tycho/template/service.yaml` | 4 | Service manifest template |
-| `appstore/tycho/kube.py` | 5 | `KubernetesCompute` — K8s API calls |
-| `appstore/tycho/client.py` | 5 | `TychoClient`, `TychoService` |
-| `appstore/tycho/actions.py` | 5 | `StartSystemResource` dispatcher |
+| `appstore/api/v1/serializers.py` | 1 | Request deserialization and validation |
+| `appstore/registry/models.py` | 2 | `ResolvedApp`, `AppRegistryEntry` |
+| `appstore/registry/loader.py` | 2 | Registry directory scan and app loading |
+| `appstore/appspec/parser.py` | 3 | `parse_compose()` — docker-compose → `ComposeApp` |
+| `appstore/appspec/models.py` | 3 | `ComposeApp`, `ComposeService`, `VolumeMount` |
+| `appstore/registry/spec_builder.py` | 3 | `build_helxapp_spec()`, `build_helxinst_spec()` |
+| `appstore/kube/models.py` | 3 | `HelxAppSpec`, `HelxInstSpec`, `AmbassadorSpec`, etc. |
+| `appstore/kube/client.py` | 4 | `KubeClient` — CRD creation via K8s API |
+| `appstore/kube/status.py` | — | Instance status from Deployment labels |
 | `appstore/core/models.py` | — | `UserIdentityToken`, `IrodAuthorizedUser` |
-| `appstore/appstore/settings/base.py` | — | All Django/Tycho settings |
+| `appstore/appstore/settings/base.py` | — | All Django/Kubernetes settings |
