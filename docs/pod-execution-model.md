@@ -287,13 +287,13 @@ AmbassadorSpec(
 The controller writes this as an Ambassador v1 Mapping annotation on the generated Service. Ambassador resolves the Go template expressions at deploy time (double-pass rendering), producing per-user routes:
 
 ```
-/private/jupyter/alice/  →  jupyter-svc:8888
+/private/jupyter/alice/a3f9c2/  →  jupyter-svc:8888
 ```
 
 AppStore's `proxy_path` is constructed to match this pattern:
 
 ```python
-proxy_path = f"/private/{app_id}/{k8s_user}/"
+proxy_path = f"/private/{app_id}/{k8s_user}/{instance_id}/"
 ```
 
 ### Secrets / envFrom injection
@@ -361,7 +361,7 @@ The controller merges environment variables from three sources in precedence ord
 2. `HelxUser.spec.environment` — user-level defaults (if a HelxUser CRD exists)
 3. `HelxInst.spec.environment` — instance-level overrides (per-launch values)
 
-AppStore injects `IDENTITY_TOKEN`, `REMOTE_USER`, and `NB_PREFIX` at the HelxInst level so they take precedence.
+AppStore injects `IDENTITY_TOKEN`, `REMOTE_USER`, and `NB_PREFIX` at the HelxInst level so they take precedence. `NB_PREFIX` includes the instance GUID so app routing stays aligned with the launched service URL.
 
 ---
 

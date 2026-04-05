@@ -502,9 +502,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         # Per-instance environment variables.  The controller merges these
         # with HelxApp-level env (instance values take precedence).
-        # proxy_path matches the ambassador prefix on the HelxApp:
-        # /private/{{ .system.AppClassName }}/{{ .system.UserName }}/
-        proxy_path = f"/private/{app_id}/{k8s_user}/"
+        # Each instance needs a unique base path so app routing lines up with
+        # the launched service URL and per-instance proxying.
+        proxy_path = f"/private/{app_id}/{k8s_user}/{instance_id}/"
         inst_env = {
             "NB_PREFIX": proxy_path,
             "FB_BASEURL": proxy_path,

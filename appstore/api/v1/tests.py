@@ -128,6 +128,63 @@ class TestInstanceView(TestCase):
         )
         self.assertTrue(response.data[0]["memory"])
 
+    @patch("appstore.api.v1.views.uuid.uuid4")
+    @patch("appstore.api.v1.views.UserIdentityToken.objects.create")
+    @patch("appstore.api.v1.views._get_helxinst_mgr")
+    @patch("appstore.api.v1.views._get_helxapp_mgr")
+    @patch("appstore.api.v1.views._get_helxuser_mgr")
+    @patch("appstore.api.v1.views.validate_request_resources")
+    @patch("appstore.api.v1.views.extract_app_resources")
+    @patch("appstore.api.v1.views.get_registry")
+    def test_create_sets_nb_prefix_with_instance_guid(
+        self,
+        mock_get_registry,
+        mock_extract_app_resources,
+        mock_validate_request_resources,
+        mock_get_helxuser_mgr,
+        mock_get_helxapp_mgr,
+        mock_get_helxinst_mgr,
+        mock_create_identity_token,
+        mock_uuid4,
+    ):
+        user = User.objects.get(username=self.username)
+        create_view = self.view.as_view({"post": "create"})
+        api_request = self.factory.post(
+            "",
+            {"app_id": "jupyter", "cpus": 1, "gpus": 0, "memory": "2Gi"},
+            format="json",
+            HTTP_HOST="example.test",
+        )
+        force_authenticate(api_request, user=user)
+
+        instance_id = "e9cb47849da640a4b0f1b938094ff17d"
+        mock_uuid4.return_value = SimpleNamespace(hex=instance_id)
+
+        identity_token = Mock()
+        identity_token.token = "token-123"
+        identity_token.compute_app_consumer_id.return_value = f"app-{instance_id}"
+        mock_create_identity_token.return_value = identity_token
+
+        mock_extract_app_resources.return_value = (None, None)
+        mock_validate_request_resources.return_value = None
+
+        mock_registry = Mock()
+        mock_registry.build_helxapp.return_value = Mock()
+        mock_registry.build_helxinst.return_value = Mock()
+        mock_registry.get_app.return_value = SimpleNamespace(name="JupyterLab")
+        mock_get_registry.return_value = mock_registry
+
+        response = create_view(api_request)
+
+        self.assertEqual(response.status_code, 200)
+        mock_registry.build_helxinst.assert_called_once()
+        environment = mock_registry.build_helxinst.call_args.kwargs["environment"]
+        self.assertEqual(
+            environment["NB_PREFIX"],
+            f"/private/jupyter/{user.username.lower()}/{instance_id}/",
+        )
+        self.assertEqual(environment["FB_BASEURL"], environment["NB_PREFIX"])
+
     # TODO Add POST and DELETE
 
     def tearDown(self):

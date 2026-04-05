@@ -85,8 +85,8 @@ Content-Type: application/json
   "app_id":      "jupyter",
   "name":        "Jupyter",
   "sid":         "a3f9c2",
-  "proxy_path":  "/private/jupyter/alice/",
-  "url":         "https://helx.example.org/private/jupyter/alice/",
+  "proxy_path":  "/private/jupyter/alice/a3f9c2/",
+  "url":         "https://helx.example.org/private/jupyter/alice/a3f9c2/",
   "cpus":        "2",
   "memory":      "4Gi",
   "gpus":        "0",
@@ -140,7 +140,7 @@ The running container receives:
 |---------|-------|---------|
 | `REMOTE_USER` | `alice` | Username, passed by Ambassador header or env |
 | `IDENTITY_TOKEN` | 256-char token | App can use this to authenticate callbacks to AppStore |
-| `NB_PREFIX` | `/private/jupyter/alice/` | Base path; apps that honour `NB_PREFIX` (e.g. JupyterLab) route correctly |
+| `NB_PREFIX` | `/private/jupyter/alice/a3f9c2/` | Per-instance base path; apps that honour `NB_PREFIX` (e.g. JupyterLab) route correctly |
 
 The `IDENTITY_TOKEN` is tied to this specific instance. Apps that expose an API can accept it as a bearer token and validate it by calling:
 
