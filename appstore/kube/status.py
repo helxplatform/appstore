@@ -32,10 +32,10 @@ class StatusQuery:
         """Get status for a specific appstore instance ID.
 
         The helxapp-controller assigns its own UUID (``helx.renci.org/id``),
-        which differs from the appstore's instance ID.  The appstore ID is
-        embedded in the ``helx.renci.org/instance-name`` label as the suffix
-        after ``{app_id}-``.  We query all managed deployments and filter
-        client-side.
+        which differs from the appstore's instance ID. We recover the
+        appstore ID from the injected ``GUID`` environment variable when
+        available, falling back to the ``helx.renci.org/instance-name`` label.
+        We query all managed deployments and filter client-side.
         """
         all_managed = self._list(L.selector_all_managed())
         return [s for s in all_managed if s.instance_id == instance_id]
@@ -47,6 +47,28 @@ class StatusQuery:
     def all_managed(self) -> list[InstanceStatus]:
         """Get status for all controller-managed instances."""
         return self._list(L.selector_all_managed())
+
+    def _extract_appstore_instance_id(self, labels: dict[str, str], containers) -> str:
+        """Recover the AppStore instance ID for a deployment.
+
+        The controller labels derived workloads with its own UUID, but AppStore
+        injects the launch GUID into the HelxInst environment. Prefer that
+        stable AppStore GUID when present so lookups by ``sid`` match the ID
+        returned from ``POST /instances/`` and used by ``is_ready`` polling.
+        """
+        for container in containers or []:
+            for env_var in getattr(container, "env", None) or []:
+                if getattr(env_var, "name", None) == "GUID":
+                    value = getattr(env_var, "value", None)
+                    if value:
+                        return value
+
+        # Fall back to deriving the ID from controller-applied labels.
+        inst_name_label = labels.get(L.INSTANCE_NAME, "")
+        app_name = labels.get(L.APP_NAME, "")
+        if app_name and inst_name_label.startswith(app_name + "-"):
+            return inst_name_label[len(app_name) + 1:]
+        return inst_name_label or labels.get(L.ID, "")
 
     def _list(self, label_selector: str) -> list[InstanceStatus]:
         try:
@@ -71,21 +93,14 @@ class StatusQuery:
             desired = item.status.replicas or 0
             ready = item.status.ready_replicas or 0
 
+            containers = item.spec.template.spec.containers or []
             resource_usage: dict[str, dict[str, str]] = {}
-            for c in item.spec.template.spec.containers:
+            for c in containers:
                 if c.resources and c.resources.limits:
                     resource_usage[c.name] = dict(c.resources.limits)
 
-            # Derive the appstore instance_id from the instance-name label.
-            # The controller's helx.renci.org/id is its own UUID, not ours.
-            # The instance-name label is the HelxInst CR name: "{app_id}-{instance_id}".
-            inst_name_label = labels.get(L.INSTANCE_NAME, "")
             app_name = labels.get(L.APP_NAME, "")
-            if app_name and inst_name_label.startswith(app_name + "-"):
-                instance_id = inst_name_label[len(app_name) + 1:]
-            else:
-                # Fallback: use the full instance-name or controller UUID
-                instance_id = inst_name_label or labels.get(L.ID, "")
+            instance_id = self._extract_appstore_instance_id(labels, containers)
 
             results.append(
                 InstanceStatus(

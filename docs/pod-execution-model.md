@@ -257,9 +257,11 @@ HelxInst created
       └─ (optional) NetworkPolicy, ServiceAccount
 ```
 
-### Label-based instance identification
+### AppStore instance identification
 
-AppStore identifies running instances by reading Deployments labelled `executor=helxapp-controller` in the target namespace. The appstore `instance_id` is recovered from the `helx.renci.org/instance-name` label by stripping the `<app_id>-` prefix:
+AppStore identifies running instances by reading Deployments labelled `executor=helxapp-controller` in the target namespace. The most reliable AppStore `instance_id` is the injected `GUID` environment variable on the deployed containers, because the controller may apply its own UUIDs to labels on derived objects.
+
+When the injected `GUID` is unavailable, AppStore falls back to the `helx.renci.org/instance-name` label and strips the `<app_id>-` prefix:
 
 ```
 helx.renci.org/instance-name = "jupyter-a3f9c2"

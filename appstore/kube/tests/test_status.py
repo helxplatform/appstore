@@ -2,6 +2,7 @@
 
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
+from types import SimpleNamespace
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -23,7 +24,7 @@ def query(mock_api):
 
 def _make_deployment(
     name, controller_uuid, username, app_name="jupyter",
-    instance_name=None, ready=True,
+    instance_name=None, ready=True, guid=None,
 ):
     """Build a mock Deployment object.
 
@@ -49,13 +50,29 @@ def _make_deployment(
     container = MagicMock()
     container.name = "main"
     container.resources.limits = {"cpu": "2", "memory": "4Gi"}
+    container.env = []
+    if guid is not None:
+        container.env.append(SimpleNamespace(name="GUID", value=guid))
     item.spec.template.spec.containers = [container]
     return item
 
 
 class TestInstanceIdExtraction:
-    """The appstore instance_id is derived from the INSTANCE_NAME label,
-    not from the controller's helx.renci.org/id UUID."""
+    """The appstore instance_id comes from GUID env when available,
+    otherwise it falls back to label-based extraction."""
+
+    def test_prefers_guid_env_when_present(self, query, mock_api):
+        dep = _make_deployment(
+            "jupyter-controller-uuid-deploy", "controller-uuid-999",
+            "alice", app_name="jupyter",
+            instance_name="jupyter-controller-uuid-999",
+            guid="abc123",
+        )
+        mock_api.list_namespaced_deployment.return_value.items = [dep]
+
+        results = query.by_username("alice")
+        assert len(results) == 1
+        assert results[0].instance_id == "abc123"
 
     def test_extracts_from_instance_name(self, query, mock_api):
         dep = _make_deployment(
@@ -103,6 +120,25 @@ class TestByInstanceId:
             namespace="test-ns",
             label_selector=f"executor={L.EXECUTOR_VALUE}",
         )
+
+    def test_filters_by_guid_env_when_controller_uses_different_uuid(self, query, mock_api):
+        deps = [
+            _make_deployment(
+                "jupyter-controller-a-deploy", "ctrl-1", "alice",
+                instance_name="jupyter-controller-a",
+                guid="appstore-guid-1",
+            ),
+            _make_deployment(
+                "jupyter-controller-b-deploy", "ctrl-2", "alice",
+                instance_name="jupyter-controller-b",
+                guid="appstore-guid-2",
+            ),
+        ]
+        mock_api.list_namespaced_deployment.return_value.items = deps
+
+        results = query.by_instance_id("appstore-guid-2")
+        assert len(results) == 1
+        assert results[0].instance_id == "appstore-guid-2"
 
     def test_returns_empty_when_not_found(self, query, mock_api):
         mock_api.list_namespaced_deployment.return_value.items = []
