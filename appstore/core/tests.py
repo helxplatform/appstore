@@ -1,4 +1,5 @@
 import logging
+from unittest.mock import Mock, patch
 
 from core.admin_tests import *   # noqa: F403
 from django.http import HttpResponse, HttpResponseRedirect
@@ -41,3 +42,27 @@ class AppTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(isinstance(response, HttpResponseRedirect))
         self.assertEqual(response.url, "/accounts/login?next=/auth/")
+
+    @patch("core.views._get_helxinst_manager")
+    def test_private_route_redirects_guid_to_controller_uuid(self, mock_get_helxinst_manager):
+        mock_mgr = Mock()
+        mock_mgr.get.return_value = {"status": {"uuid": "3ccf4b07-ea15-488e-9208-48b0e3ffbb53"}}
+        mock_get_helxinst_manager.return_value = mock_mgr
+
+        response = self.client.get("/private/pgadmin/wateim/4ec0678656034b7198ae30fa598196af/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.url,
+            "/private/pgadmin/wateim/3ccf4b07-ea15-488e-9208-48b0e3ffbb53/",
+        )
+
+    @patch("core.views._get_helxinst_manager")
+    def test_private_route_returns_404_when_no_matching_helxinst(self, mock_get_helxinst_manager):
+        mock_mgr = Mock()
+        mock_mgr.get.return_value = None
+        mock_get_helxinst_manager.return_value = mock_mgr
+
+        response = self.client.get("/private/pgadmin/wateim/missing-guid/")
+
+        self.assertEqual(response.status_code, 404)

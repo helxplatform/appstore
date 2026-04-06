@@ -1,4 +1,5 @@
 import logging
+import re
 
 from allauth.socialaccount.signals import pre_social_login
 
@@ -10,6 +11,10 @@ from django.shortcuts import render, redirect
 from core.models import UserIdentityToken
 
 logger = logging.getLogger(__name__)
+
+_PRIVATE_APP_PATH_RE = re.compile(
+    r"^/private/(?P<app_id>[^/]+)/(?P<username>[^/]+)/(?P<sid>[^/]+)(?P<rest>/.*)?$"
+)
 
 
 @receiver(pre_social_login)
@@ -107,7 +112,44 @@ def auth(request):
         )
     return response
 
+def _get_helxinst_manager():
+    from api.v1.views import _get_helxinst_mgr
+
+    return _get_helxinst_mgr()
+
+
+def _resolve_private_redirect_path(path):
+    match = _PRIVATE_APP_PATH_RE.match(path)
+    if match is None:
+        return None
+
+    app_id = match.group("app_id")
+    sid = match.group("sid")
+    rest = match.group("rest") or ""
+
+    helxinst = _get_helxinst_manager().get(f"{app_id}-{sid}")
+    if helxinst is None:
+        return None
+
+    controller_uuid = (helxinst.get("status") or {}).get("uuid")
+    if not controller_uuid or controller_uuid == sid:
+        return None
+
+    return (
+        f"/private/{app_id}/{match.group('username')}/{controller_uuid}{rest}"
+    )
+
+
 def HandlePrivateURL404s(request):
+    redirect_path = _resolve_private_redirect_path(request.path)
+    if redirect_path is not None:
+        logger.info(
+            "Redirecting unresolved private path %s to controller UUID path %s",
+            request.path,
+            redirect_path,
+        )
+        return redirect(redirect_path)
+
     response = HttpResponse("App service not ready.", content_type="text/plain", status=404)
     logger.debug(f"Ambassador app resource may not be mapped to the app service yet. Redirection to app UI happens when it is ready.")
     return response
