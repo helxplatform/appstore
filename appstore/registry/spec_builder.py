@@ -24,6 +24,16 @@ _AMBASSADOR_PREFIX = (
     "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/{{ .system.UUID }}/"
 )
 
+# AppStore still launches applications with a stable GUID in NB_PREFIX/GUID.
+# The helxapp-controller, however, labels Services with its own UUID. Match on
+# the controller UUID externally, then rewrite the upstream path back to the
+# AppStore GUID so path-aware apps (pgAdmin, filebrowser, notebooks) see the
+# prefix they were configured with at launch time.
+_AMBASSADOR_GUID_REWRITE = (
+    '/private/{{ .system.AppClassName }}/{{ .system.UserName }}/'
+    '{{ index .system.Environment "GUID" }}/'
+)
+
 
 def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
     """Convert a resolved app + its docker-compose into a HelxAppSpec.
@@ -75,7 +85,7 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         if has_service_port and not ambassador_assigned:
             proxy_rewrite = None
             if app.proxy_rewrite_enabled:
-                proxy_rewrite = app.proxy_rewrite_target or _AMBASSADOR_PREFIX
+                proxy_rewrite = app.proxy_rewrite_target or _AMBASSADOR_GUID_REWRITE
             ambassador = AmbassadorSpec(
                 prefix=_AMBASSADOR_PREFIX,
                 ambassador_id=ambassador_id,

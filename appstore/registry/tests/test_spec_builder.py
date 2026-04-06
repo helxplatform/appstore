@@ -146,7 +146,10 @@ class TestBuildHelxappSpec:
         )
         ambassador = spec.services[0].ambassador
         assert ambassador is not None
-        assert ambassador.proxy_rewrite == ambassador.prefix
+        assert ambassador.proxy_rewrite != ambassador.prefix
+        assert "{{ .system.AppClassName }}" in ambassador.proxy_rewrite
+        assert "{{ .system.UserName }}" in ambassador.proxy_rewrite
+        assert 'index .system.Environment "GUID"' in ambassador.proxy_rewrite
 
     def test_ambassador_rewrite_uses_explicit_target(self):
         spec = build_helxapp_spec(
