@@ -49,7 +49,7 @@ class AppTests(TestCase):
         mock_mgr.get.return_value = {"status": {"uuid": "3ccf4b07-ea15-488e-9208-48b0e3ffbb53"}}
         mock_get_helxinst_manager.return_value = mock_mgr
 
-        response = self.client.get("/private/pgadmin/wateim/4ec0678656034b7198ae30fa598196af/")
+        response = self.client.get("/private/pgadmin/wateim/4ec0678656034b7198ae30fa598196af")
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(

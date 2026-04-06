@@ -125,7 +125,7 @@ def _resolve_private_redirect_path(path):
 
     app_id = match.group("app_id")
     sid = match.group("sid")
-    rest = match.group("rest") or ""
+    rest = match.group("rest") or "/"
 
     helxinst = _get_helxinst_manager().get(f"{app_id}-{sid}")
     if helxinst is None:
@@ -135,9 +135,7 @@ def _resolve_private_redirect_path(path):
     if not controller_uuid or controller_uuid == sid:
         return None
 
-    return (
-        f"/private/{app_id}/{match.group('username')}/{controller_uuid}{rest}"
-    )
+    return f"/private/{app_id}/{match.group('username')}/{controller_uuid}{rest}"
 
 
 def HandlePrivateURL404s(request):
