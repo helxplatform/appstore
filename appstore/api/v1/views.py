@@ -374,6 +374,42 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """Return InstanceStatus objects for the current user."""
         return _get_status_query().by_username(self.request.user.username.lower())
 
+    def _get_helxinst_record(self, sid, username):
+        """Find the HelxInst CR backing an AppStore instance ID."""
+        username = username.lower()
+        for item in _get_helxinst_mgr().list():
+            metadata = item.get("metadata", {}) or {}
+            spec = item.get("spec", {}) or {}
+            env = spec.get("environment", {}) or {}
+            if (spec.get("userName") or "").lower() != username:
+                continue
+            if env.get("GUID") == sid or metadata.get("name", "").endswith(f"-{sid}"):
+                return item
+        return None
+
+    def _get_instance_status(self, sid, username):
+        """Resolve an AppStore sid to the matching deployment status."""
+        active = self.get_queryset()
+        for ist in active:
+            if ist.instance_id == sid:
+                return ist
+
+        helxinst = self._get_helxinst_record(sid, username)
+        if helxinst is None:
+            return None
+
+        controller_uuid = (helxinst.get("status") or {}).get("uuid")
+        if not controller_uuid:
+            return None
+
+        statuses = _get_status_query().by_controller_id(controller_uuid)
+        for ist in statuses:
+            if (ist.username or "").lower() == username.lower():
+                # Keep the outward-facing AppStore sid stable for callers.
+                ist.instance_id = sid
+                return ist
+        return None
+
     def _instance_from_status(self, ist, username, host):
         """Convert an InstanceStatus to the API Instance model."""
         app_name = ist.app_name or ""
@@ -416,11 +452,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
         )
 
     def get_instance(self, sid, username, host):
-        active = self.get_queryset()
-        for ist in active:
-            if ist.instance_id == sid:
-                return self._instance_from_status(ist, username, host)
-        return None
+        ist = self._get_instance_status(sid, username)
+        if ist is None:
+            return None
+        return self._instance_from_status(ist, username, host)
 
     def list(self, request):
         """Provide all active instances."""
@@ -645,38 +680,37 @@ class InstanceViewSet(viewsets.GenericViewSet):
         serializer.is_valid(raise_exception=True)
         instance_id = serializer.validated_data["sid"]
 
-        # Find the instance and verify ownership
-        statuses = _get_status_query().by_instance_id(instance_id)
-        if statuses and len(statuses) == 1:
-            ist = statuses[0]
-            logger.debug("service username: " + str(ist.username))
-            logger.debug("request username: " + str(request.user.username))
-            if ist.username == request.user.username.lower():
-                logger.info(f"Terminating app id {sid} for user {request.user.username}")
-
-                # Find the HelxInst CR name from the deployment name pattern
-                inst_mgr = _get_helxinst_mgr()
-                inst_mgr.delete(ist.name)
-
-                # Clean up identity tokens
-                try:
-                    consumer_id = UserIdentityToken.compute_app_consumer_id(instance_id)
-                    tokens = UserIdentityToken.objects.filter(user=request.user, consumer_id=consumer_id)
-                    token_count = tokens.count()
-                    tokens.delete()
-                    logger.info(f"Deleted {token_count} identity token(s) for terminated instance: user={request.user.username}, sid={sid}")
-                except Exception as token_error:
-                    logger.error(
-                        f"Failed to delete identity tokens for terminated instance: "
-                        f"user={request.user.username}, sid={sid}, error={type(token_error).__name__}: {str(token_error)}"
-                    )
-                time.sleep(2)
-                return Response({"status": "success"})
-            else:
-                logger.warning(f"User {request.user.username} attempted to terminate app id {sid} owned by user {ist.username}")
-                return Response(status=drf_status.HTTP_403_FORBIDDEN)
-        else:
+        helxinst = self._get_helxinst_record(instance_id, request.user.username)
+        if helxinst is None:
             return Response(status=drf_status.HTTP_404_NOT_FOUND)
+
+        spec = helxinst.get("spec", {}) or {}
+        owner = (spec.get("userName") or "").lower()
+        if owner != request.user.username.lower():
+            logger.warning(f"User {request.user.username} attempted to terminate app id {sid} owned by user {owner}")
+            return Response(status=drf_status.HTTP_403_FORBIDDEN)
+
+        inst_name = (helxinst.get("metadata", {}) or {}).get("name")
+        if not inst_name:
+            return Response(status=drf_status.HTTP_404_NOT_FOUND)
+
+        logger.info(f"Terminating app id {sid} for user {request.user.username}")
+        _get_helxinst_mgr().delete(inst_name)
+
+        # Clean up identity tokens
+        try:
+            consumer_id = UserIdentityToken.compute_app_consumer_id(instance_id)
+            tokens = UserIdentityToken.objects.filter(user=request.user, consumer_id=consumer_id)
+            token_count = tokens.count()
+            tokens.delete()
+            logger.info(f"Deleted {token_count} identity token(s) for terminated instance: user={request.user.username}, sid={sid}")
+        except Exception as token_error:
+            logger.error(
+                f"Failed to delete identity tokens for terminated instance: "
+                f"user={request.user.username}, sid={sid}, error={type(token_error).__name__}: {str(token_error)}"
+            )
+        time.sleep(2)
+        return Response({"status": "success"})
 
     def partial_update(self, request, sid=None):
         """Update resources on a running instance."""
@@ -722,12 +756,13 @@ class InstanceViewSet(viewsets.GenericViewSet):
             resource_request=resource_dict if resource_dict else None,
         )
 
-        # Find the HelxInst CR name from the instance status
-        statuses = _get_status_query().by_instance_id(sid)
-        if not statuses:
+        helxinst = self._get_helxinst_record(sid, username)
+        if helxinst is None:
             return Response(status=drf_status.HTTP_404_NOT_FOUND)
 
-        inst_name = statuses[0].name
+        inst_name = (helxinst.get("metadata", {}) or {}).get("name")
+        if not inst_name:
+            return Response(status=drf_status.HTTP_404_NOT_FOUND)
         try:
             _get_helxinst_mgr().update(inst_name, helxinst_spec)
         except Exception as e:

@@ -146,6 +146,24 @@ class TestByInstanceId:
         assert results == []
 
 
+class TestByControllerId:
+    def test_filters_by_controller_uuid_label(self, query, mock_api):
+        dep = _make_deployment(
+            "pgadmin-controller-deploy", "ctrl-123", "alice",
+            instance_name="pgadmin-appstore-guid",
+            guid="appstore-guid",
+        )
+        mock_api.list_namespaced_deployment.return_value.items = [dep]
+
+        results = query.by_controller_id("ctrl-123")
+        assert len(results) == 1
+        assert results[0].instance_id == "appstore-guid"
+        mock_api.list_namespaced_deployment.assert_called_with(
+            namespace="test-ns",
+            label_selector=f"{L.ID}=ctrl-123",
+        )
+
+
 class TestByUsername:
     def test_returns_all_user_instances(self, query, mock_api):
         deps = [

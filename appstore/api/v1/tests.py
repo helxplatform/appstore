@@ -185,6 +185,57 @@ class TestInstanceView(TestCase):
         )
         self.assertEqual(environment["FB_BASEURL"], environment["NB_PREFIX"])
 
+    @patch("appstore.api.v1.views._get_helxinst_mgr")
+    @patch("appstore.api.v1.views.get_registry")
+    @patch("appstore.api.v1.views._get_status_query")
+    def test_is_ready_resolves_via_helxinst_controller_uuid(
+        self, mock_get_status_query, mock_get_registry, mock_get_helxinst_mgr
+    ):
+        user = User.objects.get(username=self.username)
+        sid = "69c34967103647e19f0ddfe7abbf8f3a"
+        controller_uuid = "b08804f0-f46e-4bac-b96f-1a10c1545251"
+
+        mock_status_query = Mock()
+        mock_status_query.by_username.return_value = []
+        mock_status_query.by_controller_id.return_value = [
+            InstanceStatus(
+                name=f"pgadmin-{controller_uuid}",
+                instance_id=controller_uuid,
+                app_name="pgadmin",
+                username=user.username.lower(),
+                creation_time="2026-04-06T00:06:57Z",
+                is_ready=True,
+                resource_usage={},
+            )
+        ]
+        mock_get_status_query.return_value = mock_status_query
+
+        mock_registry = Mock()
+        mock_registry.get_app.return_value = SimpleNamespace(
+            name="pgAdmin",
+            docs_url="https://docs.example.test/pgadmin",
+        )
+        mock_get_registry.return_value = mock_registry
+
+        mock_get_helxinst_mgr.return_value.list.return_value = [
+            {
+                "metadata": {"name": f"pgadmin-{sid}"},
+                "spec": {
+                    "userName": user.username.lower(),
+                    "environment": {"GUID": sid},
+                },
+                "status": {"uuid": controller_uuid},
+            }
+        ]
+
+        ready_view = self.view.as_view({"get": "is_ready"})
+        api_request = self.factory.get("", HTTP_HOST="example.test")
+        force_authenticate(api_request, user=user)
+        response = ready_view(api_request, sid=sid)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, {"is_ready": True})
+
     # TODO Add POST and DELETE
 
     def tearDown(self):

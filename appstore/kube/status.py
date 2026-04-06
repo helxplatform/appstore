@@ -44,6 +44,10 @@ class StatusQuery:
         """Get status for all instances belonging to a user."""
         return self._list(L.selector_by_username(username))
 
+    def by_controller_id(self, controller_id: str) -> list[InstanceStatus]:
+        """Get status for a specific controller-assigned UUID."""
+        return self._list(L.selector_by_id(controller_id))
+
     def all_managed(self) -> list[InstanceStatus]:
         """Get status for all controller-managed instances."""
         return self._list(L.selector_all_managed())
