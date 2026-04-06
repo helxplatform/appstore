@@ -43,6 +43,20 @@ class AppTests(TestCase):
         self.assertTrue(isinstance(response, HttpResponseRedirect))
         self.assertEqual(response.url, "/accounts/login?next=/auth/")
 
+    def test_auth_normalizes_remote_user_to_lowercase(self):
+        mixed_user = User.objects.create_superuser(
+            username="waTeim",
+            email="wateim@example.com",
+            password="admin2",
+        )
+        self.client.login(username="waTeim", password="admin2")
+
+        response = self.client.get("/auth/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("REMOTE_USER"), "wateim")
+        mixed_user.delete()
+
     @patch("core.views._get_helxinst_manager")
     def test_private_route_redirects_guid_to_controller_uuid(self, mock_get_helxinst_manager):
         mock_mgr = Mock()

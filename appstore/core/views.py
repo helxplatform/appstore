@@ -74,7 +74,7 @@ def auth_identity(request):
         token = UserIdentityToken.objects.get(token=raw_token)
         if not token.valid:
             return HttpResponse("The token is expired. Try restarting the app.", status=401)
-        remote_user = token.user.get_username()
+        remote_user = token.user.get_username().lower()
         response = HttpResponse(remote_user, status=200)
         response["REMOTE_USER"] = remote_user
         response["ACCESS_TOKEN"] = token.token
@@ -90,8 +90,9 @@ def auth(request):
     used to test authentication of a principal before proxying a request upstream."""
     if request.user and request.user.is_authenticated:
         try:
+            remote_user = request.user.get_username().lower()
             response = HttpResponse(content_type="application/json", status=200)
-            response["REMOTE_USER"] = request.user
+            response["REMOTE_USER"] = remote_user
             access_token = get_access_token(request)
             response["ACCESS_TOKEN"] = access_token
             logger.debug(
@@ -99,14 +100,14 @@ def auth(request):
             )
         except Exception as e:
             response = HttpResponse(content_type="application/json", status=403)
-            response["REMOTE_USER"] = request.user
+            response["REMOTE_USER"] = request.user.get_username().lower()
             logger.debug(
                 f"----------> exception {e.__class__.__name__} \
                 with the remote user ----- {request.user} "
             )
     else:
         response = HttpResponse(content_type="application/json", status=403)
-        response["REMOTE_USER"] = request.user
+        response["REMOTE_USER"] = str(request.user).lower()
         logger.debug(
             f"----------> user is not authenticated on the server ----- {request.user}"
         )
