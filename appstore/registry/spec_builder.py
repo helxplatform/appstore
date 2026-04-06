@@ -17,10 +17,11 @@ from kube.models import (
 )
 from registry.models import ResolvedApp
 
-# Standard ambassador prefix — routes /private/<app>/<user>/ to this service.
-# Uses Go template expressions resolved by the controller at deployment time.
+# Standard ambassador prefix — routes /private/<app>/<user>/<uuid>/ to this
+# service. Uses Go template expressions resolved by the controller at
+# deployment time.
 _AMBASSADOR_PREFIX = (
-    "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/"
+    "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/{{ .system.UUID }}/"
 )
 
 

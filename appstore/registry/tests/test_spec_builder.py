@@ -131,6 +131,7 @@ class TestBuildHelxappSpec:
         assert svc.ambassador is not None
         assert "{{ .system.AppClassName }}" in svc.ambassador.prefix
         assert "{{ .system.UserName }}" in svc.ambassador.prefix
+        assert "{{ .system.UUID }}" in svc.ambassador.prefix
 
     def test_ambassador_in_to_dict(self):
         spec = build_helxapp_spec(_app(), _compose())
