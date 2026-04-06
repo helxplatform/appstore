@@ -236,6 +236,61 @@ class TestInstanceView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data, {"is_ready": True})
 
+    @patch("appstore.api.v1.views._get_helxinst_mgr")
+    @patch("appstore.api.v1.views.get_registry")
+    @patch("appstore.api.v1.views._get_status_query")
+    def test_list_normalizes_controller_uuid_to_guid_and_lowercase_url(
+        self, mock_get_status_query, mock_get_registry, mock_get_helxinst_mgr
+    ):
+        user = User.objects.get(username=self.username)
+        sid = "69c34967103647e19f0ddfe7abbf8f3a"
+        controller_uuid = "3ccf4b07-ea15-488e-9208-48b0e3ffbb53"
+
+        mock_status_query = Mock()
+        mock_status_query.by_username.return_value = [
+            InstanceStatus(
+                name=f"pgadmin-{controller_uuid}-deploy",
+                instance_id=controller_uuid,
+                controller_id=controller_uuid,
+                app_name="pgadmin",
+                username=user.username.lower(),
+                creation_time="2026-04-06T01:33:16Z",
+                is_ready=True,
+                resource_usage={},
+            )
+        ]
+        mock_get_status_query.return_value = mock_status_query
+
+        mock_registry = Mock()
+        mock_registry.get_app.return_value = SimpleNamespace(
+            name="pgAdmin",
+            docs_url="https://docs.example.test/pgadmin",
+        )
+        mock_get_registry.return_value = mock_registry
+
+        mock_get_helxinst_mgr.return_value.list.return_value = [
+            {
+                "metadata": {"name": f"pgadmin-{sid}"},
+                "spec": {
+                    "userName": user.username.lower(),
+                    "environment": {"GUID": sid},
+                },
+                "status": {"uuid": controller_uuid},
+            }
+        ]
+
+        list_view = self.view.as_view({"get": "list"})
+        api_request = self.factory.get("", HTTP_HOST="example.test")
+        force_authenticate(api_request, user=user)
+        response = list_view(api_request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data[0]["sid"], sid)
+        self.assertEqual(
+            response.data[0]["url"],
+            f"http://example.test/private/pgadmin/{user.username.lower()}/{sid}/",
+        )
+
     # TODO Add POST and DELETE
 
     def tearDown(self):

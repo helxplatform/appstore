@@ -374,6 +374,18 @@ class InstanceViewSet(viewsets.GenericViewSet):
         """Return InstanceStatus objects for the current user."""
         return _get_status_query().by_username(self.request.user.username.lower())
 
+    def _extract_sid_from_helxinst(self, helxinst):
+        spec = helxinst.get("spec", {}) or {}
+        env = spec.get("environment", {}) or {}
+        guid = env.get("GUID")
+        if guid:
+            return guid
+
+        name = (helxinst.get("metadata", {}) or {}).get("name", "")
+        if "-" in name:
+            return name.split("-", 1)[1]
+        return None
+
     def _get_helxinst_record(self, sid, username):
         """Find the HelxInst CR backing an AppStore instance ID."""
         username = username.lower()
@@ -381,17 +393,36 @@ class InstanceViewSet(viewsets.GenericViewSet):
             metadata = item.get("metadata", {}) or {}
             spec = item.get("spec", {}) or {}
             env = spec.get("environment", {}) or {}
+            status = item.get("status", {}) or {}
             if (spec.get("userName") or "").lower() != username:
                 continue
-            if env.get("GUID") == sid or metadata.get("name", "").endswith(f"-{sid}"):
+            if (
+                env.get("GUID") == sid
+                or metadata.get("name", "").endswith(f"-{sid}")
+                or status.get("uuid") == sid
+            ):
                 return item
         return None
+
+    def _normalize_status_instance_id(self, ist, username):
+        """Prefer the AppStore GUID over any controller-derived UUID."""
+        helxinst = self._get_helxinst_record(ist.instance_id, username)
+        if helxinst is None and ist.controller_id:
+            helxinst = self._get_helxinst_record(ist.controller_id, username)
+        if helxinst is None:
+            return ist
+
+        sid = self._extract_sid_from_helxinst(helxinst)
+        if sid:
+            ist.instance_id = sid
+        return ist
 
     def _get_instance_status(self, sid, username):
         """Resolve an AppStore sid to the matching deployment status."""
         active = self.get_queryset()
         for ist in active:
-            if ist.instance_id == sid:
+            ist = self._normalize_status_instance_id(ist, username)
+            if ist.instance_id == sid or (ist.controller_id and ist.controller_id == sid):
                 return ist
 
         helxinst = self._get_helxinst_record(sid, username)
@@ -460,12 +491,13 @@ class InstanceViewSet(viewsets.GenericViewSet):
     def list(self, request):
         """Provide all active instances."""
         active = self.get_queryset()
-        username = request.user.get_username()
+        username = request.user.get_username().lower()
         host = get_host(request)
         instances = []
 
         if not host.lower() == "ambassador":
             for ist in active:
+                ist = self._normalize_status_instance_id(ist, username)
                 app_name = ist.app_name or ""
                 logger.debug(f"\nActive instance type:\n{app_name}\n")
 
@@ -610,7 +642,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
         resolved_app = get_registry().get_app(app_id)
         s = InstanceSpec(
-            username=username,
+            username=k8s_user,
             app_id=app_id,
             name=resolved_app.name,
             host=host,
@@ -646,7 +678,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, sid=None):
         """Provide active instance details."""
-        username = request.user.get_username()
+        username = request.user.get_username().lower()
         host = get_host(request)
 
         if sid is not None:
@@ -660,7 +692,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=['get'])
     def is_ready(self, request, sid=None):
-        username = request.user.get_username()
+        username = request.user.get_username().lower()
         host = get_host(request)
 
         if sid is not None:

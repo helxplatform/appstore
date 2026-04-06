@@ -110,6 +110,7 @@ class StatusQuery:
                 InstanceStatus(
                     name=item.metadata.name,
                     instance_id=instance_id,
+                    controller_id=labels.get(L.ID, ""),
                     app_name=app_name,
                     username=labels.get(L.USERNAME),
                     creation_time=time_str,

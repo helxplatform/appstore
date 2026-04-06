@@ -231,6 +231,7 @@ class InstanceStatus:
 
     name: str
     instance_id: str
+    controller_id: str = ""
     app_name: str | None = None
     username: str | None = None
     creation_time: str | None = None
