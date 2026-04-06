@@ -139,6 +139,24 @@ class TestBuildHelxappSpec:
         assert "ambassador" in d["services"][0]
         assert d["services"][0]["ambassador"]["prefix"].startswith("/private/")
 
+    def test_ambassador_rewrite_defaults_to_prefix_when_enabled(self):
+        spec = build_helxapp_spec(
+            _app(proxy_rewrite_enabled=True),
+            _compose(),
+        )
+        ambassador = spec.services[0].ambassador
+        assert ambassador is not None
+        assert ambassador.proxy_rewrite == ambassador.prefix
+
+    def test_ambassador_rewrite_uses_explicit_target(self):
+        spec = build_helxapp_spec(
+            _app(proxy_rewrite_enabled=True, proxy_rewrite_target="/"),
+            _compose(),
+        )
+        ambassador = spec.services[0].ambassador
+        assert ambassador is not None
+        assert ambassador.proxy_rewrite == "/"
+
     def test_ambassador_only_on_first_service_with_port(self):
         compose = {
             "services": {

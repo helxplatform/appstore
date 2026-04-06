@@ -28,6 +28,8 @@ class ResolvedApp:
     security_context: SecurityContext | None = None
     env: dict[str, str] = field(default_factory=dict)
     ext: dict | None = None
+    proxy_rewrite_enabled: bool = False
+    proxy_rewrite_target: str | None = None
 
     # Lazily populated by the loader
     spec_obj: dict | None = field(default=None, repr=False)

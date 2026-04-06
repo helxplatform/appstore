@@ -40,6 +40,11 @@ def _to_resolved_app(app_id: str, raw: dict) -> ResolvedApp:
         security_context=security_context,
         env=raw.get("env", {}),
         ext=raw.get("ext"),
+        proxy_rewrite_enabled=bool(
+            raw.get("proxy-rewrite-rule")
+            or (raw.get("proxy-rewrite", {}) or {}).get("enabled", False)
+        ),
+        proxy_rewrite_target=(raw.get("proxy-rewrite", {}) or {}).get("target"),
     )
 
 

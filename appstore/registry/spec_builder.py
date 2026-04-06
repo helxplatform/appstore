@@ -73,9 +73,13 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         ambassador = None
         has_service_port = any(p.port for p in ports)
         if has_service_port and not ambassador_assigned:
+            proxy_rewrite = None
+            if app.proxy_rewrite_enabled:
+                proxy_rewrite = app.proxy_rewrite_target or _AMBASSADOR_PREFIX
             ambassador = AmbassadorSpec(
                 prefix=_AMBASSADOR_PREFIX,
                 ambassador_id=ambassador_id,
+                proxy_rewrite=proxy_rewrite,
             )
             ambassador_assigned = True
 
