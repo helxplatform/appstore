@@ -152,16 +152,17 @@ class AppRegistry:
         resource_request: dict | None = None,
         security_context: SecurityContext | None = None,
         environment: dict[str, str] | None = None,
+        reference_id: str | None = None,
     ) -> HelxInstSpec:
         """Build a HelxInstSpec for launching.
 
         :param environment: Per-instance environment variables (e.g.
-            ``NB_PREFIX``, ``GUID``, ``ACCESS_TOKEN``).  The controller
+            ``NB_PREFIX``, ``REFERENCE_ID``, ``GUID``, ``ACCESS_TOKEN``).  The controller
             merges these with app-level env; instance values win.
         """
         app = self.get_app(app_id)
         return build_helxinst_spec(
-            app, username, resource_request, security_context, environment
+            app, username, resource_request, security_context, environment, reference_id
         )
 
 

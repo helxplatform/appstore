@@ -33,8 +33,9 @@ class StatusQuery:
 
         The helxapp-controller assigns its own UUID (``helx.renci.org/id``),
         which differs from the appstore's instance ID. We recover the
-        appstore ID from the injected ``GUID`` environment variable when
-        available, falling back to the ``helx.renci.org/instance-name`` label.
+        appstore ID from the injected ``REFERENCE_ID``/``GUID`` environment
+        variables when available, falling back to the
+        ``helx.renci.org/instance-name`` label.
         We query all managed deployments and filter client-side.
         """
         all_managed = self._list(L.selector_all_managed())
@@ -56,13 +57,14 @@ class StatusQuery:
         """Recover the AppStore instance ID for a deployment.
 
         The controller labels derived workloads with its own UUID, but AppStore
-        injects the launch GUID into the HelxInst environment. Prefer that
-        stable AppStore GUID when present so lookups by ``sid`` match the ID
-        returned from ``POST /instances/`` and used by ``is_ready`` polling.
+        injects the launch reference ID into the HelxInst environment. Prefer
+        that stable AppStore instance ID when present so lookups by ``sid``
+        match the ID returned from ``POST /instances/`` and used by
+        ``is_ready`` polling.
         """
         for container in containers or []:
             for env_var in getattr(container, "env", None) or []:
-                if getattr(env_var, "name", None) == "GUID":
+                if getattr(env_var, "name", None) in {"REFERENCE_ID", "GUID"}:
                     value = getattr(env_var, "value", None)
                     if value:
                         return value

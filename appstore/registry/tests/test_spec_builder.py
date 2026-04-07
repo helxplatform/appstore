@@ -149,7 +149,7 @@ class TestBuildHelxappSpec:
         assert ambassador.proxy_rewrite != ambassador.prefix
         assert "{{ .system.AppClassName }}" in ambassador.proxy_rewrite
         assert "{{ .system.UserName }}" in ambassador.proxy_rewrite
-        assert 'index .system.Environment "GUID"' in ambassador.proxy_rewrite
+        assert "{{ .system.ReferenceID }}" in ambassador.proxy_rewrite
 
     def test_ambassador_rewrite_uses_explicit_target(self):
         spec = build_helxapp_spec(
@@ -217,3 +217,8 @@ class TestBuildHelxinstSpec:
             app, "alice", resource_request={"cpu": "1", "gpu": "1"}
         )
         assert spec.resources["jupyter"].request.gpu == "1"
+
+    def test_with_reference_id(self):
+        app = _app()
+        spec = build_helxinst_spec(app, "alice", reference_id="inst-123")
+        assert spec.reference_id == "inst-123"

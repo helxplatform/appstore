@@ -24,7 +24,7 @@ def query(mock_api):
 
 def _make_deployment(
     name, controller_uuid, username, app_name="jupyter",
-    instance_name=None, ready=True, guid=None,
+    instance_name=None, ready=True, guid=None, reference_id=None,
 ):
     """Build a mock Deployment object.
 
@@ -51,6 +51,8 @@ def _make_deployment(
     container.name = "main"
     container.resources.limits = {"cpu": "2", "memory": "4Gi"}
     container.env = []
+    if reference_id is not None:
+        container.env.append(SimpleNamespace(name="REFERENCE_ID", value=reference_id))
     if guid is not None:
         container.env.append(SimpleNamespace(name="GUID", value=guid))
     item.spec.template.spec.containers = [container]
@@ -73,6 +75,20 @@ class TestInstanceIdExtraction:
         results = query.by_username("alice")
         assert len(results) == 1
         assert results[0].instance_id == "abc123"
+
+    def test_prefers_reference_id_env_when_present(self, query, mock_api):
+        dep = _make_deployment(
+            "jupyter-controller-uuid-deploy", "controller-uuid-999",
+            "alice", app_name="jupyter",
+            instance_name="jupyter-controller-uuid-999",
+            reference_id="ref-abc123",
+            guid="legacy-guid-ignored",
+        )
+        mock_api.list_namespaced_deployment.return_value.items = [dep]
+
+        results = query.by_username("alice")
+        assert len(results) == 1
+        assert results[0].instance_id == "ref-abc123"
 
     def test_extracts_from_instance_name(self, query, mock_api):
         dep = _make_deployment(

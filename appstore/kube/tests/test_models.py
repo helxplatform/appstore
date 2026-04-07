@@ -197,6 +197,15 @@ class TestHelxInstSpec:
         d = spec.to_dict()
         assert d == {"appName": "app", "userName": "bob"}
 
+    def test_to_dict_with_reference_id(self):
+        spec = HelxInstSpec(
+            app_name="app",
+            user_name="bob",
+            reference_id="ref-123",
+        )
+        d = spec.to_dict()
+        assert d["referenceID"] == "ref-123"
+
 
 class TestHelxUserSpec:
     def test_with_handle(self):

@@ -376,6 +376,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
 
     def _extract_sid_from_helxinst(self, helxinst):
         spec = helxinst.get("spec", {}) or {}
+        reference_id = spec.get("referenceID")
+        if reference_id:
+            return reference_id
         env = spec.get("environment", {}) or {}
         guid = env.get("GUID")
         if guid:
@@ -397,7 +400,8 @@ class InstanceViewSet(viewsets.GenericViewSet):
             if (spec.get("userName") or "").lower() != username:
                 continue
             if (
-                env.get("GUID") == sid
+                spec.get("referenceID") == sid
+                or env.get("GUID") == sid
                 or metadata.get("name", "").endswith(f"-{sid}")
                 or status.get("uuid") == sid
             ):
@@ -575,6 +579,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         inst_env = {
             "NB_PREFIX": proxy_path,
             "FB_BASEURL": proxy_path,
+            "REFERENCE_ID": instance_id,
             "GUID": instance_id,
             "USER_NAME": k8s_user,
             "USER": k8s_user,
@@ -585,6 +590,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         helxinst_spec = get_registry().build_helxinst(
             app_id,
             k8s_user,
+            reference_id=instance_id,
             resource_request={
                 "cpu": str(resource_request.cpus),
                 "memory": resource_request.memory,

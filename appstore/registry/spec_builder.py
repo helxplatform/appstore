@@ -24,14 +24,14 @@ _AMBASSADOR_PREFIX = (
     "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/{{ .system.UUID }}/"
 )
 
-# AppStore still launches applications with a stable GUID in NB_PREFIX/GUID.
-# The helxapp-controller, however, labels Services with its own UUID. Match on
-# the controller UUID externally, then rewrite the upstream path back to the
-# AppStore GUID so path-aware apps (pgAdmin, filebrowser, notebooks) see the
-# prefix they were configured with at launch time.
-_AMBASSADOR_GUID_REWRITE = (
+# AppStore still launches applications with a stable reference ID in NB_PREFIX.
+# The helxapp-controller labels Services with its own UUID. Match on the
+# controller UUID externally, then rewrite the upstream path back to the
+# AppStore reference ID so path-aware apps (pgAdmin, filebrowser, notebooks)
+# see the prefix they were configured with at launch time.
+_AMBASSADOR_REFERENCE_REWRITE = (
     '/private/{{ .system.AppClassName }}/{{ .system.UserName }}/'
-    '{{ index .system.Environment "GUID" }}/'
+    '{{ .system.ReferenceID }}/'
 )
 
 
@@ -85,7 +85,7 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         if has_service_port and not ambassador_assigned:
             proxy_rewrite = None
             if app.proxy_rewrite_enabled:
-                proxy_rewrite = app.proxy_rewrite_target or _AMBASSADOR_GUID_REWRITE
+                proxy_rewrite = app.proxy_rewrite_target or _AMBASSADOR_REFERENCE_REWRITE
             ambassador = AmbassadorSpec(
                 prefix=_AMBASSADOR_PREFIX,
                 ambassador_id=ambassador_id,
@@ -119,6 +119,7 @@ def build_helxinst_spec(
     resource_request: dict | None = None,
     security_context: SecurityContext | None = None,
     environment: dict[str, str] | None = None,
+    reference_id: str | None = None,
 ) -> HelxInstSpec:
     """Build a HelxInst spec for a user's launch request.
 
@@ -129,7 +130,7 @@ def build_helxinst_spec(
     :param security_context: Instance-level override; falls back to
         app-level if not provided.
     :param environment: Per-instance environment variables (e.g.
-        ``NB_PREFIX``, ``GUID``, ``ACCESS_TOKEN``).  Merged with
+        ``NB_PREFIX``, ``REFERENCE_ID``, ``GUID``, ``ACCESS_TOKEN``).  Merged with
         app-level env at deploy time; instance values take precedence.
     """
     resources: dict[str, ContainerResources] = {}
@@ -149,6 +150,7 @@ def build_helxinst_spec(
     return HelxInstSpec(
         app_name=app.app_id,
         user_name=username,
+        reference_id=reference_id,
         resources=resources,
         security_context=sc,
         environment=environment,

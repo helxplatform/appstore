@@ -176,6 +176,7 @@ class HelxInstSpec:
 
     app_name: str
     user_name: str
+    reference_id: str | None = None
     resources: dict[str, ContainerResources] = field(default_factory=dict)
     security_context: SecurityContext | None = None
     environment: dict[str, str] | None = None
@@ -185,6 +186,8 @@ class HelxInstSpec:
             "appName": self.app_name,
             "userName": self.user_name,
         }
+        if self.reference_id:
+            d["referenceID"] = self.reference_id
         if self.environment:
             d["environment"] = self.environment
         if self.resources:

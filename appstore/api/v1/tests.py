@@ -178,12 +178,18 @@ class TestInstanceView(TestCase):
 
         self.assertEqual(response.status_code, 200)
         mock_registry.build_helxinst.assert_called_once()
+        self.assertEqual(
+            mock_registry.build_helxinst.call_args.kwargs["reference_id"],
+            instance_id,
+        )
         environment = mock_registry.build_helxinst.call_args.kwargs["environment"]
         self.assertEqual(
             environment["NB_PREFIX"],
             f"/private/jupyter/{user.username.lower()}/{instance_id}/",
         )
         self.assertEqual(environment["FB_BASEURL"], environment["NB_PREFIX"])
+        self.assertEqual(environment["REFERENCE_ID"], instance_id)
+        self.assertEqual(environment["GUID"], instance_id)
 
     @patch("appstore.api.v1.views._get_helxinst_mgr")
     @patch("appstore.api.v1.views.get_registry")
@@ -222,6 +228,7 @@ class TestInstanceView(TestCase):
                 "metadata": {"name": f"pgadmin-{sid}"},
                 "spec": {
                     "userName": user.username.lower(),
+                    "referenceID": sid,
                     "environment": {"GUID": sid},
                 },
                 "status": {"uuid": controller_uuid},
@@ -273,6 +280,7 @@ class TestInstanceView(TestCase):
                 "metadata": {"name": f"pgadmin-{sid}"},
                 "spec": {
                     "userName": user.username.lower(),
+                    "referenceID": sid,
                     "environment": {"GUID": sid},
                 },
                 "status": {"uuid": controller_uuid},
