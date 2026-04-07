@@ -127,6 +127,34 @@ class TestGetApp:
         assert app.proxy_rewrite_enabled is True
         assert app.proxy_rewrite_target is None
 
+    def test_connect_path_metadata(self, tmp_path):
+        registry = {
+            "spec_dir": "specs",
+            "contexts": {
+                "common": {
+                    "apps": {
+                        "pgadmin": {
+                            "name": "pgAdmin",
+                            "services": {"pgadmin": "8080"},
+                            "connectPath": "browser/",
+                        },
+                    }
+                }
+            },
+        }
+        reg_path, _ = _write_registry(tmp_path, registry)
+        _write_compose(tmp_path, "specs", "pgadmin", {
+            "services": {
+                "pgadmin": {
+                    "image": "pgadmin4:latest",
+                    "ports": ["8080"],
+                }
+            }
+        })
+        reg = AppRegistry(reg_path, product="common")
+        app = reg.get_app("pgadmin")
+        assert app.connect_path == "browser/"
+
     def test_missing_raises(self, simple_registry):
         reg = AppRegistry(simple_registry, product="common")
         with pytest.raises(KeyError):

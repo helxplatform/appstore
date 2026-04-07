@@ -30,6 +30,7 @@ class ResolvedApp:
     ext: dict | None = None
     proxy_rewrite_enabled: bool = False
     proxy_rewrite_target: str | None = None
+    connect_path: str = ""
 
     # Lazily populated by the loader
     spec_obj: dict | None = field(default=None, repr=False)

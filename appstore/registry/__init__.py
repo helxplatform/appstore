@@ -45,6 +45,7 @@ def _to_resolved_app(app_id: str, raw: dict) -> ResolvedApp:
             or (raw.get("proxy-rewrite", {}) or {}).get("enabled", False)
         ),
         proxy_rewrite_target=(raw.get("proxy-rewrite", {}) or {}).get("target"),
+        connect_path=raw.get("connectPath", ""),
     )
 
 

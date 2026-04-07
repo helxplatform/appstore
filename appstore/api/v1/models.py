@@ -46,15 +46,21 @@ class Instance:
     host: InitVar[str]
     username: InitVar[str]
     is_ready: bool
+    connect_path: InitVar[str] = ""
     url: str = field(init=False)
     status: str = field(init=False)
     protocol: InitVar[str] = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
 
-    def __post_init__(self, host, username, protocol):
+    def __post_init__(self, host, username, connect_path, protocol):
         # TODO use urllib to confirm construction of a valid resource path
         # http://0.0.0.0:8000/private/jupyter-ds/admin/018b22862f8b44858cca6ad84430b364
+        suffix = connect_path.lstrip("/")
+        if suffix and not suffix.endswith("/"):
+            suffix = f"{suffix}/"
         self.url = (
-            f"{self.protocol}://{host}/private/{self.aid}/" f"{username}/{self.sid}/"
+            f"{self.protocol}://{host}/private/{self.aid}/"
+            f"{username}/{self.sid}/"
+            f"{suffix}"
         )
 
         # Would be better to get this from tycho per app based on the pod status
@@ -174,12 +180,16 @@ class InstanceSpec:
     port: InitVar[int]
     svc_id: InitVar[str]
     sys_id: InitVar[str]
+    connect_path: InitVar[str] = ""
     url: str = field(init=False)
     sid: str = field(init=False)
     protocol: str = os.environ.get("ACCOUNT_DEFAULT_HTTP_PROTOCOL", "http")
 
-    def __post_init__(self, ip, port, svc_id, sys_id):
+    def __post_init__(self, ip, port, svc_id, sys_id, connect_path):
         logger.debug(f'{"Finishing spec construction."}')
+        suffix = connect_path.lstrip("/")
+        if suffix and not suffix.endswith("/"):
+            suffix = f"{suffix}/"
 
         if ip:
             self.url = f"http://{ip}:{port}"
@@ -187,11 +197,13 @@ class InstanceSpec:
             self.url = (
                 f"{self.protocol}://{self.host}/private/{self.app_id}/"
                 f"{self.username}/{sys_id}/"
+                f"{suffix}"
             )
         else:
             self.url = (
                 f"{self.protocol}://{self.host}/private/{self.app_id}/"
                 f"{self.username}/{svc_id}/"
+                f"{suffix}"
             )
         self.sid = sys_id
         logger.debug(f"-- app-networking constructed url: {self.url}")
