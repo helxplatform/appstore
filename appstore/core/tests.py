@@ -72,6 +72,20 @@ class AppTests(TestCase):
         )
 
     @patch("core.views._get_helxinst_manager")
+    def test_private_route_keeps_reference_id_path(self, mock_get_helxinst_manager):
+        sid = "4ec0678656034b7198ae30fa598196af"
+        mock_mgr = Mock()
+        mock_mgr.get.return_value = {
+            "spec": {"referenceID": sid},
+            "status": {"uuid": "3ccf4b07-ea15-488e-9208-48b0e3ffbb53"},
+        }
+        mock_get_helxinst_manager.return_value = mock_mgr
+
+        response = self.client.get(f"/private/pgadmin/wateim/{sid}/")
+
+        self.assertEqual(response.status_code, 404)
+
+    @patch("core.views._get_helxinst_manager")
     def test_private_route_returns_404_when_no_matching_helxinst(self, mock_get_helxinst_manager):
         mock_mgr = Mock()
         mock_mgr.get.return_value = None

@@ -131,7 +131,7 @@ class TestBuildHelxappSpec:
         assert svc.ambassador is not None
         assert "{{ .system.AppClassName }}" in svc.ambassador.prefix
         assert "{{ .system.UserName }}" in svc.ambassador.prefix
-        assert "{{ .system.UUID }}" in svc.ambassador.prefix
+        assert "{{ .system.ReferenceID }}" in svc.ambassador.prefix
 
     def test_ambassador_in_to_dict(self):
         spec = build_helxapp_spec(_app(), _compose())
@@ -146,10 +146,7 @@ class TestBuildHelxappSpec:
         )
         ambassador = spec.services[0].ambassador
         assert ambassador is not None
-        assert ambassador.proxy_rewrite != ambassador.prefix
-        assert "{{ .system.AppClassName }}" in ambassador.proxy_rewrite
-        assert "{{ .system.UserName }}" in ambassador.proxy_rewrite
-        assert "{{ .system.ReferenceID }}" in ambassador.proxy_rewrite
+        assert ambassador.proxy_rewrite == ambassador.prefix
 
     def test_ambassador_rewrite_uses_explicit_target(self):
         spec = build_helxapp_spec(

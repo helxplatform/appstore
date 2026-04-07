@@ -17,21 +17,11 @@ from kube.models import (
 )
 from registry.models import ResolvedApp
 
-# Standard ambassador prefix — routes /private/<app>/<user>/<uuid>/ to this
-# service. Uses Go template expressions resolved by the controller at
+# Standard ambassador prefix — routes /private/<app>/<user>/<referenceID>/ to
+# the service. Uses Go template expressions resolved by the controller at
 # deployment time.
 _AMBASSADOR_PREFIX = (
-    "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/{{ .system.UUID }}/"
-)
-
-# AppStore still launches applications with a stable reference ID in NB_PREFIX.
-# The helxapp-controller labels Services with its own UUID. Match on the
-# controller UUID externally, then rewrite the upstream path back to the
-# AppStore reference ID so path-aware apps (pgAdmin, filebrowser, notebooks)
-# see the prefix they were configured with at launch time.
-_AMBASSADOR_REFERENCE_REWRITE = (
-    '/private/{{ .system.AppClassName }}/{{ .system.UserName }}/'
-    '{{ .system.ReferenceID }}/'
+    "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/{{ .system.ReferenceID }}/"
 )
 
 
@@ -85,7 +75,7 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         if has_service_port and not ambassador_assigned:
             proxy_rewrite = None
             if app.proxy_rewrite_enabled:
-                proxy_rewrite = app.proxy_rewrite_target or _AMBASSADOR_REFERENCE_REWRITE
+                proxy_rewrite = app.proxy_rewrite_target or _AMBASSADOR_PREFIX
             ambassador = AmbassadorSpec(
                 prefix=_AMBASSADOR_PREFIX,
                 ambassador_id=ambassador_id,

@@ -132,6 +132,11 @@ def _resolve_private_redirect_path(path):
     if helxinst is None:
         return None
 
+    spec = helxinst.get("spec", {}) or {}
+    reference_id = spec.get("referenceID")
+    if reference_id and reference_id == sid:
+        return None
+
     controller_uuid = (helxinst.get("status") or {}).get("uuid")
     if not controller_uuid or controller_uuid == sid:
         return None
