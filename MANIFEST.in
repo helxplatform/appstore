@@ -1,4 +1,5 @@
 recursive-include appstore/templates *
+recursive-include appstore/tycho *
 recursive-include appstore/appstore/static *
 recursive-include appstore/appstore/templates *
 recursive-include appstore/core/static *
