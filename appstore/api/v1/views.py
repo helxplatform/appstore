@@ -452,11 +452,9 @@ class InstanceViewSet(viewsets.GenericViewSet):
             resolved = get_registry().get_app(app_name)
             name = resolved.name
             docs = resolved.docs_url
-            connect_path = getattr(resolved, "connect_path", "")
         except KeyError:
             name = app_name
             docs = ""
-            connect_path = ""
 
         # Aggregate resource usage across containers
         total_cpu = 0.0
@@ -486,7 +484,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
             host=host,
             username=username,
             is_ready=ist.is_ready,
-            connect_path=connect_path,
         )
 
     def get_instance(self, sid, username, host):
@@ -660,7 +657,6 @@ class InstanceViewSet(viewsets.GenericViewSet):
             port=0,
             svc_id=inst_name,
             sys_id=instance_id,
-            connect_path=getattr(resolved_app, "connect_path", ""),
         )
 
         serializer = InstanceSpecSerializer(data=asdict(s))
