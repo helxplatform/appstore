@@ -123,13 +123,13 @@ def extract_app_resources(app_id: str) -> tuple[Resources, Resources]:
     if svc.resource_bounds is not None:
         bounds = svc.resource_bounds
         minimum = Resources(
-            cpus=float(bounds.cpu.min) if bounds.cpu and bounds.cpu.min else 0,
+            cpus=to_cpus(bounds.cpu.min) if bounds.cpu and bounds.cpu.min else 0,
             gpus=int(bounds.gpu.min) if bounds.gpu and bounds.gpu.min else 0,
             memory=bounds.memory.min if bounds.memory and bounds.memory.min else 0,
             ephemeralStorage=bounds.ephemeral_storage.min if bounds.ephemeral_storage and bounds.ephemeral_storage.min else 0,
         )
         maximum = Resources(
-            cpus=float(bounds.cpu.max) if bounds.cpu and bounds.cpu.max else 0,
+            cpus=to_cpus(bounds.cpu.max) if bounds.cpu and bounds.cpu.max else 0,
             gpus=int(bounds.gpu.max) if bounds.gpu and bounds.gpu.max else 0,
             memory=bounds.memory.max if bounds.memory and bounds.memory.max else 0,
             ephemeralStorage=bounds.ephemeral_storage.max if bounds.ephemeral_storage and bounds.ephemeral_storage.max else 0,
@@ -140,13 +140,13 @@ def extract_app_resources(app_id: str) -> tuple[Resources, Resources]:
 
     # Fall back to standard compose limits / requests
     minimum = Resources(
-        cpus=float(svc.requests.cpu) if svc.requests.cpu else 0,
+        cpus=to_cpus(svc.requests.cpu) if svc.requests.cpu else 0,
         gpus=int(svc.requests.gpu) if svc.requests.gpu else 0,
         memory=svc.requests.memory if svc.requests.memory else 0,
         ephemeralStorage=svc.requests.ephemeral_storage if svc.requests.ephemeral_storage else 0,
     )
     maximum = Resources(
-        cpus=float(svc.limits.cpu) if svc.limits.cpu else 0,
+        cpus=to_cpus(svc.limits.cpu) if svc.limits.cpu else 0,
         gpus=int(svc.limits.gpu) if svc.limits.gpu else 0,
         memory=svc.limits.memory if svc.limits.memory else 0,
         ephemeralStorage=svc.limits.ephemeral_storage if svc.limits.ephemeral_storage else 0,
@@ -275,6 +275,36 @@ def to_bytes(memory):
     conversion = units.get(unit, 0)
 
     return number * conversion
+
+
+def to_cpus(cpu) -> float:
+    """Convert Kubernetes CPU quantities to cores as a float."""
+    if isinstance(cpu, (int, float)):
+        return float(cpu)
+    if cpu in (None, ""):
+        return 0.0
+
+    cpu = str(cpu).strip()
+    match = re.fullmatch(r"([0-9]*\.?[0-9]+)([numkKMGTPE]?)", cpu)
+    if match is None:
+        return 0.0
+
+    value = float(match.group(1))
+    suffix = match.group(2)
+    multipliers = {
+        "": 1.0,
+        "n": 1e-9,
+        "u": 1e-6,
+        "m": 1e-3,
+        "k": 1e3,
+        "K": 1e3,
+        "M": 1e6,
+        "G": 1e9,
+        "T": 1e12,
+        "P": 1e15,
+        "E": 1e18,
+    }
+    return value * multipliers.get(suffix, 0.0)
 
 
 class AppViewSet(viewsets.GenericViewSet):
@@ -462,7 +492,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
         total_memory = 0.0
         total_ephemeral = ""
         for _cname, res in ist.resource_usage.items():
-            total_cpu += float(res.get("cpu", 0))
+            total_cpu += to_cpus(res.get("cpu", 0))
             gpu_val = res.get("nvidia.com/gpu", 0)
             total_gpu += int(gpu_val) if gpu_val else 0
             total_memory += to_bytes(res.get("memory", "0"))

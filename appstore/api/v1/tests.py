@@ -128,6 +128,48 @@ class TestInstanceView(TestCase):
         )
         self.assertTrue(response.data[0]["memory"])
 
+    @patch("appstore.api.v1.views.get_registry")
+    @patch("appstore.api.v1.views._get_status_query")
+    def test_is_ready_handles_millicpu_resource_usage(
+        self, mock_get_status_query, mock_get_registry
+    ):
+        user = User.objects.get(username=self.username)
+        sid = "72cfc14b174c42eba8b6ee9baddb18ac"
+        ready_view = self.view.as_view({"get": "is_ready"})
+        api_request = self.factory.get("", HTTP_HOST="example.test")
+        force_authenticate(api_request, user=user)
+
+        mock_status_query = Mock()
+        mock_status_query.by_username.return_value = [
+            InstanceStatus(
+                name=f"jupyter-{sid}",
+                instance_id=sid,
+                app_name="jupyter",
+                username=user.username.lower(),
+                creation_time="2026-04-09T03:20:47Z",
+                is_ready=True,
+                resource_usage={
+                    "notebook": {
+                        "cpu": "2500m",
+                        "memory": "4Gi",
+                    }
+                },
+            )
+        ]
+        mock_get_status_query.return_value = mock_status_query
+
+        mock_registry = Mock()
+        mock_registry.get_app.return_value = SimpleNamespace(
+            name="JupyterLab",
+            docs_url="https://docs.example.test/jupyter",
+        )
+        mock_get_registry.return_value = mock_registry
+
+        response = ready_view(api_request, sid=sid)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, {"is_ready": True})
+
     @patch("appstore.api.v1.views.uuid.uuid4")
     @patch("appstore.api.v1.views.UserIdentityToken.objects.create")
     @patch("appstore.api.v1.views._get_helxinst_mgr")
