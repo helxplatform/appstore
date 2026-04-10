@@ -649,6 +649,7 @@ class InstanceViewSet(viewsets.GenericViewSet):
                 user_labels = {kube_labels.IDENTITY_SOURCE: "ldap"}
             _get_helxuser_mgr().ensure(k8s_user, user_spec, labels=user_labels)
             _get_helxapp_mgr().ensure(app_id, helxapp_spec)
+            _get_helxapp_mgr().wait_for_reconcile(app_id)
             _get_helxinst_mgr().create(inst_name, helxinst_spec)
         except Exception as e:
             logger.error(f"Failed to create CRDs for {app_id}, user {username}: {type(e).__name__}: {e}")

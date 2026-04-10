@@ -8,6 +8,7 @@ environment, volumes, and security context.
 from __future__ import annotations
 
 import logging
+import time
 
 from kubernetes.client import CustomObjectsApi
 from kubernetes.client.rest import ApiException
@@ -86,3 +87,25 @@ class HelxAppManager:
         if existing is None:
             return self.create(name, spec)
         return self.update(name, spec)
+
+    def wait_for_reconcile(self, name: str, timeout: float = 30.0, interval: float = 0.5) -> None:
+        """Block until the controller has reconciled this HelxApp.
+
+        After an update the controller bumps ``status.observedGeneration`` to
+        match ``metadata.generation``.  Submitting a HelxInst before that
+        happens causes the HelxInst reconciler to see the HelxApp in a
+        mid-reconcile state and exit without creating a Deployment.
+        """
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            obj = self.get(name)
+            if obj is not None:
+                generation = obj.get("metadata", {}).get("generation", 0)
+                observed = obj.get("status", {}).get("observedGeneration", 0)
+                if generation == observed:
+                    return
+            time.sleep(interval)
+        logger.warning(
+            "HelxApp %s did not reach observedGeneration within %.1fs; proceeding anyway",
+            name, timeout,
+        )
