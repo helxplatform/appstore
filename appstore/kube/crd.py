@@ -23,12 +23,16 @@ def create_crd(
     plural: str,
     name: str,
     spec: dict,
+    labels: dict[str, str] | None = None,
 ) -> dict:
     """Create a namespaced custom resource."""
+    metadata: dict[str, Any] = {"name": name}
+    if labels:
+        metadata["labels"] = labels
     body: dict[str, Any] = {
         "apiVersion": f"{API_GROUP}/{API_VERSION}",
         "kind": _kind_from_plural(plural),
-        "metadata": {"name": name},
+        "metadata": metadata,
         "spec": spec,
     }
     return api.create_namespaced_custom_object(

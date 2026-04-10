@@ -23,6 +23,7 @@ from allauth import socialaccount
 from appspec import parse_compose
 from kube import KubeClient, HelxAppManager, HelxInstManager, HelxUserManager, StatusQuery
 from kube.models import HelxUserSpec
+from kube import labels as kube_labels
 from registry import get_registry
 from core.models import IrodAuthorizedUser, UserIdentityToken
 
@@ -643,7 +644,10 @@ class InstanceViewSet(viewsets.GenericViewSet):
                     "home": f"{stdnfs_pvc}:{home_path}#{k8s_user}",
                 },
             )
-            _get_helxuser_mgr().ensure(k8s_user, user_spec)
+            user_labels = None
+            if os.environ.get("LDAP_URI"):
+                user_labels = {kube_labels.IDENTITY_SOURCE: "ldap"}
+            _get_helxuser_mgr().ensure(k8s_user, user_spec, labels=user_labels)
             _get_helxapp_mgr().ensure(app_id, helxapp_spec)
             _get_helxinst_mgr().create(inst_name, helxinst_spec)
         except Exception as e:

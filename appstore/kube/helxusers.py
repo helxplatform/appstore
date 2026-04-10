@@ -28,10 +28,10 @@ class HelxUserManager:
         self._api = custom_api
         self._ns = namespace
 
-    def create(self, name: str, spec: HelxUserSpec) -> dict:
+    def create(self, name: str, spec: HelxUserSpec, labels: dict[str, str] | None = None) -> dict:
         try:
             return crd.create_crd(
-                self._api, self._ns, PLURAL, name, spec.to_dict()
+                self._api, self._ns, PLURAL, name, spec.to_dict(), labels=labels
             )
         except ApiException as exc:
             raise UserError(
@@ -66,11 +66,11 @@ class HelxUserManager:
                 "Failed to list HelxUsers", details=str(exc)
             ) from exc
 
-    def ensure(self, name: str, spec: HelxUserSpec) -> dict:
+    def ensure(self, name: str, spec: HelxUserSpec, labels: dict[str, str] | None = None) -> dict:
         """Create or update a HelxUser (idempotent)."""
         existing = self.get(name)
         if existing is None:
-            return self.create(name, spec)
+            return self.create(name, spec, labels=labels)
         # Update — replace spec
         try:
             return crd.update_crd(

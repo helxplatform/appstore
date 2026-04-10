@@ -18,6 +18,7 @@ USERNAME = f"{PREFIX}/username"
 APP_CLASS_NAME = f"{PREFIX}/app-class-name"
 INSTANCE_NAME = f"{PREFIX}/instance-name"
 RETAIN = f"{PREFIX}/retain"
+IDENTITY_SOURCE = f"{PREFIX}/identity-source"
 
 EXECUTOR = "executor"
 EXECUTOR_VALUE = "helxapp-controller"
