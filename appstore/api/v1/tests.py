@@ -227,7 +227,7 @@ class TestInstanceView(TestCase):
         environment = mock_registry.build_helxinst.call_args.kwargs["environment"]
         self.assertEqual(
             environment["NB_PREFIX"],
-            f"/private/jupyter/{user.username.lower()}/{instance_id}/",
+            f"/private/jupyter/{user.username.lower()}/{instance_id}",
         )
         self.assertEqual(environment["FB_BASEURL"], environment["NB_PREFIX"])
         self.assertEqual(environment["REFERENCE_ID"], instance_id)
