@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 from appspec import parse_compose, to_k8s_resources, bounds_to_resource_bounds
+from appspec.models import ComposeResources
 from appspec.models import ProbeSpec as AppspecProbeSpec
 from kube.models import (
     AmbassadorSpec,
@@ -27,10 +28,24 @@ _AMBASSADOR_PREFIX = (
 )
 
 
-def _convert_probe(probe: AppspecProbeSpec | None) -> ProbeSpec | None:
-    """Convert an appspec ProbeSpec to a kube ProbeSpec."""
+def _convert_probe(
+    probe: AppspecProbeSpec | None,
+    service_port: int | None = None,
+) -> ProbeSpec | None:
+    """Convert an appspec ProbeSpec to a kube ProbeSpec.
+
+    :param service_port: Fallback port (integer) used when the probe's port
+        is a Jinja2 template string (e.g. ``'{{ system_port }}'``).  The CRD
+        requires an integer; template strings are not accepted.
+    """
     if probe is None:
         return None
+    port = probe.port
+    if isinstance(port, str):
+        try:
+            port = int(port)
+        except (ValueError, TypeError):
+            port = service_port  # resolve template to the service's actual port
     return ProbeSpec(
         probe_type=probe.probe_type,
         delay=probe.delay,
@@ -38,9 +53,32 @@ def _convert_probe(probe: AppspecProbeSpec | None) -> ProbeSpec | None:
         threshold=probe.threshold,
         command=probe.command,
         path=probe.path,
-        port=probe.port,
+        port=port,
         http_headers=probe.http_headers,
     )
+
+
+def _compose_resources_to_bounds(
+    requests: ComposeResources,
+    limits: ComposeResources,
+) -> dict:
+    """Map compose request/limit pairs to the CRD resourceBounds shape.
+
+    The CRD expects ``{cpu: {min, max}, memory: {min, max}}`` — not the
+    ``{limits: {...}, requests: {...}}`` shape that mirrors HelxInst resources.
+    Compose ``requests`` map to ``min`` and ``limits`` map to ``max``.
+    """
+    result: dict = {}
+    req = to_k8s_resources(requests).to_dict()
+    lim = to_k8s_resources(limits).to_dict()
+    for key in set(list(req.keys()) + list(lim.keys())):
+        bound: dict = {}
+        if key in req:
+            bound["min"] = req[key]
+        if key in lim:
+            bound["max"] = lim[key]
+        result[key] = bound
+    return result
 
 
 def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
@@ -74,14 +112,12 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
         for v in svc.volumes:
             volumes[v.source] = v.to_dsl_string()
 
-        # Resource bounds: prefer x-helx-resources; fall back to compose
+        # Resource bounds: prefer x-helx-resources; fall back to compose.
+        # CRD shape: {cpu: {min, max}, memory: {min, max}} — NOT limits/requests.
         if svc.resource_bounds is not None:
             rb = bounds_to_resource_bounds(svc.resource_bounds)
         elif svc.limits.cpu or svc.requests.cpu:
-            rb = {
-                "limits": to_k8s_resources(svc.limits).to_dict(),
-                "requests": to_k8s_resources(svc.requests).to_dict(),
-            }
+            rb = _compose_resources_to_bounds(svc.requests, svc.limits)
         else:
             rb = None
 
@@ -112,8 +148,8 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
             security_context=app.security_context,
             resource_bounds=rb,
             ambassador=ambassador,
-            liveness_probe=_convert_probe(svc.liveness_probe),
-            readiness_probe=_convert_probe(svc.readiness_probe),
+            liveness_probe=_convert_probe(svc.liveness_probe, service_port=ports[0].container_port if ports else None),
+            readiness_probe=_convert_probe(svc.readiness_probe, service_port=ports[0].container_port if ports else None),
         ))
 
     return HelxAppSpec(

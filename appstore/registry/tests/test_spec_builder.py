@@ -177,6 +177,47 @@ class TestBuildHelxappSpec:
         assert spec.services[0].ambassador is None
 
 
+class TestResourceBoundsInHelxappSpec:
+    def test_compose_limits_map_to_crd_bounds_shape(self):
+        """Compose limits/requests must serialise as {cpu: {min, max}} not {limits: {cpu}}."""
+        compose = _compose(**{"deploy": {"resources": {"limits": {"cpus": "2", "memory": "4G"}}}})
+        spec = build_helxapp_spec(_app(), compose)
+        rb = spec.services[0].resource_bounds
+        assert rb is not None
+        assert "limits" not in rb
+        assert "requests" not in rb
+        assert "cpu" in rb or "memory" in rb
+
+    def test_compose_limits_become_max(self):
+        compose = _compose(**{"deploy": {"resources": {"limits": {"cpus": "2", "memory": "4G"}}}})
+        spec = build_helxapp_spec(_app(), compose)
+        rb = spec.services[0].resource_bounds
+        assert rb["cpu"]["max"] == "2"
+        assert rb["memory"]["max"] == "4G"
+
+    def test_compose_requests_become_min(self):
+        compose = _compose(**{"deploy": {"resources": {
+            "limits": {"cpus": "2", "memory": "4G"},
+            "reservations": {"cpus": "0.5", "memory": "512M"},
+        }}})
+        spec = build_helxapp_spec(_app(), compose)
+        rb = spec.services[0].resource_bounds
+        assert rb["cpu"]["min"] == "0.5"
+        assert rb["cpu"]["max"] == "2"
+
+    def test_no_resource_bounds_when_no_compose_resources(self):
+        spec = build_helxapp_spec(_app(), _compose())
+        assert spec.services[0].resource_bounds is None
+
+    def test_resource_bounds_in_to_dict_has_correct_shape(self):
+        compose = _compose(**{"deploy": {"resources": {"limits": {"cpus": "4", "memory": "8G"}}}})
+        spec = build_helxapp_spec(_app(), compose)
+        d = spec.to_dict()
+        rb = d["services"][0]["resourceBounds"]
+        assert "limits" not in rb
+        assert "requests" not in rb
+
+
 class TestProbesInHelxappSpec:
     def test_liveness_probe_exec_from_ext(self):
         ext = {"kube": {"livenessProbe": {"cmd": ["pgrep", "jupyter"], "delay": 5, "period": 5}}}
@@ -251,6 +292,40 @@ class TestProbesInHelxappSpec:
         d = spec.to_dict()
         assert "livenessProbe" not in d["services"][0]
         assert "readinessProbe" not in d["services"][0]
+
+    def test_template_port_string_resolved_to_service_port(self):
+        """Port template strings (e.g. '{{ system_port }}') must become integers."""
+        ext = {"kube": {"readinessProbe": {"httpGet": {"path": "/", "port": "{{ system_port }}"}, "delay": 5}}}
+        spec = build_helxapp_spec(_app(), _compose())
+        # Manually inject a template-port probe to simulate registry behaviour
+        from appspec.models import ProbeSpec as AppspecProbeSpec
+        from registry.spec_builder import _convert_probe
+        probe = AppspecProbeSpec(probe_type="httpGet", path="/", port="{{ system_port }}")
+        converted = _convert_probe(probe, service_port=8888)
+        assert isinstance(converted.port, int)
+        assert converted.port == 8888
+
+    def test_numeric_string_port_cast_to_int(self):
+        from appspec.models import ProbeSpec as AppspecProbeSpec
+        from registry.spec_builder import _convert_probe
+        probe = AppspecProbeSpec(probe_type="httpGet", path="/", port="8080")
+        converted = _convert_probe(probe, service_port=9999)
+        assert converted.port == 8080  # parsed directly, not the fallback
+
+    def test_integer_port_unchanged(self):
+        from appspec.models import ProbeSpec as AppspecProbeSpec
+        from registry.spec_builder import _convert_probe
+        probe = AppspecProbeSpec(probe_type="httpGet", path="/", port=8888)
+        converted = _convert_probe(probe, service_port=0)
+        assert converted.port == 8888
+
+    def test_probe_port_is_int_in_to_dict(self):
+        """to_dict() must never emit a string for httpGet.port."""
+        ext = {"kube": {"readinessProbe": {"httpGet": {"path": "/", "port": 8080}, "delay": 0}}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        d = spec.to_dict()
+        port = d["services"][0]["readinessProbe"]["httpGet"]["port"]
+        assert isinstance(port, int)
 
 
 class TestBuildHelxinstSpec:
