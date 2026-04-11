@@ -177,6 +177,82 @@ class TestBuildHelxappSpec:
         assert spec.services[0].ambassador is None
 
 
+class TestProbesInHelxappSpec:
+    def test_liveness_probe_exec_from_ext(self):
+        ext = {"kube": {"livenessProbe": {"cmd": ["pgrep", "jupyter"], "delay": 5, "period": 5}}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        p = spec.services[0].liveness_probe
+        assert p is not None
+        assert p.probe_type == "exec"
+        assert p.command == ["pgrep", "jupyter"]
+        assert p.delay == 5
+        assert p.period == 5
+
+    def test_readiness_probe_http_from_ext(self):
+        ext = {"kube": {"readinessProbe": {"httpGet": {"path": "/", "port": 8787}, "delay": 5, "period": 10}}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        p = spec.services[0].readiness_probe
+        assert p is not None
+        assert p.probe_type == "httpGet"
+        assert p.path == "/"
+        assert p.port == 8787
+
+    def test_no_probes_when_ext_absent(self):
+        spec = build_helxapp_spec(_app(), _compose())
+        assert spec.services[0].liveness_probe is None
+        assert spec.services[0].readiness_probe is None
+
+    def test_probe_none_string_suppresses_probe(self):
+        ext = {"kube": {"readinessProbe": "none"}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        assert spec.services[0].readiness_probe is None
+
+    def test_liveness_probe_in_to_dict(self):
+        ext = {"kube": {"livenessProbe": {"cmd": ["pgrep", "nb"], "delay": 3, "period": 5}}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        d = spec.to_dict()
+        lp = d["services"][0]["livenessProbe"]
+        assert lp["exec"]["command"] == ["pgrep", "nb"]
+        assert lp["initialDelaySeconds"] == 3
+
+    def test_readiness_probe_in_to_dict(self):
+        ext = {"kube": {"readinessProbe": {"httpGet": {"path": "/api", "port": 8888}, "delay": 10}}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        d = spec.to_dict()
+        rp = d["services"][0]["readinessProbe"]
+        assert rp["httpGet"]["path"] == "/api"
+        assert rp["initialDelaySeconds"] == 10
+
+    def test_both_probes_together(self):
+        ext = {"kube": {
+            "livenessProbe": {"cmd": ["pgrep", "proc"], "delay": 5, "period": 5},
+            "readinessProbe": {"httpGet": {"path": "/ready", "port": 8080}, "delay": 10},
+        }}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        svc = spec.services[0]
+        assert svc.liveness_probe is not None
+        assert svc.readiness_probe is not None
+
+    def test_tcp_probe_from_ext(self):
+        ext = {"kube": {"readinessProbe": {"tcpSocket": {"port": 5432}, "delay": 5}}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        p = spec.services[0].readiness_probe
+        assert p is not None
+        assert p.probe_type == "tcpSocket"
+        assert p.port == 5432
+
+    def test_failure_threshold_preserved(self):
+        ext = {"kube": {"livenessProbe": {"cmd": ["true"], "threshold": 3}}}
+        spec = build_helxapp_spec(_app(ext=ext), _compose())
+        assert spec.services[0].liveness_probe.threshold == 3
+
+    def test_probes_absent_from_to_dict_when_none(self):
+        spec = build_helxapp_spec(_app(), _compose())
+        d = spec.to_dict()
+        assert "livenessProbe" not in d["services"][0]
+        assert "readinessProbe" not in d["services"][0]
+
+
 class TestBuildHelxinstSpec:
     def test_basic(self):
         app = _app()

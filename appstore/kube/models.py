@@ -87,6 +87,51 @@ class PortSpec:
 
 
 @dataclass
+class ProbeSpec:
+    """Readiness or liveness probe for a HelxApp service container.
+
+    Serialises to the Kubernetes probe sub-object expected by the
+    helxapp-controller (standard Kubernetes probe schema).
+    """
+
+    probe_type: str  # "exec" | "httpGet" | "tcpSocket"
+    delay: int = 0
+    period: int = 10
+    threshold: int | None = None
+
+    # exec
+    command: list[str] | None = None
+
+    # httpGet
+    path: str | None = None
+    port: int | str | None = None  # str for Go template expressions
+    http_headers: list[dict] | None = None
+
+    # tcpSocket reuses port
+
+    def to_dict(self) -> dict:
+        d: dict = {}
+        if self.probe_type == "exec":
+            d["exec"] = {"command": list(self.command or [])}
+        elif self.probe_type == "httpGet":
+            http: dict = {}
+            if self.path is not None:
+                http["path"] = self.path
+            if self.port is not None:
+                http["port"] = self.port
+            if self.http_headers:
+                http["httpHeaders"] = self.http_headers
+            d["httpGet"] = http
+        elif self.probe_type == "tcpSocket":
+            d["tcpSocket"] = {"port": self.port}
+        d["initialDelaySeconds"] = self.delay
+        d["periodSeconds"] = self.period
+        if self.threshold is not None:
+            d["failureThreshold"] = self.threshold
+        return d
+
+
+@dataclass
 class AmbassadorSpec:
     """Ambassador ingress-routing config for a HelxApp service.
 
@@ -125,6 +170,8 @@ class AppServiceSpec:
     resource_bounds: dict | None = None
     security_context: SecurityContext | None = None
     ambassador: AmbassadorSpec | None = None
+    liveness_probe: ProbeSpec | None = None
+    readiness_probe: ProbeSpec | None = None
 
     def to_dict(self) -> dict:
         d: dict = {"name": self.name, "image": self.image}
@@ -149,6 +196,10 @@ class AppServiceSpec:
             d["securityContext"] = self.security_context.to_dict()
         if self.ambassador:
             d["ambassador"] = self.ambassador.to_dict()
+        if self.liveness_probe:
+            d["livenessProbe"] = self.liveness_probe.to_dict()
+        if self.readiness_probe:
+            d["readinessProbe"] = self.readiness_probe.to_dict()
         return d
 
 

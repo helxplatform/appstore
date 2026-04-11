@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 
 from appspec import parse_compose, to_k8s_resources, bounds_to_resource_bounds
+from appspec.models import ProbeSpec as AppspecProbeSpec
 from kube.models import (
     AmbassadorSpec,
     AppServiceSpec,
@@ -12,6 +13,7 @@ from kube.models import (
     HelxAppSpec,
     HelxInstSpec,
     PortSpec,
+    ProbeSpec,
     ResourceSpec,
     SecurityContext,
 )
@@ -23,6 +25,22 @@ from registry.models import ResolvedApp
 _AMBASSADOR_PREFIX = (
     "/private/{{ .system.AppClassName }}/{{ .system.UserName }}/{{ .system.ReferenceID }}/"
 )
+
+
+def _convert_probe(probe: AppspecProbeSpec | None) -> ProbeSpec | None:
+    """Convert an appspec ProbeSpec to a kube ProbeSpec."""
+    if probe is None:
+        return None
+    return ProbeSpec(
+        probe_type=probe.probe_type,
+        delay=probe.delay,
+        period=probe.period,
+        threshold=probe.threshold,
+        command=probe.command,
+        path=probe.path,
+        port=probe.port,
+        http_headers=probe.http_headers,
+    )
 
 
 def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
@@ -94,6 +112,8 @@ def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
             security_context=app.security_context,
             resource_bounds=rb,
             ambassador=ambassador,
+            liveness_probe=_convert_probe(svc.liveness_probe),
+            readiness_probe=_convert_probe(svc.readiness_probe),
         ))
 
     return HelxAppSpec(

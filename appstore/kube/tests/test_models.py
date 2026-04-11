@@ -11,6 +11,7 @@ from kube.models import (
     HelxUserSpec,
     InstanceStatus,
     PortSpec,
+    ProbeSpec,
     ResourceSpec,
     SecurityContext,
 )
@@ -146,6 +147,95 @@ class TestHelxAppSpec:
         spec = AppServiceSpec(name="app", image="nginx")
         d = spec.to_dict()
         assert "ambassador" not in d
+
+    def test_service_with_liveness_probe(self):
+        spec = AppServiceSpec(
+            name="app",
+            image="jupyter:latest",
+            liveness_probe=ProbeSpec(
+                probe_type="exec",
+                command=["pgrep", "jupyter"],
+                delay=5,
+                period=5,
+            ),
+        )
+        d = spec.to_dict()
+        assert d["livenessProbe"]["exec"]["command"] == ["pgrep", "jupyter"]
+        assert d["livenessProbe"]["initialDelaySeconds"] == 5
+        assert d["livenessProbe"]["periodSeconds"] == 5
+
+    def test_service_with_readiness_probe_http(self):
+        spec = AppServiceSpec(
+            name="app",
+            image="rstudio:latest",
+            readiness_probe=ProbeSpec(
+                probe_type="httpGet",
+                path="/",
+                port=8787,
+                delay=10,
+                period=10,
+            ),
+        )
+        d = spec.to_dict()
+        assert d["readinessProbe"]["httpGet"]["path"] == "/"
+        assert d["readinessProbe"]["httpGet"]["port"] == 8787
+        assert d["readinessProbe"]["initialDelaySeconds"] == 10
+
+    def test_service_no_probes_omitted(self):
+        spec = AppServiceSpec(name="app", image="nginx")
+        d = spec.to_dict()
+        assert "livenessProbe" not in d
+        assert "readinessProbe" not in d
+
+
+class TestProbeSpec:
+    def test_exec_to_dict(self):
+        p = ProbeSpec(probe_type="exec", command=["pgrep", "nb"], delay=5, period=5)
+        d = p.to_dict()
+        assert d == {
+            "exec": {"command": ["pgrep", "nb"]},
+            "initialDelaySeconds": 5,
+            "periodSeconds": 5,
+        }
+
+    def test_http_get_to_dict(self):
+        p = ProbeSpec(probe_type="httpGet", path="/health", port=8080, delay=0, period=10)
+        d = p.to_dict()
+        assert d["httpGet"] == {"path": "/health", "port": 8080}
+        assert d["initialDelaySeconds"] == 0
+        assert d["periodSeconds"] == 10
+
+    def test_http_get_with_headers(self):
+        p = ProbeSpec(
+            probe_type="httpGet",
+            path="/",
+            port=80,
+            http_headers=[{"name": "X-Custom", "value": "test"}],
+        )
+        d = p.to_dict()
+        assert d["httpGet"]["httpHeaders"] == [{"name": "X-Custom", "value": "test"}]
+
+    def test_tcp_socket_to_dict(self):
+        p = ProbeSpec(probe_type="tcpSocket", port=5432, delay=3, period=10)
+        d = p.to_dict()
+        assert d["tcpSocket"] == {"port": 5432}
+        assert d["initialDelaySeconds"] == 3
+
+    def test_failure_threshold(self):
+        p = ProbeSpec(probe_type="exec", command=["true"], threshold=3)
+        d = p.to_dict()
+        assert d["failureThreshold"] == 3
+
+    def test_no_threshold_omitted(self):
+        p = ProbeSpec(probe_type="exec", command=["true"])
+        d = p.to_dict()
+        assert "failureThreshold" not in d
+
+    def test_template_port_preserved(self):
+        # ports may be Go template strings resolved by the controller
+        p = ProbeSpec(probe_type="httpGet", path="/", port="{{ .system.Port }}")
+        d = p.to_dict()
+        assert d["httpGet"]["port"] == "{{ .system.Port }}"
 
 
 class TestAmbassadorSpec:
