@@ -48,6 +48,50 @@ class TestLoadSpec:
         result = loader.load_spec(str(path), {})
         assert result["services"]["web"]["image"] == "nginx"
 
+    def test_go_template_preserved(self, loader, tmp_path):
+        """Go template expressions must survive Jinja2 unchanged."""
+        compose = (
+            "services:\n"
+            "  app:\n"
+            "    image: myapp:latest\n"
+            "    command:\n"
+            "      - --user={{ .system.UserName }}\n"
+        )
+        path = tmp_path / "docker-compose.yaml"
+        path.write_text(compose)
+        result = loader.load_spec(str(path), {})
+        assert result["services"]["app"]["command"][0] == "--user={{ .system.UserName }}"
+
+    def test_go_template_in_path_preserved(self, loader, tmp_path):
+        """Dotted paths like .filebrowser/db must not cause parse errors."""
+        compose = (
+            "services:\n"
+            "  fb:\n"
+            "    image: filebrowser:latest\n"
+            "    command:\n"
+            "      - --database=/home/{{ .system.UserName }}/.filebrowser/filebrowser.db\n"
+        )
+        path = tmp_path / "docker-compose.yaml"
+        path.write_text(compose)
+        result = loader.load_spec(str(path), {})
+        cmd = result["services"]["fb"]["command"][0]
+        assert cmd == "--database=/home/{{ .system.UserName }}/.filebrowser/filebrowser.db"
+
+    def test_jinja2_and_go_templates_coexist(self, loader, tmp_path):
+        """Jinja2 vars are resolved; Go templates are preserved side-by-side."""
+        compose = (
+            "services:\n"
+            "  app:\n"
+            "    image: {{ registry }}/app:latest\n"
+            "    command:\n"
+            "      - --user={{ .system.UserName }}\n"
+        )
+        path = tmp_path / "docker-compose.yaml"
+        path.write_text(compose)
+        result = loader.load_spec(str(path), {"registry": "containers.renci.org"})
+        assert result["services"]["app"]["image"] == "containers.renci.org/app:latest"
+        assert result["services"]["app"]["command"][0] == "--user={{ .system.UserName }}"
+
 
 class TestLoadSettings:
     def test_reads_env_file(self, loader, tmp_path):

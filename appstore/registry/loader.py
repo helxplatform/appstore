@@ -3,9 +3,17 @@
 from __future__ import annotations
 
 import os
+import re
 
 import yaml
 from jinja2 import Environment, Undefined
+
+# Matches Go template expressions: {{ ... }} that contain a dot or a
+# function call the controller resolves at deploy time.  These must be
+# preserved verbatim through Jinja2 rendering and passed to the CRD.
+# Jinja2 raises a syntax error on expressions like {{ .system.UserName }}
+# because the leading dot is not valid Jinja2 syntax.
+_GO_TEMPLATE_RE = re.compile(r"\{\{[^{}]*\.[^{}]*\}\}")
 
 
 class _KeepUndefined(Undefined):
@@ -44,10 +52,33 @@ class RegistryLoader:
         expressions like ``{{ helx_registry }}``.  We render those first,
         then parse the result as YAML.  Unknown variables are rendered as
         empty strings so the spec is still structurally parseable.
+
+        Go template expressions (``{{ .system.UserName }}``, etc.) are
+        controller-time placeholders and must not be touched by Jinja2.
+        They are protected with unique sentinels before rendering and
+        restored verbatim in the output.
+
+        Available Jinja2 variables:
+          - ``system_port``: first service port declared in the app registry
+          - Any key under the registry-level ``settings:`` block
         """
         with open(spec_path) as f:
             raw = f.read()
-        rendered = _jinja_env.from_string(raw).render(settings)
+
+        # Protect Go template expressions from Jinja2.
+        sentinels: dict[str, str] = {}
+        def _sentinel(m: re.Match) -> str:
+            key = f"__GO_{len(sentinels)}__"
+            sentinels[key] = m.group(0)
+            return key
+        protected = _GO_TEMPLATE_RE.sub(_sentinel, raw)
+
+        rendered = _jinja_env.from_string(protected).render(settings)
+
+        # Restore Go template expressions.
+        for key, original in sentinels.items():
+            rendered = rendered.replace(key, original)
+
         return yaml.safe_load(rendered) or {}
 
     def load_settings(self, spec_path: str) -> str:
