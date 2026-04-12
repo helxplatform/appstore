@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 
 from kube.models import HelxAppSpec, HelxInstSpec, SecurityContext
@@ -10,6 +11,8 @@ from registry.loader import RegistryLoader
 from registry.models import ResolvedApp
 from registry.resolver import resolve_apps
 from registry.spec_builder import build_helxapp_spec, build_helxinst_spec
+
+logger = logging.getLogger(__name__)
 
 
 def _to_resolved_app(app_id: str, raw: dict) -> ResolvedApp:
@@ -82,9 +85,24 @@ class AppRegistry:
         self._raw_apps = resolve_apps(
             raw_registry, raw_defaults, product, registry_dir
         )
-        self.apps: dict[str, ResolvedApp] = {
-            k: _to_resolved_app(k, v) for k, v in self._raw_apps.items()
-        }
+
+        self.apps: dict[str, ResolvedApp] = {}
+        failed: list[str] = []
+        for app_id, raw in self._raw_apps.items():
+            try:
+                self.apps[app_id] = _to_resolved_app(app_id, raw)
+            except Exception as exc:
+                logger.error("registry: failed to load app %r: %s", app_id, exc)
+                failed.append(app_id)
+
+        ids = sorted(self.apps)
+        logger.info(
+            "registry: loaded %d app%s [%s]%s",
+            len(ids),
+            "s" if len(ids) != 1 else "",
+            ", ".join(ids),
+            f" — {len(failed)} failed: {failed}" if failed else "",
+        )
 
     def get_app(self, app_id: str) -> ResolvedApp:
         """Return a resolved app by ID, or raise KeyError."""
@@ -118,6 +136,12 @@ class AppRegistry:
                 f"Spec file not found for {app_id!r}: {app.spec_path}",
                 details=str(exc),
             ) from exc
+        except Exception as exc:
+            raise SpecLoadError(
+                f"Failed to parse spec for {app_id!r}: {app.spec_path}",
+                details=str(exc),
+            ) from exc
+        logger.debug("registry: spec loaded for %r (%s)", app_id, app.spec_path)
         app.spec_obj = spec
         return spec
 
@@ -144,7 +168,27 @@ class AppRegistry:
         """Load spec, convert to HelxAppSpec."""
         app = self.get_app(app_id)
         compose = self.get_spec(app_id)
-        return build_helxapp_spec(app, compose)
+        try:
+            helxapp = build_helxapp_spec(app, compose)
+        except Exception as exc:
+            logger.error("registry: failed to build HelxApp spec for %r: %s", app_id, exc)
+            raise
+        svcs = helxapp.services
+        probe_summary = ", ".join(
+            f"{s.name}:"
+            + ("L" if s.liveness_probe else "")
+            + ("R" if s.readiness_probe else "")
+            for s in svcs
+            if s.liveness_probe or s.readiness_probe
+        )
+        logger.info(
+            "registry: parsed %r — %d service%s%s",
+            app_id,
+            len(svcs),
+            "s" if len(svcs) != 1 else "",
+            f", probes [{probe_summary}]" if probe_summary else "",
+        )
+        return helxapp
 
     def build_helxinst(
         self,
