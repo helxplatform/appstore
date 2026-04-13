@@ -395,7 +395,7 @@ LOGGING = {
             "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },
-        "appspec": {
+        "app": {
             "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },

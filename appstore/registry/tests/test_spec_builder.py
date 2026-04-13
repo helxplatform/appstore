@@ -298,24 +298,24 @@ class TestProbesInHelxappSpec:
         ext = {"kube": {"readinessProbe": {"httpGet": {"path": "/", "port": "{{ system_port }}"}, "delay": 5}}}
         spec = build_helxapp_spec(_app(), _compose())
         # Manually inject a template-port probe to simulate registry behaviour
-        from appspec.models import ProbeSpec as AppspecProbeSpec
+        from app.models import ProbeSpec as AppProbeSpec
         from registry.spec_builder import _convert_probe
-        probe = AppspecProbeSpec(probe_type="httpGet", path="/", port="{{ system_port }}")
+        probe = AppProbeSpec(probe_type="httpGet", path="/", port="{{ system_port }}")
         converted = _convert_probe(probe, service_port=8888)
         assert isinstance(converted.port, int)
         assert converted.port == 8888
 
     def test_numeric_string_port_cast_to_int(self):
-        from appspec.models import ProbeSpec as AppspecProbeSpec
+        from app.models import ProbeSpec as AppProbeSpec
         from registry.spec_builder import _convert_probe
-        probe = AppspecProbeSpec(probe_type="httpGet", path="/", port="8080")
+        probe = AppProbeSpec(probe_type="httpGet", path="/", port="8080")
         converted = _convert_probe(probe, service_port=9999)
         assert converted.port == 8080  # parsed directly, not the fallback
 
     def test_integer_port_unchanged(self):
-        from appspec.models import ProbeSpec as AppspecProbeSpec
+        from app.models import ProbeSpec as AppProbeSpec
         from registry.spec_builder import _convert_probe
-        probe = AppspecProbeSpec(probe_type="httpGet", path="/", port=8888)
+        probe = AppProbeSpec(probe_type="httpGet", path="/", port=8888)
         converted = _convert_probe(probe, service_port=0)
         assert converted.port == 8888
 

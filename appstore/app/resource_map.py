@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from appspec.models import ComposeResources, ResourceBounds, ResourceBound
+from app.models import ComposeResources, ResourceBounds, ResourceBound
 from kube.models import ResourceSpec
 
 

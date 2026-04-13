@@ -1,4 +1,4 @@
-"""Exceptions for the appspec module."""
+"""Exceptions for the app module."""
 
 from kube.exceptions import KubeError
 

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import os
 
-from appspec import parse_compose, to_k8s_resources, bounds_to_resource_bounds
-from appspec.models import ComposeResources
-from appspec.models import ProbeSpec as AppspecProbeSpec
+from app import parse_compose, to_k8s_resources, bounds_to_resource_bounds
+from app.models import ComposeResources
+from app.models import ProbeSpec as AppProbeSpec
 from kube.models import (
     AmbassadorSpec,
     AppServiceSpec,
@@ -29,10 +29,10 @@ _AMBASSADOR_PREFIX = (
 
 
 def _convert_probe(
-    probe: AppspecProbeSpec | None,
+    probe: AppProbeSpec | None,
     service_port: int | None = None,
 ) -> ProbeSpec | None:
-    """Convert an appspec ProbeSpec to a kube ProbeSpec.
+    """Convert an app ProbeSpec to a kube ProbeSpec.
 
     :param service_port: Fallback port (integer) used when the probe's port
         is a Jinja2 template string (e.g. ``'{{ system_port }}'``).  The CRD
@@ -84,7 +84,7 @@ def _compose_resources_to_bounds(
 def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
     """Convert a resolved app + its docker-compose into a HelxAppSpec.
 
-    Uses appspec.parse_compose() to extract services, ports, resources,
+    Uses app.parse_compose() to extract services, ports, resources,
     bounds, and helx_vars from the compose spec.
     """
     compose_app = parse_compose(compose_spec, ext=app.ext)

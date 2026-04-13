@@ -20,7 +20,7 @@ from rest_framework import status
 
 from allauth import socialaccount
 
-from appspec import parse_compose
+from app import parse_compose
 from kube import KubeClient, HelxAppManager, HelxInstManager, HelxUserManager, StatusQuery
 from kube.models import HelxUserSpec
 from kube import labels as kube_labels
@@ -100,7 +100,7 @@ def get_host(request):
 def extract_app_resources(app_id: str) -> tuple[Resources, Resources]:
     """Extract minimum (request) and maximum (limit) resources for an app.
 
-    Uses appspec to parse the compose spec.  Prefers ``x-helx-resources``
+    Uses app to parse the compose spec.  Prefers ``x-helx-resources``
     bounds when available; falls back to standard compose
     ``deploy.resources``.
 
@@ -312,7 +312,7 @@ class AppViewSet(viewsets.GenericViewSet):
     """
     ViewSet for listing and retrieving available applications.
 
-    Uses AppRegistry (backed by appspec) instead of the legacy TychoContext.
+    Uses AppRegistry (backed by app) instead of the legacy TychoContext.
     """
 
     lookup_field = "app_id"

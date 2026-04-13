@@ -1,7 +1,7 @@
-"""Tests for appspec.resource_map — compose -> K8s translation."""
+"""Tests for app.resource_map — compose -> K8s translation."""
 
-from appspec.models import ComposeResources, ResourceBound, ResourceBounds
-from appspec.resource_map import (
+from app.models import ComposeResources, ResourceBound, ResourceBounds
+from app.resource_map import (
     bounds_to_default_resources,
     bounds_to_resource_bounds,
     extract_gpu_from_devices,

@@ -1,6 +1,6 @@
-"""Tests for appspec.models — data model behavior."""
+"""Tests for app.models — data model behavior."""
 
-from appspec.models import (
+from app.models import (
     ComposeApp,
     ComposeService,
     ResourceBound,

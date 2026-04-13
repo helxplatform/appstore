@@ -1,8 +1,8 @@
-"""Tests for appspec.parser — compose dict parsing."""
+"""Tests for app.parser — compose dict parsing."""
 
 import pytest
 
-from appspec.parser import (
+from app.parser import (
     parse_compose,
     parse_environment,
     parse_helx_resources,
@@ -14,7 +14,7 @@ from appspec.parser import (
     parse_top_level_secrets,
     parse_volumes,
 )
-from appspec.exceptions import ParseError
+from app.exceptions import ParseError
 
 
 # -----------------------------------------------------------------------

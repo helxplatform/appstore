@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from appspec.exceptions import ParseError
-from appspec.models import (
+from app.exceptions import ParseError
+from app.models import (
     ComposeApp,
     ComposeResources,
     ComposeService,
