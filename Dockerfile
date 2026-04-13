@@ -1,4 +1,4 @@
-FROM python:3.9.23-alpine
+FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -30,8 +30,7 @@ RUN chown -R $USER:0 $APP_HOME && \
 
 RUN if [ -d whl -a "$(ls -A whl/*.whl)" ]; then pip install whl/*.whl; fi
 RUN export SET_BUILD_ENV_FROM_FILE=false \
-    && pip install "cython<3.0.0" wheel \
-    && pip install "pyyaml==5.4.1" --no-build-isolation \
+    && pip install wheel \
     && make install \
     && unset SET_BUILD_ENV_FROM_FILE
 
