@@ -27,5 +27,6 @@ PyYAML==6.0.2
 requests==2.32.4
 docker-compose==1.29.2
 requests_cache==1.2.1
+google-auth>=2.40.0
 ldap3
 urllib3==2.5.0
