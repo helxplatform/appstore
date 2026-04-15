@@ -1,3 +1,6 @@
+# helx SDK (app/kube/registry modules)
+-e file:../helx
+
 Django==4.2.23
 django-allauth==0.61.1
 django-cors-headers==4.3.1

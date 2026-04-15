@@ -387,15 +387,15 @@ LOGGING = {
             "handlers": ["console"] + (["syslog"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },
-        "registry": {
+        "helx.registry": {
             "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },
-        "kube": {
+        "helx.kube": {
             "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },
-        "app": {
+        "helx.app": {
             "handlers": ["console"] + (["app_store_log"] if USE_LOG_FILE else []),
             "level": LOG_LEVEL,
         },

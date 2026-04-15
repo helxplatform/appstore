@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 
 from rest_framework.test import APIRequestFactory, force_authenticate
 
-from kube.models import InstanceStatus
+from helx.kube.models import InstanceStatus
 
 from .views import (
     AppViewSet,

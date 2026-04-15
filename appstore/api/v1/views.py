@@ -20,11 +20,11 @@ from rest_framework import status
 
 from allauth import socialaccount
 
-from app import parse_compose
-from kube import KubeClient, HelxAppManager, HelxInstManager, HelxUserManager, StatusQuery
-from kube.models import HelxUserSpec
-from kube import labels as kube_labels
-from registry import get_registry
+from helx.app import parse_compose
+from helx.kube import KubeClient, HelxAppManager, HelxInstManager, HelxUserManager, StatusQuery
+from helx.kube.models import HelxUserSpec
+from helx.kube import labels as kube_labels
+from helx.registry import get_registry
 from core.models import IrodAuthorizedUser, UserIdentityToken
 
 from .models import Instance, InstanceSpec, App, LoginProvider, Resources, User
