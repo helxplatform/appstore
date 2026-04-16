@@ -1,9 +1,12 @@
 # Registry Module Specification
 
-Design document for `appstore/registry/` — the app-registry
-processing module that replaces `TychoContext._grok()` and related
-methods, producing `HelxApp` specs consumable by the
+Design document for `helx.registry` (`helx/src/helx/registry/`) — the app-registry
+processing module, producing `HelxApp` specs consumable by the
 helxapp-controller.
+
+> **Status: implemented.** This document describes the design as built.
+> The module was originally located at `appstore/registry/` and has been
+> moved to the `helx` library.
 
 ---
 
@@ -313,7 +316,7 @@ that happens once (HelxApp), one per launch (HelxInst):
 1. Load the docker-compose spec via `get_spec(app_id)` — already
    Jinja2-rendered at catalog time.  `${varname}` references are
    still present as literal strings.
-2. Parse the spec via `appspec.parse_compose()` — extracts services,
+2. Parse the spec via `helx.app.parse_compose()` — extracts services,
    ports, resource bounds, `x-helx-vars`.
 3. Build `HelxAppSpec` via `spec_builder.build_helxapp_spec()` — the
    CRD template for this app, including `${varname}` literals and the
@@ -362,12 +365,12 @@ values are resolved only when the user launches the app.
 
 ---
 
-## 6. Module Design for `appstore/registry/`
+## 6. Module Design for `helx.registry`
 
 ### 6.1 File Layout
 
 ```
-appstore/registry/
+helx/src/helx/registry/
 ├── __init__.py          # Public API: AppRegistry class
 ├── loader.py            # Load YAML from local files, Jinja2 rendering
 ├── resolver.py          # The core algorithm: extends resolution, defaults, path resolution
@@ -720,16 +723,15 @@ No new dependencies required.
 
 ---
 
-## 11. Migration Path
+## 11. Migration Status
 
-1. Implement `registry` module with its own tests.
-2. Add an `AppRegistry`-based code path in `api/v1/views.py` alongside
-   the existing `TychoContext`.
-3. Verify that `AppRegistry.list_apps()` returns the same apps as
-   `tycho.apps` for each product.
-4. Verify that `AppRegistry.build_helxapp()` produces a valid
-   `HelxAppSpec` matching the docker-compose content.
-5. Switch the views to use `AppRegistry` + `kube.HelxAppManager` /
-   `kube.HelxInstManager` instead of `TychoContext.start()` /
-   `.delete()` / `.status()` / `.update()`.
-6. Remove `TychoContext` dependency.
+Migration from `TychoContext` to `helx.registry` + `helx.kube` is complete:
+
+1. `helx.registry.AppRegistry` replaces `TychoContext` for all catalog concerns.
+2. `helx.kube.HelxAppManager` / `HelxInstManager` / `HelxUserManager` replace
+   `TychoContext.start()` / `.delete()` / `.status()` / `.update()`.
+3. `api/v1/views.py` uses `AppRegistry` and the kube managers exclusively.
+4. The `tycho` module remains in the codebase for legacy compatibility but is
+   no longer on the critical path for app launch.
+5. The `helx` package is installed from `helx/` in this repo via
+   `-e file:../helx` in `requirements.txt`.

@@ -1,8 +1,12 @@
 # App Spec Module Specification
 
-Design document for `appstore/appspec/` — a module that parses
+Design document for `helx.app` (`helx/src/helx/app/`) — a module that parses
 docker-compose-like app definition files and converts them into typed
 objects suitable for building HelxApp CRDs.
+
+> **Status: implemented.** This document describes the design as built.
+> The module was originally named `appspec` and has been renamed to `app`,
+> packaged as part of the `helx` library.
 
 ---
 
@@ -15,14 +19,14 @@ environment, volumes, and resource limits.  Today, `System.parse()` in
 model that tycho then templates into raw Kubernetes manifests.
 
 In the new architecture, the helxapp-controller creates workloads from
-HelxApp CRDs.  The `appspec` module replaces the parsing half of
+HelxApp CRDs.  The `helx.app` module replaces the parsing half of
 `System.parse()` — it reads the compose spec, extracts the relevant
 fields, and produces typed objects that map directly to `HelxAppSpec`
 and its constituent `AppServiceSpec` entries from `kube.models`.
 
 The `registry` module already references these specs by name via
 `spec_dir/{app_id}/docker-compose.yaml` and loads them through
-`RegistryLoader.load_spec()`.  The `appspec` module receives the
+`RegistryLoader.load_spec()`.  The `helx.app` module receives the
 parsed dict and converts it to typed objects — it does not do I/O.
 
 ---
@@ -169,8 +173,8 @@ readinessProbe: "none"
 ### 2.7 Jinja2 Template Variables
 
 The compose file may contain Jinja2 expressions like
-`{{ helx_registry }}`.  These are rendered **before** the appspec
-module sees the dict — the loader handles this.  The appspec module
+`{{ helx_registry }}`.  These are rendered **before** the `helx.app`
+module sees the dict — the loader handles this.  The `helx.app` module
 receives a fully resolved dict with no template expressions.
 
 ### 2.8 Extended Resource Model (`x-helx-resources`)
@@ -296,7 +300,7 @@ evaluation stages:
 
 The Jinja2 pass resolves `{{ helx_registry }}` at catalog time.
 `${username}` passes through untouched — it is an opaque string to
-Jinja2, to `yaml.safe_load()`, and to the appspec parser.  It is
+Jinja2, to `yaml.safe_load()`, and to the `helx.app` parser.  It is
 resolved later, at instance creation time.
 
 #### The `x-helx-vars` declaration
@@ -432,12 +436,12 @@ dependency explicit rather than relying on implicit env var injection.
 
 ---
 
-## 4. Module Design for `appstore/appspec/`
+## 4. Module Design for `helx.app`
 
 ### 4.1 File Layout
 
 ```
-appstore/appspec/
+helx/src/helx/app/
 ├── __init__.py          # Public API: parse_compose()
 ├── parser.py            # Core parsing: compose dict → ComposeApp
 ├── models.py            # ComposeService, ComposeResources, ProbeSpec, VolumeMount
@@ -671,14 +675,14 @@ class ParseError(KubeError):
 ### 4.6 `__init__.py` — Public API
 
 ```python
-from appspec.parser import parse_compose
-from appspec.models import (
+from helx.app.parser import parse_compose
+from helx.app.models import (
     ComposeApp, ComposeService, ComposeResources,
     ResourceBounds, ResourceBound,
     VolumeMount, ProbeSpec,
 )
-from appspec.resource_map import to_k8s_resources, bounds_to_resource_bounds
-from appspec.exceptions import ParseError
+from helx.app.resource_map import to_k8s_resources, bounds_to_resource_bounds
+from helx.app.exceptions import ParseError
 ```
 
 ---
@@ -829,7 +833,7 @@ registry.yaml
     │       ▼
     │   dict (raw compose, with ${varname} literals in values)
     │       │
-    │  appspec.parse_compose(spec, ext=app.ext)
+    │  helx.app.parse_compose(spec, ext=app.ext)
     │       │
     │       ▼
     │   ComposeApp                    ← .helx_vars extracted
@@ -860,10 +864,10 @@ registry.yaml
 ### 6.2 How `registry.spec_builder` Changes
 
 The current `spec_builder.py` in the registry module inlines compose
-parsing.  With `appspec`, it becomes a thin adapter:
+parsing.  With `helx.app`, it becomes a thin adapter:
 
 ```python
-from appspec import parse_compose, to_k8s_resources, bounds_to_resource_bounds
+from helx.app import parse_compose, to_k8s_resources, bounds_to_resource_bounds
 
 def build_helxapp_spec(app: ResolvedApp, compose_spec: dict) -> HelxAppSpec:
     compose_app = parse_compose(compose_spec, ext=app.ext)
@@ -919,12 +923,12 @@ at launch time (see `registry-module-spec.md` §5.2).
 
 ### 6.3 What the Module Does NOT Do
 
-The following are **not** the appspec module's responsibility:
+The following are **not** the `helx.app` module's responsibility:
 
 - **I/O**: Loading files or fetching URLs.  The registry loader does
   that.
 - **Jinja2 rendering**: Done by the loader before the dict reaches
-  appspec.
+  `helx.app`.
 - **Default volume injection**: The legacy behavior of injecting
   `STDNFS_PVC`-based volumes from tycho config is deployment policy,
   not app specification.  This moves to the controller or is expressed
@@ -1047,13 +1051,14 @@ produces dataclasses.  It imports `kube.models.ResourceSpec` only in
 
 ---
 
-## 10. Migration Path
+## 10. Migration Status
 
-1. Implement `appspec` module with its own tests.
-2. Update `registry.spec_builder.build_helxapp_spec()` to use
-   `appspec.parse_compose()` instead of inline parsing.
-3. Verify that the `HelxAppSpec` output is identical.
-4. Remove the inline parsing from `spec_builder.py`.
-5. The tycho `System.parse()`, `Container`, `Limits`, `Volumes`,
-   `Probe`, `HttpProbe`, `TcpProbe` classes become unused and can be
-   removed when tycho is fully retired.
+Migration is complete:
+
+1. `helx.app` module is implemented with its own tests (`helx/src/helx/app/tests/`).
+2. `helx.registry.spec_builder.build_helxapp_spec()` uses `helx.app.parse_compose()`
+   for all compose parsing.
+3. The tycho `System.parse()`, `Container`, `Limits`, `Volumes`, `Probe`,
+   `HttpProbe`, `TcpProbe` classes are no longer used on the critical path.
+   The `appstore/tycho/` directory is retained for reference but is not
+   imported by the app-launch pipeline.

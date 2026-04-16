@@ -69,7 +69,7 @@ concerns are:
 
 **Security**: Secrets are added to the container via environment variables.
 **Persistence**: Storage must be mounted for a database.
-**Services**: The chief dependency is on Tycho which must be at the correct version.
+**Services**: The chief dependency is on [helxapp-controller](https://github.com/helxplatform/helxapp-controller) which must be running in the target namespace.
 
 ## Configuration Variables
 
@@ -79,7 +79,7 @@ During development, environment variables can be set to control execution:
 |:-------------------------------------------------------------|:------------------------------------------------------------------|
 | BRAND=[braini, cat, heal, restartr, scidas, eduhelx]         | Product context configuration for the appstore.                   |
 | DJANGO_SETTINGS_MODULE=[appstore.settings.<brand>_settings]  | Product settings module configuration for the appstore.           |
-| DEV_PHASE=[stub, local, dev, val, prod]                      | In stub, does not require a Tycho service.                        |
+| DEV_PHASE=[stub, local, dev, val, prod]                      | In stub mode, no Kubernetes connection is required.               |
 | ALLOW_DJANGO_LOGIN=[TRUE, FALSE]                             | When true, presents username and password authentication options. |
 | SECRET_KEY                                                   | Key for securing the application.                                 |
 | OAUTH_PROVIDERS                                              | Contains all the providers(google, github, cilogon).              |
@@ -94,7 +94,9 @@ During development, environment variables can be set to control execution:
 | GITHUB_NAME                                                  | Sets the name for the provider.                                   |
 | APPSTORE_DJANGO_USERNAME                                     | Holds superuser username credentials.                             |
 | APPSTORE_DJANGO_PASSWORD                                     | Holds superuser password credentials.                             |
-| TYCHO_URL                                                    | Contains the url of the running tycho host.                       |
+| NAMESPACE                                                    | Kubernetes namespace for workload CRDs (default: `default`).      |
+| APP_REGISTRY_PATH                                            | Path to app-registry.yaml (default: bundled registry).            |
+| LDAP_URI                                                     | If set, enables LDAP identity source label on HelxUser CRDs.      |
 | OAUTH_DB_DIR                                                 | Contains the path for the database directory.                     |
 | OAUTH_DB_FILE                                                | Contains the path for the database file.                          |
 | APPSTORE_DEFAULT_FROM_EMAIL                                  | Default email address for appstore.                               |
@@ -110,16 +112,19 @@ Making application development easy is key to bringing the widest range of usefu
 tools to the platform so we prefer metadata to code wherever possible for creating
 HeLx Apps. Apps are systems of cooperating processes. These are expressed using
 [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/).
-Appstore uses the [Tycho](https://helxplatform.github.io/tycho-docs/gen/html/index.html)
-engine to discover and manage Apps. The [Tycho app metadata](https://github.com/helxplatform/tycho/blob/metadata/tycho/conf/app-registry.yaml)
-format specifies the details of each application, contexts to which applications
-belong, and inheritance relationships between contexts.
 
-Docker compose syntax is used to express cooperating containers comprising an application.
-The specifications are stored in [GitHub](https://github.com/helxplatform/app-support-prototype/tree/develop/dockstore-yaml-proposals),
-each in an application specific subfolder. Along with the docker compose, a `.env`
-file specifies environment variables for the application. If a file called icon.png
-is provided, that is used as the application's icon.
+App definitions are managed by the `helx` library (located in `helx/` within this
+repo). The `helx` library provides three modules:
+
+- **`helx.app`** — parses docker-compose specs into typed objects
+- **`helx.registry`** — loads and resolves the app-registry YAML, producing `HelxApp` specs
+- **`helx.kube`** — manages HelxApp, HelxInst, and HelxUser CRDs via [helxapp-controller](https://github.com/helxplatform/helxapp-controller)
+
+The app-registry YAML format specifies the details of each application, contexts to which
+applications belong, and inheritance relationships between contexts. Each app entry points
+to a docker-compose file that describes its containers and a `.env` file for environment
+defaults. If a file called `icon.png` is provided alongside the docker-compose, it is used
+as the application's icon.
 
 ### App Deployment features
 
@@ -150,91 +155,61 @@ etc).
 
 NOTE: You must run `make init` once you've cloned the repo to enable the commit-msg git hook so that conventional commits will apply automatically
 
-#### With Tycho (default)
+#### Local setup
 
-For local development you should have Python 3, a python virtual environment dedicated
+For local development you will need Python 3.12 and a virtual environment dedicated
 to the project. You can configure your python environment with the following steps.
 
 ```bash
 #!/bin/bash
 set -ex
 
-# start fresh
-rm -rf appstore
-
 # clone appstore
-if [ ! -d appstore ]; then
-    git clone git@github.com:helxplatform/appstore.git
-fi
+git clone git@github.com:helxplatform/appstore.git
 cd appstore
 
 # make a virtualenv
-if [ ! -d venv ]; then
-    python3 -m venv venv
-fi
+python3 -m venv venv
 source venv/bin/activate
 git checkout develop
 ```
 
-Install requirements
-
-> NOTE: The below command will install requirements necessary for appstore which includes 
-> Tycho pypi package, and it's requirements.
-> Skip to [Cloning Tycho locally](#with-tycho-cloned-locally) to work on simultaneous changes to both projects.
+Install appstore and the `helx` library (installed as an editable local package):
 
 ```
 make install
 ```
 
-#### With Tycho cloned locally
+This installs both `requirements.txt` (which includes `-e file:../helx`) and the
+appstore Django project.  The `helx` library at `helx/` is installed in editable
+mode so changes to `helx/src/helx/` are immediately reflected without reinstalling.
 
-> NOTE: To work with Tycho and appstore locally comment
-> `tycho-api` in requirements.txt.
-
-Clone Tycho repo locally outside the appstore project.
-
-```
-git clone https://github.com/helxplatform/tycho.git
-cd tycho
-git checkout develop
-```
-
-Add Tycho folder to the PYTHON PATH. 
-
-```
-export PYTHONPATH=${PYTHONPATH}:/path/to/tycho/folder
-
-Example:
-export PYTHONPATH=$PYTHONPATH:/home/user/tycho
-```
-
-Install appstore and Tycho requirements
-```
-# To install appstore requirements
-make install
-
-# To install Tycho requirements
-pip install -r /path/to/tycho/folder/requirements.txt
-
-Example:
-pip install -r /home/user/tycho/requirements.txt
-```
-
-You can use the commands packaged in `make` to configure and run the appstore. The below command is a way to
-start appstore development server.
+Start the development server:
 
 ```bash
 # configure environment variables, see above or .env.sample
 export DEV_PHASE=stub
 export SECRET_KEY=f00barBaz
-# Runs database migrations, creates super user, runs test then runs the appstore
+# Runs database migrations, creates super user, runs tests, then starts appstore
 # at 0.0.0.0:8000
 make start brand=braini
 ```
 
-With appstore running, make the necessary changes (including Tycho if necessary). Next steps involve publishing the 
-Tycho package to PyPI (Python Package Index). Jump to 
-[Publishing the Tycho package](#coordination-of-development-for-tycho-and-appstore) for details.
+#### Working on the helx library
+
+The `helx/` directory contains the standalone `helx` Python package that handles
+app-registry parsing and Kubernetes CRD management.  It can be developed and tested
+independently of the Django app:
+
+```bash
+# Run helx unit tests (no Kubernetes cluster needed)
+python -m pytest helx/
+
+# Use the run-app script to launch workloads directly
+python helx/run-app.py --registry ./ai-sandbox/app-registry.yaml --list
+python helx/run-app.py --registry ./ai-sandbox/app-registry.yaml \
+    --app jupyter-ai-notebook --user alice --namespace helx
+```
 
 #### Local testing with Artillery
 To run Artillery tests locally, a few things need to be set up beforehand.
@@ -273,8 +248,7 @@ make test.artillery
 - Have [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) set up.
 
 > NOTE: Once kubectl has been setup then set the KUBECONFIG env variable to use
-> other kubeconfigs for example the one provided to you will be exported into
-> the terminal where tycho api would be run: export KUBECONFIG=path-to-kubeconfig-file.
+> other kubeconfigs: `export KUBECONFIG=path-to-kubeconfig-file`.
 
 ### Kubernetes configuration
 
@@ -313,7 +287,7 @@ helm install release-name $HELXPLATFORM_HOME/devops/helx --values basic-values.y
 
 > Note you can enable/disable services as part of your helm install values file.
 
-You now have appstore and tycho running in a kubernetes environment ready for
+You now have appstore and helxapp-controller running in a kubernetes environment ready for
 testing. You can monitor pods/service status via `kubectl`.
 
 ### Artillery testing in Kubernetes
@@ -386,7 +360,7 @@ http://localhost/unique-URI
 The appstore has a new frontend being developed inside the [helx-ui](https://github.com/helxplatform/helx-ui)
 that is served by Django. This frontend is focused on user interactions with
 search and apps providing a rich experience while Django remains responsible
-for authentication, authorization, routing and exposing data from Tycho.
+for authentication, authorization, routing and exposing data from the `helx` library.
 
 This means that before a user is able to access the frontend `helx-ui` project
 Django will provide a login page to authenticate the user, after which the
@@ -414,55 +388,44 @@ developing the frontend and testing appstore integration.
 >NOTE: helx-ui is now deployed with it's own Helm chart and runs in it's own
 >container separate from appstore.
 
-## Coordination of Development for Tycho and Appstore
+## Coordination of Development for helx and Appstore
 
->NOTE: Tycho is a library that provides a facility and API to manipulate launch and 
->get state information for kubernetes objects in a more simplistic manner.
->Appstore relies on this facility to launch apps as defined by an external 
->repository  and then later query/manager those objects afterwards.  Thus,
->Tycho is an Appstore dependency.  It's functionality is made available as
->a python package, and changes to tycho are accessed through an updated
->package.  During the development process this can be accomplished by either
->using a published package or using a locally created package.
+The `helx` library (`helx/`) replaces the legacy `tycho` dependency as the package
+that handles app-registry loading and Kubernetes CRD management.  Appstore consumes
+it via an editable install (`-e file:../helx` in `requirements.txt`), so both
+projects can be developed together in the same checkout without publishing a package.
 
-### Install build support packages
+### Running helx tests independently
 
-    pip install setuptools==53.0.0
-    pip install wheel==0.36.2
-    pip install twine==3.3.0
-
-### Publish a new tycho package
-
-#### Create a pypi account and establish credentials
-
-1. Log into pypi.org with credentials from helx-pypi-credentials.txt in Keybase
-2. Go to Account Settings->API Tokens and generate a new token
-  - don’t limit its scope to a new project
-  - copy the token before you exit the screen
-  - create a ~/.pypirc file with this content
-
-    [pypi]
-      username = __token__
-      password = <pypi-token>
-
-#### Publishing
-
-This will build Tycho with your updates and publish a package to pypi.org
-
-1.  Update version in /tycho.__init__.py
-
-Use the  .dev* suffix for test versions
-
-2. Publish from within the Tycho project folder.
-```
-python setup.py publish
+```bash
+python -m pytest helx/ -q
 ```
 
-#### Updating Appstore
- 
-1. Go to appstore code base and update tycho version in following files `requirements.txt` created in the publishing step
+### Publishing the helx package
 
-2. Build and publish appstore
+When `helx/` is eventually moved to its own repository, publish it to PyPI:
+
+1. Update `version` in `helx/pyproject.toml`.
+2. Build and publish:
+
+```bash
+cd helx
+pip install build twine
+python -m build
+twine upload dist/*
+```
+
+#### Updating Appstore after a helx release
+
+Replace the editable install line in `requirements.txt`:
+
+```
+# development (editable):
+-e file:../helx
+
+# production (published):
+helx==<version>
+```
 
 ## Cluster Kubernetes Config
 
