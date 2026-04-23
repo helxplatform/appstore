@@ -1,0 +1,4 @@
+# Minimal app registry — the /api/v1/containers/ endpoint bypasses this.
+contexts:
+  helx:
+    apps: {}

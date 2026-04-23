@@ -35,6 +35,8 @@ from .serializers import (
     AppContextSerializer,
     InstanceModifySerializer,
     EmptySerializer,
+    ContainerLaunchSerializer,
+    JobLaunchSerializer,
 )
 
 from urllib.parse import urljoin
@@ -979,3 +981,167 @@ class AppContextViewSet(viewsets.GenericViewSet):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.validated_data)
+
+
+class ContainerViewSet(viewsets.GenericViewSet):
+    """Launch arbitrary containers with Ambassador routing.
+
+    Bypasses the app registry — accepts an image, env vars, and PVC mounts
+    directly. Designed for the execution platform to spin up interactive
+    sessions (e.g., result exploration in Jupyter).
+    """
+
+    serializer_class = ContainerLaunchSerializer
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        username = request.user.get_username()
+        host = get_host(request)
+
+        identity_token = UserIdentityToken.objects.create(user=request.user)
+        principal = Principal(username, identity_token.token, None)
+
+        resources = {
+            "cpus": str(data["cpus"]),
+            "memory": data["memory"],
+        }
+        if data.get("gpus"):
+            resources["gpus"] = str(data["gpus"])
+
+        system = tycho.start_raw(
+            principal=principal,
+            name=data["name"],
+            image=data["image"],
+            port=data["port"],
+            resources=resources,
+            host=host,
+            env=data.get("env", {}),
+            command=data.get("command") or None,
+            pvc_mounts=data.get("pvc_mounts", []),
+        )
+
+        identity_token.consumer_id = identity_token.compute_app_consumer_id(
+            system.identifier
+        )
+        identity_token.save()
+
+        s = InstanceSpec(
+            username,
+            data["name"],
+            data["name"],
+            host,
+            resources,
+            system.services[0].ip_address if system.services else None,
+            system.services[0].port if system.services else data["port"],
+            system.services[0].identifier if system.services else "",
+            system.identifier,
+        )
+
+        serializer = InstanceSpecSerializer(data=asdict(s))
+        serializer.is_valid(raise_exception=True)
+        logger.info(
+            f"Launched container {data['name']}-{system.identifier} for {username}"
+        )
+        return Response(serializer.validated_data, status=drf_status.HTTP_201_CREATED)
+
+    def retrieve(self, request, sid=None):
+        """Get status of a container by sid."""
+        username = request.user.get_username()
+        host = get_host(request)
+        result = tycho.status({"name": sid})
+
+        if not result or not result.services:
+            return Response(
+                {"detail": "Container not found"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
+
+        svc = result.services[0]
+        if svc.username != username:
+            return Response(status=drf_status.HTTP_403_FORBIDDEN)
+
+        return Response({
+            "sid": sid,
+            "name": svc.name,
+            "is_ready": svc.is_ready,
+            "url": svc.ip_address or f"https://{host}/private/{svc.app_id}/{username}/{sid}/",
+        })
+
+    def destroy(self, request, sid=None):
+        """Terminate a container by sid."""
+        username = request.user.get_username()
+        result = tycho.status({"name": sid})
+
+        if not result or not result.services:
+            return Response(status=drf_status.HTTP_404_NOT_FOUND)
+
+        svc = result.services[0]
+        if svc.username != username:
+            return Response(status=drf_status.HTTP_403_FORBIDDEN)
+
+        tycho.delete({"name": sid})
+        UserIdentityToken.objects.filter(
+            consumer_id__contains=sid
+        ).delete()
+
+        return Response(status=drf_status.HTTP_204_NO_CONTENT)
+
+
+class JobViewSet(viewsets.GenericViewSet):
+    """Launch and manage batch K8s Jobs.
+
+    No networking, no Ambassador, no Service creation.
+    Jobs run to completion and exit.
+    """
+
+    serializer_class = JobLaunchSerializer
+    lookup_field = "sid"
+
+    def create(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        volumes = []
+        for m in data.get("pvc_mounts", []):
+            volumes.append({
+                "pvc": m["pvc"],
+                "mount_path": m["mount_path"],
+                "sub_path": m.get("sub_path", ""),
+                "read_only": m.get("read_only", False),
+            })
+
+        result = tycho.start_batch_job(
+            name=data["name"],
+            identifier=data["identifier"],
+            image=data["image"],
+            command=data.get("command") or None,
+            env=data.get("env", {}),
+            volumes=volumes,
+            limits={"cpus": data["cpus"], "memory": data["memory"]},
+            username=data.get("username", "mism"),
+        )
+
+        return Response(result, status=drf_status.HTTP_201_CREATED)
+
+    def retrieve(self, request, sid=None):
+        """Get status of a batch Job."""
+        result = tycho.job_status(sid)
+        if result is None:
+            return Response(
+                {"detail": "Job not found"},
+                status=drf_status.HTTP_404_NOT_FOUND,
+            )
+        return Response(result)
+
+    def destroy(self, request, sid=None):
+        """Delete a batch Job."""
+        result = tycho.job_status(sid)
+        if result is None:
+            return Response(status=drf_status.HTTP_404_NOT_FOUND)
+
+        tycho.delete_job(sid)
+        return Response(status=drf_status.HTTP_204_NO_CONTENT)

@@ -103,5 +103,40 @@ class AppContextSerializer(serializers.Serializer):
     env = serializers.DictField()
 
 
+class PvcMountSerializer(serializers.Serializer):
+    pvc = serializers.CharField()
+    mount_path = serializers.CharField()
+    sub_path = serializers.CharField(required=False, default="")
+    read_only = serializers.BooleanField(required=False, default=False)
+
+
+class ContainerLaunchSerializer(serializers.Serializer):
+    """Launch an arbitrary container image with optional PVC mounts."""
+
+    image = serializers.CharField()
+    name = serializers.CharField()
+    port = serializers.IntegerField(default=8888)
+    cpus = serializers.FloatField(default=0.5)
+    gpus = serializers.IntegerField(default=0)
+    memory = serializers.CharField(default="512M")
+    env = serializers.DictField(child=serializers.CharField(), required=False, default=dict)
+    command = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    pvc_mounts = PvcMountSerializer(many=True, required=False, default=list)
+
+
+class JobLaunchSerializer(serializers.Serializer):
+    """Launch a batch K8s Job — no networking, no Ambassador."""
+
+    image = serializers.CharField()
+    name = serializers.CharField()
+    identifier = serializers.CharField()
+    cpus = serializers.CharField(default="1")
+    memory = serializers.CharField(default="2Gi")
+    env = serializers.DictField(child=serializers.CharField(), required=False, default=dict)
+    command = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    pvc_mounts = PvcMountSerializer(many=True, required=False, default=list)
+    username = serializers.CharField(default="mism")
+
+
 class EmptySerializer(serializers.Serializer):
     pass

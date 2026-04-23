@@ -362,9 +362,124 @@ class TychoContext:
                 f"  -- started app id:{app_id} user:{principal.username} id:{system.identifier} services:{list(running.items ())}")
         return system
     
+    def start_raw(self, principal, name, image, port, resources, host,
+                   env=None, command=None, pvc_mounts=None):
+        """Launch an arbitrary container without requiring the app registry.
+
+        Builds a docker-compose-style spec programmatically and feeds it
+        through the standard Tycho pipeline.
+        """
+        env = env or {}
+        pvc_mounts = pvc_mounts or []
+
+        # Build volume strings in Tycho's pvc:// format
+        volumes = []
+        for m in pvc_mounts:
+            sub = m.get("sub_path", "").strip("/")
+            pvc_name = m["pvc"]
+            mount = m["mount_path"]
+            if sub:
+                volumes.append(f"pvc://{pvc_name}/{sub}:{mount}")
+            else:
+                volumes.append(f"pvc://{pvc_name}:{mount}")
+
+        # Construct inline docker-compose spec
+        spec = {
+            "services": {
+                name: {
+                    "image": image,
+                    "deploy": {
+                        "resources": {
+                            "limits": resources,
+                            "reservations": resources,
+                        }
+                    },
+                    "ports": [str(port)],
+                    "environment": [f"{k}={v}" for k, v in env.items()],
+                    "volumes": volumes,
+                    "ext": None,
+                    "conn_string": "",
+                    "proxy_rewrite": {"enabled": True, "target": None},
+                    "gitea_integration": False,
+                }
+            },
+            "security_context": {},
+        }
+
+        if command:
+            spec["services"][name]["entrypoint"] = command
+        else:
+            # Wrap the default entrypoint to pass NB_PREFIX as base_url
+            # and JUPYTER_TOKEN for auth. Both are injected as env vars.
+            spec["services"][name]["entrypoint"] = [
+                "/bin/sh", "-c",
+                'exec start-notebook.sh'
+                ' --ServerApp.base_url="$NB_PREFIX"'
+                ' --ServerApp.token="$JUPYTER_TOKEN"'
+                ' "$@"',
+                "--",
+            ]
+
+        principal_params = {
+            "username": principal.username,
+            "access_token": principal.access_token,
+            "refresh_token": principal.refresh_token,
+            "host": host,
+            "extra_container_env": {},
+        }
+
+        # Empty clients list = no REMOTE_USER header requirement on the
+        # Ambassador mapping, so the URL is directly accessible.
+        services = {name: {"port": str(port), "clients": []}}
+
+        return self._start({
+            "name": name,
+            "serviceaccount": None,
+            "env": {},
+            "system": spec,
+            "principal": json.dumps(principal_params, indent=4),
+            "services": services,
+        })
+
+    def _get_compute(self):
+        """Get the KubernetesCompute instance for direct K8s operations."""
+        if not hasattr(self, '_compute'):
+            from tycho.factory import ComputeFactory
+            from tycho.config import Config
+            config = Config({"tycho": {"backplane": "kubernetes"}})
+            self._compute = ComputeFactory.create_compute(config)
+        return self._compute
+
+    def start_batch_job(self, name, identifier, image, command, env,
+                        volumes, limits, username="mism", service_account=None):
+        """Launch a batch K8s Job. Bypasses Tycho's Deployment pipeline.
+
+        Goes directly to KubernetesCompute.start_job() — no docker-compose
+        parsing, no Service creation, no Ambassador routing.
+        """
+        return self._get_compute().start_job(
+            name=name,
+            identifier=identifier,
+            image=image,
+            command=command,
+            env=env,
+            volumes=volumes,
+            limits=limits,
+            username=username,
+            service_account=service_account,
+        )
+
+    def job_status(self, sid):
+        """Get batch Job status by identifier."""
+        return self._get_compute().job_status(sid)
+
+    def delete_job(self, sid):
+        """Delete a batch Job by identifier."""
+        return self._get_compute().delete_job(sid)
+
     def _start (self, request):
         """
-        Control low level application launching (start) logic. 
+        Control low level application launching (start) logic.
         Also provides an anchor point to mock the service in unit tests.
         """
         return self.client.start (request)
