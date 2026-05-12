@@ -411,8 +411,11 @@ class TychoContext:
         else:
             # Wrap the default entrypoint to pass NB_PREFIX as base_url
             # and JUPYTER_TOKEN for auth. Both are injected as env vars.
+            # If OUTPUT_PATH is set, create the directory before Jupyter starts
+            # so the mount point exists even if the NFS driver doesn't auto-create it.
             spec["services"][name]["entrypoint"] = [
                 "/bin/sh", "-c",
+                '[ -n "$OUTPUT_PATH" ] && mkdir -p "$OUTPUT_PATH"; '
                 'exec start-notebook.sh'
                 ' --ServerApp.base_url="$NB_PREFIX"'
                 ' --ServerApp.token="$JUPYTER_TOKEN"'
