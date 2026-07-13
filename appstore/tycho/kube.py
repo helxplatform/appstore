@@ -47,6 +47,7 @@ class KubernetesCompute(Compute):
 #        self.extensions_api = k8s_client.ExtensionsV1beta1Api(api_client) 
         self.extensions_api = k8s_client.AppsV1Api(api_client)
         self.networking_api = k8s_client.NetworkingV1Api(api_client)
+        self.batch_api = k8s_client.BatchV1Api(api_client)
         self.try_minikube = True
         self.namespace = self.get_namespace (
             namespace=os.environ.get("NAMESPACE", self.get_namespace ()))
@@ -485,6 +486,214 @@ class KubernetesCompute(Compute):
                 message=f"Failed to modify system: {system_modify.guid}",
                 details=text
             )
+
+    # ------------------------------------------------------------------
+    # Batch Job support
+    # ------------------------------------------------------------------
+
+    def start_job(self, name, identifier, image, command, env, volumes,
+                  limits, namespace=None, username="mism",
+                  service_account=None):
+        """Create a K8s Job for batch execution. No Service, no Ambassador.
+
+        Args:
+            name: Job name prefix
+            identifier: UUID for labeling (correlation key)
+            image: Container image
+            command: Entrypoint command list (or None for image default)
+            env: Dict of environment variables
+            volumes: List of dicts with keys: name, pvc, mount_path, sub_path, read_only
+            limits: Dict with keys: cpus, memory
+            namespace: K8s namespace (defaults to self.namespace)
+            username: User who triggered the job (for labels)
+            service_account: K8s ServiceAccount (optional)
+
+        Returns:
+            dict with keys: name, sid, status
+        """
+        namespace = namespace or self.namespace
+        full_name = f"{name}-{identifier}"
+
+        # Build container env
+        env_list = [k8s_client.V1EnvVar(name=k, value=str(v)) for k, v in env.items()]
+        env_list.append(k8s_client.V1EnvVar(name="MISM_GUID", value=identifier))
+
+        # Build volume mounts and volumes — deduplicate PVCs by claim name
+        volume_mounts = []
+        k8s_volumes = []
+        seen_pvcs = set()
+        for vol in volumes:
+            vol_name = vol["pvc"]  # use PVC name as volume name (dedup)
+            volume_mounts.append(k8s_client.V1VolumeMount(
+                name=vol_name,
+                mount_path=vol["mount_path"],
+                sub_path=vol.get("sub_path"),
+                read_only=vol.get("read_only", False),
+            ))
+            if vol_name not in seen_pvcs:
+                k8s_volumes.append(k8s_client.V1Volume(
+                    name=vol_name,
+                    persistent_volume_claim=k8s_client.V1PersistentVolumeClaimVolumeSource(
+                        claim_name=vol["pvc"],
+                    ),
+                ))
+                seen_pvcs.add(vol_name)
+
+        # Build resource requirements
+        resources = k8s_client.V1ResourceRequirements(
+            limits={"cpu": limits.get("cpus", "1"), "memory": limits.get("memory", "2Gi")},
+            requests={"cpu": limits.get("cpus", "1"), "memory": limits.get("memory", "2Gi")},
+        )
+
+        # Build container
+        container = k8s_client.V1Container(
+            name=name[:63],
+            image=image,
+            image_pull_policy="Always",
+            command=command if command else None,
+            env=env_list,
+            resources=resources,
+            volume_mounts=volume_mounts if volume_mounts else None,
+        )
+
+        # Build pod spec
+        pod_spec = k8s_client.V1PodSpec(
+            restart_policy="Never",
+            containers=[container],
+            volumes=k8s_volumes if k8s_volumes else None,
+            service_account_name=service_account,
+            enable_service_links=False,
+        )
+
+        labels = {
+            "mism-guid": identifier,
+            "executor": "mism-exec",
+            "username": username,
+            "app-name": name,
+        }
+
+        # Build Job
+        job = k8s_client.V1Job(
+            api_version="batch/v1",
+            kind="Job",
+            metadata=k8s_client.V1ObjectMeta(name=full_name, labels=labels),
+            spec=k8s_client.V1JobSpec(
+                template=k8s_client.V1PodTemplateSpec(
+                    metadata=k8s_client.V1ObjectMeta(labels=labels),
+                    spec=pod_spec,
+                ),
+                backoff_limit=0,
+            ),
+        )
+
+        try:
+            self.batch_api.create_namespaced_job(body=job, namespace=namespace)
+            logger.info(f"Job created: {full_name}")
+            return {
+                "name": full_name,
+                "sid": identifier,
+                "status": "running",
+            }
+        except ApiException as e:
+            raise StartException(
+                message=f"Failed to create job {full_name}",
+                details=str(e),
+            )
+
+    def job_status(self, sid, namespace=None):
+        """Get the status of a batch Job by its identifier."""
+        namespace = namespace or self.namespace
+        try:
+            response = self.batch_api.list_namespaced_job(
+                namespace=namespace,
+                label_selector=f"mism-guid={sid}",
+            )
+        except ApiException:
+            logger.exception(f"Failed to get job status for sid={sid}")
+            return None
+
+        if not response.items:
+            return None
+
+        job = response.items[0]
+        job_status = job.status
+
+        status = "pending"
+        phase = "pending"
+        exit_code = None
+
+        if job_status.succeeded and job_status.succeeded > 0:
+            status = "succeeded"
+            phase = "succeeded"
+        elif job_status.failed and job_status.failed > 0:
+            status = "failed"
+            phase = "failed"
+        elif job_status.active and job_status.active > 0:
+            status = "running"
+            phase = "running"
+        else:
+            # Fall back to pod-level inspection
+            pod_info = self._get_job_pod_phase(sid, namespace)
+            phase = pod_info.get("phase", "unknown")
+            exit_code = pod_info.get("exit_code")
+            if phase == "succeeded":
+                status = "succeeded"
+            elif phase == "failed":
+                status = "failed"
+
+        return {
+            "sid": sid,
+            "name": job.metadata.name,
+            "status": status,
+            "phase": phase,
+            "exit_code": exit_code,
+        }
+
+    def delete_job(self, sid, namespace=None):
+        """Delete a batch Job and its pods by identifier."""
+        namespace = namespace or self.namespace
+        label = f"mism-guid={sid}"
+        try:
+            self.batch_api.delete_collection_namespaced_job(
+                namespace=namespace,
+                label_selector=label,
+                propagation_policy="Background",
+            )
+            self.api.delete_collection_namespaced_pod(
+                namespace=namespace, label_selector=label,
+            )
+            logger.info(f"Deleted job sid={sid}")
+        except ApiException:
+            logger.exception(f"Failed to delete job sid={sid}")
+            raise DeleteException(
+                message=f"Failed to delete job sid={sid}",
+            )
+
+    def _get_job_pod_phase(self, sid, namespace):
+        """Inspect the pod backing a Job for exit code."""
+        try:
+            pods = self.api.list_namespaced_pod(
+                namespace=namespace,
+                label_selector=f"mism-guid={sid}",
+            )
+            if not pods.items:
+                return {"phase": "unknown"}
+
+            pod = pods.items[0]
+            raw_phase = (pod.status.phase or "Unknown").lower()
+
+            if pod.status.container_statuses:
+                for cs in pod.status.container_statuses:
+                    if cs.state and cs.state.terminated:
+                        code = cs.state.terminated.exit_code
+                        return {
+                            "phase": "succeeded" if code == 0 else "failed",
+                            "exit_code": code,
+                        }
+
+            return {"phase": raw_phase}
+        except ApiException:
+            return {"phase": "unknown"}
 
 
 
