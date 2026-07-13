@@ -549,6 +549,7 @@ class KubernetesCompute(Compute):
         container = k8s_client.V1Container(
             name=name[:63],
             image=image,
+            image_pull_policy="Always",
             command=command if command else None,
             env=env_list,
             resources=resources,
