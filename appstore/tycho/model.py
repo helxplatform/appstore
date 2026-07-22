@@ -175,7 +175,17 @@ class System:
         self.config = config
         self.identifier = identifier
         self.system_name = name
+        # Routing mode for reaching launched apps:
+        #   'ambassador' -> emit the getambassador.io Mapping annotation (legacy)
+        #   'proxy'      -> ClusterIP + /private prefix, routed by an external
+        #                   reverse proxy that resolves via appstore (no annotation)
+        #   'none'       -> LoadBalancer, app served at '/' (local/dev)
+        self.routing = os.getenv('APP_ROUTING_MODE', 'ambassador')
+        # amb: emit the Ambassador Mapping annotation.
         self.amb = False
+        # proxied: app sits behind a reverse proxy -> ClusterIP Service and
+        # /private URL prefix (true for both 'ambassador' and 'proxy' modes).
+        self.proxied = False
         self.irods_enabled = False
         self.nfrods_uid = ''
         self.dev_phase = os.getenv('DEV_PHASE', "prod")

@@ -52,6 +52,7 @@ spec:
   initContainers:
   - name: volume-tasks
     image: {{ system.init_image_repository }}:{{ system.init_image_tag }}
+    imagePullPolicy: IfNotPresent
     {% if system.init_security_context.run_as_user or system.init_security_context.run_as_group %}
     securityContext:
       {% if system.init_security_context.run_as_user %}
@@ -108,6 +109,7 @@ spec:
     {% endif %}
   - name: userless-volume-tasks
     image: {{ system.init_image_repository }}:{{ system.init_image_tag }}
+    imagePullPolicy: IfNotPresent
     securityContext:
       runAsUser: {{ system.init_nobody_uid }}
       runAsGroup: {{ system.init_nobody_gid }}
@@ -256,7 +258,7 @@ spec:
     - name: {{ key }}
       value: {{ value }}
     {%endfor %}
-    {% if system.amb %}
+    {% if system.proxied %}
     - name: NB_PREFIX
       value: /private/{{system.system_name}}/{{system.username}}/{{system.identifier}}
     - name: FB_BASEURL
@@ -277,7 +279,7 @@ spec:
       value: {{ system.username }}
     - name: USER
       value: {{ system.username }}
-    {% if system.amb %}
+    {% if system.proxied %}
     - name: NB_PREFIX
       value: /private/{{system.system_name}}/{{system.username}}/{{system.identifier}}
     - name: FB_BASEURL

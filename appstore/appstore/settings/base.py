@@ -205,6 +205,13 @@ SAML_ACS_URL = "/saml2_auth/acs/"
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 
+# TLS is terminated upstream (ingress-nginx / resty), which forwards the
+# original scheme in X-Forwarded-Proto. Honor it so request.is_secure() is
+# True behind the proxy; without this Django treats requests as HTTP and the
+# CSRF origin check rejects HTTPS POSTs (browser Origin https:// vs computed
+# http:// origin), which surfaces as launches bouncing users back to sign-in.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",

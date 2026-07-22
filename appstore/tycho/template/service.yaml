@@ -52,7 +52,7 @@ metadata:
    {% endif %} 
 resourceversion: v1
 spec:
-  {% if system.amb %}
+  {% if system.proxied %}
   type: ClusterIP
   {% else %}
   type: LoadBalancer

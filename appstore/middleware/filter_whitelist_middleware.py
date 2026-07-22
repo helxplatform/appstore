@@ -5,7 +5,6 @@ from functools import lru_cache
 
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.contrib.sessions.models import Session
 from django.http import HttpResponseRedirect
 from django.utils.deprecation import MiddlewareMixin
 from django.core.mail import send_mail
@@ -181,9 +180,7 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
 
     @staticmethod
     def clear_session(request):
-        session_key = request.session.session_key
-        session = Session.objects.get(session_key=session_key)
-        Session.objects.filter(session_key=session).delete()
+        request.session.flush()
 
 
     @staticmethod

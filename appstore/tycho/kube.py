@@ -111,10 +111,17 @@ class KubernetesCompute(Compute):
                 if index not in volumesNA:
                     systemVolumesCopy.append(value)
             system.volumes = systemVolumesCopy
-            """ Check the status of ambassador """
-            amb_status = self.is_ambassador_context(namespace, system.ambassador_service_name)
-            if amb_status:
-                system.amb = True
+            """ Determine how launched apps are routed. """
+            if system.routing == 'ambassador':
+                """ Legacy: emit an Ambassador Mapping annotation if ambassador is present. """
+                amb_status = self.is_ambassador_context(namespace, system.ambassador_service_name)
+                if amb_status:
+                    system.amb = True
+                    system.proxied = True
+            elif system.routing == 'proxy':
+                """ ClusterIP + /private prefix; an external reverse proxy resolves
+                    the backend via appstore. No Ambassador annotation is emitted. """
+                system.proxied = True
             #api_response = self.api.list_namespace()
             #notExists = True
             #for item in api_response.items:
@@ -217,7 +224,7 @@ class KubernetesCompute(Compute):
                             namespace=namespace)
 
                         ip_address = None
-                        if not system.amb:
+                        if not system.proxied:
                             ip_address = self.get_service_ip_address (response)
 
                         """ Return generated node ports to caller. """
