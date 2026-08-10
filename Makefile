@@ -20,7 +20,7 @@ DOCKER_OWNER    := helxplatform
 DOCKER_APP      := appstore
 DOCKER_TAG      := ${VERSION}
 DOCKER_IMAGE    := ${DOCKER_OWNER}/${DOCKER_APP}:$(DOCKER_TAG)
-SECRET_KEY      := $(shell openssl rand -base64 12)
+SECRET_KEY      ?= $(shell openssl rand -base64 12)
 APP_LIST        ?= api appstore core frontend middleware product
 BRANDS          := braini bdc heal restartr scidas eduhelx argus tracs eduhelx-sandbox eduhelx-dev eduhelx-dev-student eduhelx-dev-professor eduhelx-student eduhelx-professor
 MANAGE	        := ${PYTHON} appstore/manage.py
@@ -93,8 +93,8 @@ install:
 test:
 	$(foreach brand,$(BRANDS),SECRET_KEY=${SECRET_KEY} DEV_PHASE=stub DJANGO_SETTINGS_MODULE=appstore.settings.$(brand)_settings ${MANAGE} test $(APP_LIST);)
 
-#start: Run the gunicorn server
-start:	build.postgresql.local
+#db-init: Run migrations and seed data (run once per deploy, not per replica)
+db-init:	build.postgresql.local
 	if [ -z ${DJANGO_SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
 	${MANAGE} makemigrations
 	${MANAGE} migrate
@@ -104,6 +104,11 @@ start:	build.postgresql.local
 	if [ "${CREATE_TEST_USERS}" = "true" ]; then ${MANAGE} shell < bin/createtestusers.py; fi
 	${MANAGE} collectstatic --clear --no-input
 	${MANAGE} spectacular --file ./appstore/schema.yml
+
+#start: Run the gunicorn server
+start:	build.postgresql.local
+	if [ -z ${DJANGO_SETTINGS_MODULE} ]; then make help && echo "\n\nPlease set the DJANGO_SETTINGS_MODULE environment variable\n\n"; exit 1; fi
+	${MANAGE} collectstatic --clear --no-input
 	gunicorn --bind 0.0.0.0:8000 --log-level=${LOG_LEVEL} --pythonpath=./appstore appstore.wsgi:application --workers=${NO_OF_GUNICORN_WORKERS}
 
 #build: Build the Docker image
