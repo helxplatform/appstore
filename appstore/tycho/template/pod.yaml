@@ -139,6 +139,11 @@ spec:
           fi
         fi
 
+        # Create /var/run/helx symlink.
+        if [ -d "/var/run/helx" ]; then
+          ln -sfn "/var/run/helx" "$HOME_PATH/helx"
+        fi
+
         {% if system.enable_trash_cli == "true" %}
         HOME_TRASH="${XDG_DATA_HOME:-$HOME_PATH/.local/share}/Trash"
         TRASH_AGGREGATE="$HOME_PATH/Trash Bins"

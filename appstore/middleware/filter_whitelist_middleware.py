@@ -158,9 +158,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
 
         if AllowWhiteListedUserOnly.is_auto_whitelisted_email(user):
             logger.debug("[AUTHZ] AUTO-pattern match → persisting email")
-            AuthorizedUser.objects.get_or_create(
-                email=user.email, defaults={"username": user.username}
-            )
+            # AuthorizedUser.objects.get_or_create(
+            #     email=user.email, defaults={"username": user.username}
+            # )
             return True
 
         if AuthorizedUser.objects.filter(username=user.username).exists():
@@ -169,9 +169,9 @@ class AllowWhiteListedUserOnly(MiddlewareMixin):
 
         if AllowWhiteListedUserOnly._ldap_group_member(user):
             logger.debug("[AUTHZ] LDAP group match → persisting email")
-            AuthorizedUser.objects.get_or_create(
-                email=user.email, defaults={"username": user.username}
-            )
+            # AuthorizedUser.objects.get_or_create(
+            #     email=user.email, defaults={"username": user.username}
+            # )
             return True
 
         logger.debug("[AUTHZ] No rule matched; user is NOT authorised")

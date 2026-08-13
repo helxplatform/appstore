@@ -13,3 +13,7 @@ appstore/static/
 build/
 coverage/
 docs/
+venv/
+.venv/
+venv.bak/
+*.egg-info/

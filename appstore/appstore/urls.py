@@ -1,10 +1,10 @@
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import RedirectView
 from django.views.static import serve
 
-from django_saml2_auth import views as saml2_auth_views
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from core.views import custom404
@@ -13,10 +13,22 @@ admin.autodiscover()
 
 handler404 = custom404
 
+
+def _saml_legacy_login(request):
+    from allauth.socialaccount.providers.saml import views as saml_views
+    return saml_views.login(request, organization_slug=settings.SAML_PROVIDER_SLUG)
+
+
+@csrf_exempt
+def _saml_legacy_acs(request):
+    from allauth.socialaccount.providers.saml import views as saml_views
+    return saml_views.acs(request, organization_slug=settings.SAML_PROVIDER_SLUG)
+
+
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("saml2_auth/", include("django_saml2_auth.urls")),
-    path("accounts/saml/", saml2_auth_views.signin),
+    path("saml2_auth/acs/", _saml_legacy_acs),
+    path("accounts/saml/", _saml_legacy_login),
     path(r"accounts/login/", HelxLoginView.as_view(), name="helx_login"),
     path("accounts/", include("allauth.urls")),
 ]

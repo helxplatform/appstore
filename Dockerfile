@@ -1,4 +1,4 @@
-FROM python:3.9.23-alpine
+FROM python:3.10.20-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -12,6 +12,7 @@ ENV UID=1000
 RUN mkdir $APP_HOME
 
 RUN set -x && \
+    apk upgrade --no-cache && \
     apk add --no-cache make git bash build-base xmlsec libxml2-dev linux-headers openssl && \
     adduser -D -s /bin/bash -h $HOME -u $UID $USER && \
     chown -R $UID:$UID $APP_HOME
@@ -30,7 +31,8 @@ RUN chown -R $USER:0 $APP_HOME && \
 
 RUN if [ -d whl -a "$(ls -A whl/*.whl)" ]; then pip install whl/*.whl; fi
 RUN export SET_BUILD_ENV_FROM_FILE=false \
-    && pip install "cython<3.0.0" wheel \
+    && pip install --upgrade "setuptools>=78.1.1" \
+    && pip install "cython<3.0.0" "wheel>=0.46.2" \
     && pip install "pyyaml==5.4.1" --no-build-isolation \
     && make install \
     && unset SET_BUILD_ENV_FROM_FILE

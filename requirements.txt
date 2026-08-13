@@ -1,16 +1,15 @@
-Django==4.2.23
+Django==4.2.30
 django-allauth==0.61.1
 django-cors-headers==4.3.1
 django-crispy-forms==2.1
 django-debug-toolbar==4.3.0
 django-extensions==3.2.3
-grafana-django-saml2-auth==3.12.0
 djangorestframework==3.15.2
 drf-spectacular==0.27.1
 flake8==3.9.0
 gunicorn==23.0.0
 mock==4.0.2
-pysaml2==7.4.2
+python3-saml==1.16.0
 python3-openid==3.2.0
 requests-oauthlib==1.4.0
 selenium==3.141.0
@@ -19,7 +18,7 @@ asgiref==3.7.2
 psycopg2-binary
 python-irodsclient==1.1.5
 deepmerge==1.0.1
-GitPython==3.1.44
+GitPython==3.1.50
 Jinja2==3.1.6
 jsonschema==3.2.0
 kubernetes==25.3.0
@@ -28,4 +27,6 @@ requests==2.32.4
 docker-compose==1.29.2
 requests_cache==1.2.1
 ldap3
-urllib3==2.5.0
+urllib3==2.7.0
+PyJWT==2.13.0
+cryptography==48.0.1

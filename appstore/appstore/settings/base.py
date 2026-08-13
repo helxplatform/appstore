@@ -83,7 +83,6 @@ DJANGO_APPS = [
     "django.contrib.auth",
     "django.contrib.messages",
     "django.contrib.sites",
-    "django_saml2_auth",
 ]
 
 THIRD_PARTY_APPS = [
@@ -127,6 +126,64 @@ OAUTH_PROVIDERS = os.environ.get("OAUTH_PROVIDERS", "").split(",")
 for PROVIDER in OAUTH_PROVIDERS:
     if PROVIDER != '':
         THIRD_PARTY_APPS.append(f"allauth.socialaccount.providers.{PROVIDER}")
+
+SAML_URL = "/accounts/saml"
+SAML_ACS_URL = "/saml2_auth/acs/"
+SAML_PROVIDER_SLUG = os.environ.get("SAML_PROVIDER_SLUG", "saml")
+SAML_PROVIDER_NAME = os.environ.get("SAML_PROVIDER_NAME", "Single Sign-On")
+if ALLOW_SAML_LOGIN == "true":
+    THIRD_PARTY_APPS.append("allauth.socialaccount.providers.saml")
+
+    SAML_SP_ENTITY_ID = os.environ["SAML2_AUTH_ENTITY_ID"]
+    _sp_host = "/".join(SAML_SP_ENTITY_ID.split("/", 3)[:3])
+    SAML_SP_ACS_URL = os.environ.get("SAML_SP_ACS_URL") or (_sp_host + SAML_ACS_URL)
+    SAML_IDP_ENTITY_ID = os.environ.get("SAML_IDP_ENTITY_ID") or None
+    _saml_metadata_source = os.environ["SAML_METADATA_SOURCE"]
+
+    if _saml_metadata_source.startswith(("http://", "https://")):
+        _saml_idp = {
+            "entity_id": SAML_IDP_ENTITY_ID,
+            "metadata_url": _saml_metadata_source,
+        }
+    else:
+        from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
+        with open(_saml_metadata_source, "r") as _f:
+            _xml = _f.read()
+        _parsed = OneLogin_Saml2_IdPMetadataParser.parse(
+            _xml,
+            entity_id=SAML_IDP_ENTITY_ID,
+        )["idp"]
+        _saml_idp = {
+            "entity_id": _parsed["entityId"],
+            "sso_url": _parsed["singleSignOnService"]["url"],
+            "x509cert": _parsed["x509cert"],
+        }
+        _slo = _parsed.get("singleLogoutService") or {}
+        if _slo.get("url"):
+            _saml_idp["slo_url"] = _slo["url"]
+
+    SOCIALACCOUNT_PROVIDERS["saml"] = {
+        "APPS": [{
+            "provider_id": SAML_PROVIDER_SLUG,
+            "client_id": SAML_PROVIDER_SLUG,
+            "name": SAML_PROVIDER_NAME,
+            "settings": {
+                "idp": _saml_idp,
+                "attribute_mapping": {
+                    "uid": ["urn:oid:0.9.2342.19200300.100.1.1"],
+                    "username": ["urn:oid:0.9.2342.19200300.100.1.1"],
+                    "email": ["urn:oid:0.9.2342.19200300.100.1.3", "urn:oid:1.3.6.1.4.1.5923.1.1.1.6"],
+                    "first_name": ["urn:oid:2.5.4.42"],
+                    "last_name": ["urn:oid:2.5.4.4"],
+                },
+                "advanced": {
+                    "want_assertion_signed": True,
+                    "authn_request_signed": False,
+                    "want_message_signed": False,
+                },
+            },
+        }],
+    }
 
 # get the OIDC name if exists
 OIDC_NAME = os.environ.get("OIDC_NAME", "")
@@ -199,8 +256,13 @@ LOGIN_REDIRECT_URL = "/helx/workspaces/login/success"
 LOGIN_URL = "/accounts/login"
 LOGIN_WHITELIST_URL = "/helx/workspaces/login?whitelist_required=true"
 OIDC_SESSION_MANAGEMENT_ENABLE = True
-SAML_URL = "/accounts/saml"
-SAML_ACS_URL = "/saml2_auth/acs/"
+# The ingress terminates TLS and forwards to the pod over plain HTTP, setting
+# X-Forwarded-Proto: https. Trust that header so request.build_absolute_uri()
+# returns https:// URLs. Critical for allauth-SAML, which puts the ACS URL into
+# the AuthnRequest — IdPs reject ACS URLs whose scheme doesn't match the
+# registered SP. Only safe behind a proxy that strips/sets these headers.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 #SAML_ACS_URL = "/sso/acs/"
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = None
@@ -460,48 +522,5 @@ if DEBUG and DEV_PHASE in ("local", "stub", "dev"):
     # Add debug middleware early on so it doesn't conflict or process through
     # middleware that would disrupt in the process
     MIDDLEWARE[1:1] = DEBUG_MIDDLEWARE
-
-SAML2_AUTH = {
-    # Optional settings below
-    "DEFAULT_NEXT_URL": "/helx/workspaces/login/success",  # Custom target redirect URL after the user get logged in. Default to /admin if not set. This setting will be overwritten if you have parameter ?next= specificed in the login URL.
-    "CREATE_USER": "TRUE",  # Create a new Django user when a new user logs in. Defaults to True.
-    "NEW_USER_PROFILE": {
-        "USER_GROUPS": [],  # The default group name when a new user logs in
-        "ACTIVE_STATUS": True,  # The default active status for new users
-        "STAFF_STATUS": True,  # The staff status for new users
-        "SUPERUSER_STATUS": False,  # The superuser status for new users
-    },
-    "ATTRIBUTES_MAP": {  # Change Email/UserName/FirstName/LastName to corresponding SAML2 userprofile attributes.
-        "email": "mail",
-        "username": "uid",
-        "first_name": "givenName",
-        "last_name": "sn",
-    },
-    "TRIGGER": {
-        "CREATE_USER": "core.models.update_user",
-    },
-    "ASSERTION_URL": os.environ.get("SAML2_AUTH_ASSERTION_URL"),
-    "ENTITY_ID": os.environ.get(
-        "SAML2_AUTH_ENTITY_ID"
-    ),  # Populates the Issuer element in authn request
-    "USE_JWT": False,
-    'WANT_ASSERTIONS_SIGNED': True,
-    'AUTHN_REQUESTS_SIGNED': False,
-    'WANT_RESPONSE_SIGNED': False,
-    'TOKEN_REQUIRED': False,
-}
-
-# Metadata is required, either remote url or local file path, check the environment
-# determine the type based on the form of the value.  Default to UNC if there's nothing
-
-metadata_source = os.environ.get("SAML_METADATA_SOURCE")
-if metadata_source != None and type(metadata_source) is str and len(metadata_source) != 0: 
-    metadata_source_components = metadata_source.split(':')
-    if len(metadata_source_components) > 1:
-        metadata_source_scheme = metadata_source_components[0]
-        if metadata_source_scheme == "http" or metadata_source_scheme == "https":
-           SAML2_AUTH["METADATA_AUTO_CONF_URL"] = metadata_source
-        else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
-    else: SAML2_AUTH["METADATA_LOCAL_FILE_PATH"] = metadata_source
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

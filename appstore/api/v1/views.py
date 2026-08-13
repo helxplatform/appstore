@@ -1137,14 +1137,9 @@ class LoginProviderViewSet(viewsets.GenericViewSet):
         """
 
         if settings.ALLOW_SAML_LOGIN == "true":
-            # TODO can we get the provider name from metadata so that if
-            # we support something beyond UNC we dont need another func
-            # or clause? What happens if we have multiple SAML SSO providers
-            # today it's handled with SAML_URL and the saml2_auth package,
-            # but appears to be setup for one provider at a time.
             return asdict(
                 LoginProvider(
-                    "UNC Chapel Hill Single Sign-On",
+                    settings.SAML_PROVIDER_NAME,
                     settings.SAML_URL,
                 )
             )
