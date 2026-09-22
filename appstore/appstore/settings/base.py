@@ -274,6 +274,15 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = None
 # http:// origin), which surfaces as launches bouncing users back to sign-in.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
+# Restrict the session and CSRF cookies to TLS. A browser will not store a
+# Secure cookie received over http://, so a deployment served without TLS has to
+# opt out here or sign-in breaks. Only an explicit "false" opts out, so that a
+# malformed value fails closed. The string compare is required: every non-empty
+# string, "false" included, is truthy.
+COOKIE_SECURE = os.environ.get("DJANGO_COOKIE_SECURE", "true").lower() != "false"
+SESSION_COOKIE_SECURE = COOKIE_SECURE
+CSRF_COOKIE_SECURE = COOKIE_SECURE
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
