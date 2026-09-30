@@ -192,7 +192,8 @@ class KubernetesCompute(Compute):
                     username=system.username,
                     identifier=system.identifier,
                     template=pod_manifest,
-                    namespace=namespace)
+                    namespace=namespace,
+                    queue_name=system.gpu_queue_name if system.requests_gpus() else None)
 
             """ Create a network policy if appropriate. """
             if system.requires_network_policy ():
@@ -283,7 +284,7 @@ class KubernetesCompute(Compute):
         logger.debug (f"service {service_metadata.metadata.name} ingress ip: {ip_address}")
         return ip_address
 
-    def pod_to_deployment (self, name, username, identifier, template, namespace="default"):
+    def pod_to_deployment (self, name, username, identifier, template, namespace="default", queue_name=None):
         """ Create a deployment specification based on a pod template.
             
             :param name: Name of the system.
@@ -294,6 +295,8 @@ class KubernetesCompute(Compute):
             :type identifier: str
             :param namepsace: Namespace to run the pod in.
             :type namespace: str
+            :param queue_name: Kueue LocalQueue for the deployment's pods.
+            :type queue_name: str
         """
         namespace = self.namespace #self.get_namespace()
         deployment_spec = k8s_client.V1DeploymentSpec(
@@ -307,16 +310,19 @@ class KubernetesCompute(Compute):
         
         """ Instantiate the deployment object """
         logger.debug (f"creating deployment specification {template}")
+        labels = {
+            "tycho-guid" : identifier,
+            "executor" : "tycho",
+            "username" : username
+        }
+        if queue_name:
+            labels["kueue.x-k8s.io/queue-name"] = queue_name
         deployment = k8s_client.V1Deployment(
             api_version="apps/v1",
             kind="Deployment",
             metadata=k8s_client.V1ObjectMeta(
                 name=name,
-                labels={
-                    "tycho-guid" : identifier,
-                    "executor" : "tycho",
-                    "username" : username
-                }),
+                labels=labels),
             spec=deployment_spec)
 
         """ Create the deployment. """
