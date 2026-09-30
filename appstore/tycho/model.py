@@ -251,6 +251,7 @@ class System:
         self.init_nobody_uid = int(os.environ.get("TYCHO_APP_INIT_NOBODY_UID", "524288"))
         self.init_nobody_gid = int(os.environ.get("TYCHO_APP_INIT_NOBODY_GID", "524288"))
         self.gpu_resource_name = os.environ.get("TYCHO_APP_GPU_RESOURCE_NAME", "nvidia.com/gpu")
+        self.gpu_queue_name = os.environ.get("TYCHO_APP_GPU_QUEUE_NAME")
         """Proxy rewrite rule for ambassador service annotations"""
         self.proxy_rewrite = proxy_rewrite
         # """Flag for checking if an IRODS connection is enabled"""
@@ -321,6 +322,11 @@ class System:
 
     def requires_network_policy (self):
         return any ([ len(svc.clients) > 0 for name, svc in self.services.items () ])
+
+    def requests_gpus (self):
+        """ Non-GPU launches carry gpus="0" rather than None. """
+        return any ([ c.limits is not None and c.limits.gpus is not None and int(c.limits.gpus) > 0
+                      for c in self.containers ])
     
     def render (self, template, context={}):
         """ Supply this system as a context to a template.

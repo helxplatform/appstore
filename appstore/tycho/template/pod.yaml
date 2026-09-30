@@ -20,6 +20,9 @@ metadata:
     executor: tycho
     tycho-guid: {{ system.identifier }}
     tycho-app-id: {{ system.app_id }}
+{% if system.gpu_queue_name and system.requests_gpus() %}
+    kueue.x-k8s.io/queue-name: {{ system.gpu_queue_name }}
+{% endif %}
   annotations:
     helx.renci.org/identity-exempt-containers: userless-volume-tasks
 spec:
