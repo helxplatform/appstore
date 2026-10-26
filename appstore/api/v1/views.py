@@ -1123,6 +1123,11 @@ class JobViewSet(viewsets.GenericViewSet):
             volumes=volumes,
             limits={"cpus": data["cpus"], "memory": data["memory"]},
             username=data.get("username", "mism"),
+            service_account=data.get("service_account"),
+            env_from=data.get("env_from") or None,
+            secret_mounts=data.get("secret_mounts") or None,
+            ttl_seconds_after_finished=data.get("ttl_seconds_after_finished"),
+            security_context=data.get("security_context"),
         )
 
         return Response(result, status=drf_status.HTTP_201_CREATED)

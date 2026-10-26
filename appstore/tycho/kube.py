@@ -493,7 +493,8 @@ class KubernetesCompute(Compute):
 
     def start_job(self, name, identifier, image, command, env, volumes,
                   limits, namespace=None, username="mism",
-                  service_account=None):
+                  service_account=None, env_from=None, secret_mounts=None,
+                  ttl_seconds_after_finished=None, security_context=None):
         """Create a K8s Job for batch execution. No Service, no Ambassador.
 
         Args:
@@ -506,7 +507,11 @@ class KubernetesCompute(Compute):
             limits: Dict with keys: cpus, memory
             namespace: K8s namespace (defaults to self.namespace)
             username: User who triggered the job (for labels)
-            service_account: K8s ServiceAccount (optional)
+            service_account: K8s ServiceAccount (optional; allowlisted by the API layer)
+            env_from: List of dicts {kind: secret|configmap, name, optional} (optional)
+            secret_mounts: List of dicts {secret, mount_path, items: {key: path}} (optional)
+            ttl_seconds_after_finished: Let K8s garbage-collect the finished Job (optional)
+            security_context: Dict {allow_privilege_escalation, drop_capabilities} (optional)
 
         Returns:
             dict with keys: name, sid, status
@@ -517,6 +522,18 @@ class KubernetesCompute(Compute):
         # Build container env
         env_list = [k8s_client.V1EnvVar(name=k, value=str(v)) for k, v in env.items()]
         env_list.append(k8s_client.V1EnvVar(name="MISM_GUID", value=identifier))
+
+        # envFrom applies in list order, later sources winning on a key clash --
+        # callers put ConfigMaps before Secrets so a tuning knob can't shadow a credential.
+        env_from_list = []
+        for src in env_from or []:
+            optional = src.get("optional", False)
+            if src["kind"] == "secret":
+                env_from_list.append(k8s_client.V1EnvFromSource(
+                    secret_ref=k8s_client.V1SecretEnvSource(name=src["name"], optional=optional)))
+            else:
+                env_from_list.append(k8s_client.V1EnvFromSource(
+                    config_map_ref=k8s_client.V1ConfigMapEnvSource(name=src["name"], optional=optional)))
 
         # Build volume mounts and volumes — deduplicate PVCs by claim name
         volume_mounts = []
@@ -539,6 +556,36 @@ class KubernetesCompute(Compute):
                 ))
                 seen_pvcs.add(vol_name)
 
+        # Secret volumes, always read-only. Indexed names: Secret names are DNS
+        # subdomains (may contain dots), volume names must be DNS labels, and
+        # PVC volumes above are named after their claim.
+        for i, sm in enumerate(secret_mounts or []):
+            vol_name = f"secret-mount-{i}"
+            items = [k8s_client.V1KeyToPath(key=k, path=p)
+                     for k, p in (sm.get("items") or {}).items()]
+            volume_mounts.append(k8s_client.V1VolumeMount(
+                name=vol_name,
+                mount_path=sm["mount_path"],
+                read_only=True,
+            ))
+            k8s_volumes.append(k8s_client.V1Volume(
+                name=vol_name,
+                secret=k8s_client.V1SecretVolumeSource(
+                    secret_name=sm["secret"],
+                    items=items or None,
+                ),
+            ))
+
+        # Opt-in hardening only: making this the default would break model
+        # images that run as root and write to PVC dirs they don't own.
+        container_security_context = None
+        if security_context:
+            drop = security_context.get("drop_capabilities") or []
+            container_security_context = k8s_client.V1SecurityContext(
+                allow_privilege_escalation=security_context.get("allow_privilege_escalation"),
+                capabilities=k8s_client.V1Capabilities(drop=drop) if drop else None,
+            )
+
         # Build resource requirements
         resources = k8s_client.V1ResourceRequirements(
             limits={"cpu": limits.get("cpus", "1"), "memory": limits.get("memory", "2Gi")},
@@ -552,8 +599,10 @@ class KubernetesCompute(Compute):
             image_pull_policy="Always",
             command=command if command else None,
             env=env_list,
+            env_from=env_from_list or None,
             resources=resources,
             volume_mounts=volume_mounts if volume_mounts else None,
+            security_context=container_security_context,
         )
 
         # Build pod spec
@@ -583,6 +632,7 @@ class KubernetesCompute(Compute):
                     spec=pod_spec,
                 ),
                 backoff_limit=0,
+                ttl_seconds_after_finished=ttl_seconds_after_finished,
             ),
         )
 
