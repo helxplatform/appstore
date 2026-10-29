@@ -25,6 +25,7 @@ jsonschema==3.2.0
 kubernetes==25.3.0
 PyYAML==5.4.1
 requests==2.32.4
+certifi>=2026.10.23
 docker-compose==1.29.2
 requests_cache==1.2.1
 ldap3

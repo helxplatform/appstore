@@ -46,6 +46,13 @@ DEBUG = bool(DEBUG_STRING)
 DEV_PHASE = os.environ.get("DEV_PHASE", "local")
 TYCHO_MODE = os.environ.get("TYCHO_MODE", "null" if DEV_PHASE == "stub" else "live")
 
+# ServiceAccounts a /api/v1/jobs/ caller may run a Job as (comma-separated).
+# Empty means none: a caller-chosen ServiceAccount is a privilege grant, so it
+# must be allowlisted explicitly (e.g. "envbuild" for the envagent builder).
+JOB_ALLOWED_SERVICE_ACCOUNTS = [
+    s.strip() for s in os.environ.get("JOB_ALLOWED_SERVICE_ACCOUNTS", "").split(",") if s.strip()
+]
+
 # Needs to be JSON-encoded since expressions can contain basically any character that would be used as a delimiter. 
 AUTO_WHITELIST_PATTERNS = json.loads(os.environ.get("AUTO_WHITELIST_PATTERNS", "[]"))
 

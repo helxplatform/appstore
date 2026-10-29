@@ -1,0 +1,2 @@
+# Empty app defaults — the /api/v1/containers/ endpoint bypasses this.
+defaults: {}

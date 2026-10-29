@@ -266,15 +266,15 @@ class System:
         if "runAsUser" in sc_from_registry.keys():
             security_context["run_as_user"] = str(sc_from_registry.get("runAsUser"))
         else:
-            security_context["run_as_user"] = os.environ.get("TYCHO_APP_RUN_AS_USER", "0")
+            security_context["run_as_user"] = os.environ.get("TYCHO_APP_RUN_AS_USER", "")
         if "runAsGroup" in sc_from_registry.keys():
             security_context["run_as_group"] = str(sc_from_registry.get("runAsGroup"))
         else:
-            security_context["run_as_group"] = os.environ.get("TYCHO_APP_RUN_AS_GROUP", "0")
+            security_context["run_as_group"] = os.environ.get("TYCHO_APP_RUN_AS_GROUP", "")
         if "fsGroup" in sc_from_registry.keys():
             security_context["fs_group"] = str(sc_from_registry.get("fsGroup"))
         else:
-            security_context["fs_group"] = os.environ.get("TYCHO_APP_FS_GROUP", "0")
+            security_context["fs_group"] = os.environ.get("TYCHO_APP_FS_GROUP", "")
         return security_context
 
     @staticmethod
@@ -283,11 +283,11 @@ class System:
         if "initRunAsUser" in sc_from_registry.keys():
             init_security_context["run_as_user"] = str(sc_from_registry.get("initRunAsUser"))
         else:
-            init_security_context["run_as_user"] = os.environ.get("INIT_SC_RUN_AS_USER", "0")
+            init_security_context["run_as_user"] = os.environ.get("INIT_SC_RUN_AS_USER", "")
         if "initRunAsGroup" in sc_from_registry.keys():
             init_security_context["run_as_group"] = str(sc_from_registry.get("initRunAsGroup"))
         else:
-            init_security_context["run_as_group"] = os.environ.get("INIT_SC_RUN_AS_GROUP", "0")
+            init_security_context["run_as_group"] = os.environ.get("INIT_SC_RUN_AS_GROUP", "")
         return init_security_context
 
     def _get_ambassador_id(self):

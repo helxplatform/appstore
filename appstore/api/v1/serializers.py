@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from rest_framework import serializers
 from .models import ResourceRequest
 from .validators import memory_format_validator
@@ -101,6 +102,80 @@ class AppContextSerializer(serializers.Serializer):
     capabilities = serializers.ListField()
     dockstore_app_specs_dir_url = serializers.CharField(allow_null=True)
     env = serializers.DictField()
+
+
+class PvcMountSerializer(serializers.Serializer):
+    pvc = serializers.CharField()
+    mount_path = serializers.CharField()
+    sub_path = serializers.CharField(required=False, default="")
+    read_only = serializers.BooleanField(required=False, default=False)
+
+
+class ContainerLaunchSerializer(serializers.Serializer):
+    """Launch an arbitrary container image with optional PVC mounts."""
+
+    image = serializers.CharField()
+    name = serializers.CharField()
+    port = serializers.IntegerField(default=8888)
+    cpus = serializers.FloatField(default=0.5)
+    gpus = serializers.IntegerField(default=0)
+    memory = serializers.CharField(default="512M")
+    env = serializers.DictField(child=serializers.CharField(), required=False, default=dict)
+    command = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    pvc_mounts = PvcMountSerializer(many=True, required=False, default=list)
+
+
+class EnvFromSerializer(serializers.Serializer):
+    """Inject every key of a Secret or ConfigMap as env vars (container envFrom)."""
+
+    kind = serializers.ChoiceField(choices=["secret", "configmap"])
+    name = serializers.CharField()
+    optional = serializers.BooleanField(required=False, default=False)
+
+
+class SecretMountSerializer(serializers.Serializer):
+    """Mount a Secret read-only. `items` maps secret key -> file path under mount_path."""
+
+    secret = serializers.CharField()
+    mount_path = serializers.CharField()
+    items = serializers.DictField(child=serializers.CharField(), required=False, default=dict)
+
+
+class SecurityContextSerializer(serializers.Serializer):
+    """Opt-in container hardening. Omitted fields are left unset."""
+
+    allow_privilege_escalation = serializers.BooleanField(required=False)
+    drop_capabilities = serializers.ListField(
+        child=serializers.CharField(), required=False, default=list
+    )
+
+
+class JobLaunchSerializer(serializers.Serializer):
+    """Launch a batch K8s Job — no networking, no Ambassador."""
+
+    image = serializers.CharField()
+    name = serializers.CharField()
+    identifier = serializers.CharField()
+    cpus = serializers.CharField(default="1")
+    memory = serializers.CharField(default="2Gi")
+    env = serializers.DictField(child=serializers.CharField(), required=False, default=dict)
+    command = serializers.ListField(child=serializers.CharField(), required=False, default=list)
+    pvc_mounts = PvcMountSerializer(many=True, required=False, default=list)
+    username = serializers.CharField(default="mism")
+    service_account = serializers.CharField(required=False, allow_null=True, default=None)
+    env_from = EnvFromSerializer(many=True, required=False, default=list)
+    secret_mounts = SecretMountSerializer(many=True, required=False, default=list)
+    ttl_seconds_after_finished = serializers.IntegerField(
+        required=False, allow_null=True, default=None, min_value=0
+    )
+    security_context = SecurityContextSerializer(required=False, allow_null=True, default=None)
+
+    def validate_service_account(self, value):
+        if value and value not in settings.JOB_ALLOWED_SERVICE_ACCOUNTS:
+            raise serializers.ValidationError(
+                f"ServiceAccount '{value}' is not in JOB_ALLOWED_SERVICE_ACCOUNTS."
+            )
+        return value
 
 
 class EmptySerializer(serializers.Serializer):
