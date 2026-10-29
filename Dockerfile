@@ -1,4 +1,4 @@
-FROM python:3.9.23-alpine
+FROM python:3.9.25-alpine
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -12,6 +12,7 @@ ENV UID=1000
 RUN mkdir $APP_HOME
 
 RUN set -x && \
+    apk add --no-cache --upgrade ca-certificates ca-certificates-bundle && \
     apk add --no-cache make git bash build-base xmlsec libxml2-dev linux-headers openssl && \
     adduser -D -s /bin/bash -h $HOME -u $UID $USER && \
     chown -R $UID:$UID $APP_HOME

@@ -454,7 +454,9 @@ class TychoContext:
         return self._compute
 
     def start_batch_job(self, name, identifier, image, command, env,
-                        volumes, limits, username="mism", service_account=None):
+                        volumes, limits, username="mism", service_account=None,
+                        env_from=None, secret_mounts=None,
+                        ttl_seconds_after_finished=None, security_context=None):
         """Launch a batch K8s Job. Bypasses Tycho's Deployment pipeline.
 
         Goes directly to KubernetesCompute.start_job() — no docker-compose
@@ -470,6 +472,10 @@ class TychoContext:
             limits=limits,
             username=username,
             service_account=service_account,
+            env_from=env_from,
+            secret_mounts=secret_mounts,
+            ttl_seconds_after_finished=ttl_seconds_after_finished,
+            security_context=security_context,
         )
 
     def job_status(self, sid):
