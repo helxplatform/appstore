@@ -13,3 +13,4 @@ appstore/static/
 build/
 coverage/
 docs/
+.venv/
